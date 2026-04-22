@@ -1,0 +1,579 @@
+import type { Relic, RelicRarity, RelicFamily } from "@/types/relic";
+import type { ChainState } from "@/types/domino";
+import type { PatternAnalysis } from "./patterns";
+import { getGlobalRNG } from "./rng";
+
+export const ALL_RELICS: Relic[] = [
+  {
+    id: "eco_par",
+    name: "Eco Par",
+    description: "Los numeros pares otorgan +5 por aparicion",
+    trigger: "on_score",
+    effect: { type: "bonus_per_number", number: -1, value: 5 },
+  },
+  {
+    id: "pulso_bajo",
+    name: "Pulso Bajo",
+    description: "Numeros 0-3 otorgan +3 extra cada uno",
+    trigger: "on_score",
+    effect: { type: "bonus_low_numbers", value: 3 },
+  },
+  {
+    id: "corona_alta",
+    name: "Corona Alta",
+    description: "Numeros 4-6 otorgan +4 extra cada uno",
+    trigger: "on_score",
+    effect: { type: "bonus_high_numbers", value: 4 },
+  },
+  {
+    id: "doble_corona",
+    name: "Doble Corona",
+    description: "Los dobles multiplican x1.3",
+    trigger: "on_double",
+    effect: { type: "bonus_per_double", value: 15 },
+  },
+  {
+    id: "final_pesado",
+    name: "Final Pesado",
+    description: "Cierre Exacto otorga +50 extra",
+    trigger: "on_pattern",
+    effect: { type: "bonus_if_pattern", patternId: "cierre_exacto", value: 50 },
+  },
+  {
+    id: "cadena_tensa",
+    name: "Cadena Tensa",
+    description: "Cadena Larga otorga x1.2 adicional",
+    trigger: "on_pattern",
+    effect: { type: "multiplier_if_pattern", patternId: "cadena_larga", value: 1.2 },
+  },
+  {
+    id: "mano_firme",
+    name: "Mano Firme",
+    description: "+5 puntos por cada ficha jugada",
+    trigger: "on_score",
+    effect: { type: "bonus_per_tile", value: 5 },
+  },
+  {
+    id: "impulso_inicial",
+    name: "Impulso Inicial",
+    description: "+25 puntos fijos al score",
+    trigger: "passive",
+    effect: { type: "bonus_flat", value: 25 },
+  },
+  {
+    id: "precision",
+    name: "Precision",
+    description: "x1.15 multiplicador global",
+    trigger: "passive",
+    effect: { type: "multiplier", value: 1.15 },
+  },
+  {
+    id: "seis_dorado",
+    name: "Seis Dorado",
+    description: "Cada 6 en la cadena otorga +8",
+    trigger: "on_score",
+    effect: { type: "bonus_per_number", number: 6, value: 8 },
+  },
+  {
+    id: "cero_vacio",
+    name: "Cero Vacio",
+    description: "Cada 0 en la cadena otorga +10",
+    trigger: "on_score",
+    effect: { type: "bonus_per_number", number: 0, value: 10 },
+  },
+  {
+    id: "dominio_total",
+    name: "Dominio Total",
+    description: "Patron Dominio otorga +40 extra",
+    trigger: "on_pattern",
+    effect: { type: "bonus_if_pattern", patternId: "dominio", value: 40 },
+  },
+  {
+    id: "tres_magico",
+    name: "Tres Magico",
+    description: "Cada 3 en la cadena otorga +7",
+    trigger: "on_score",
+    effect: { type: "bonus_per_number", number: 3, value: 7 },
+  },
+  {
+    id: "uno_solitario",
+    name: "Uno Solitario",
+    description: "Cada 1 en la cadena otorga +6",
+    trigger: "on_score",
+    effect: { type: "bonus_per_number", number: 1, value: 6 },
+  },
+  {
+    id: "cuatro_estable",
+    name: "Cuatro Estable",
+    description: "Cada 4 en la cadena otorga +5",
+    trigger: "on_score",
+    effect: { type: "bonus_per_number", number: 4, value: 5 },
+  },
+  {
+    id: "cinco_central",
+    name: "Cinco Central",
+    description: "Cada 5 en la cadena otorga +6",
+    trigger: "on_score",
+    effect: { type: "bonus_per_number", number: 5, value: 6 },
+  },
+  {
+    id: "dos_gemelos",
+    name: "Dos Gemelos",
+    description: "Cada 2 en la cadena otorga +5",
+    trigger: "on_score",
+    effect: { type: "bonus_per_number", number: 2, value: 5 },
+  },
+  {
+    id: "amplificador",
+    name: "Amplificador",
+    description: "x1.25 multiplicador global",
+    trigger: "passive",
+    effect: { type: "multiplier", value: 1.25 },
+  },
+  {
+    id: "base_solida",
+    name: "Base Solida",
+    description: "+40 puntos fijos al score",
+    trigger: "passive",
+    effect: { type: "bonus_flat", value: 40 },
+  },
+  {
+    id: "cadena_maestra",
+    name: "Cadena Maestra",
+    description: "+8 puntos por cada ficha jugada",
+    trigger: "on_score",
+    effect: { type: "bonus_per_tile", value: 8 },
+  },
+  {
+    id: "doble_filo",
+    name: "Doble Filo",
+    description: "Los dobles otorgan +25 cada uno",
+    trigger: "on_double",
+    effect: { type: "bonus_per_double", value: 25 },
+  },
+  {
+    id: "simple_efectivo",
+    name: "Simple Efectivo",
+    description: "Cadena Simple otorga +20 extra",
+    trigger: "on_pattern",
+    effect: { type: "bonus_if_pattern", patternId: "cadena_simple", value: 20 },
+  },
+  {
+    id: "doble_amenaza",
+    name: "Doble Amenaza",
+    description: "Doble Doble otorga x1.3 adicional",
+    trigger: "on_pattern",
+    effect: { type: "multiplier_if_pattern", patternId: "doble_doble", value: 1.3 },
+  },
+  {
+    id: "impar_salvaje",
+    name: "Impar Salvaje",
+    description: "Numeros impares otorgan +4 cada uno",
+    trigger: "on_score",
+    effect: { type: "bonus_per_number", number: -2, value: 4 },
+  },
+  {
+    id: "escalador",
+    name: "Escalador",
+    description: "Patron Escalera otorga +45 extra",
+    trigger: "on_pattern",
+    effect: { type: "bonus_if_pattern", patternId: "escalera", value: 45 },
+  },
+  {
+    id: "parejas_perfectas",
+    name: "Parejas Perfectas",
+    description: "Patron Parejas otorga x1.4 adicional",
+    trigger: "on_pattern",
+    effect: { type: "multiplier_if_pattern", patternId: "parejas", value: 1.4 },
+  },
+  {
+    id: "racha_imparable",
+    name: "Racha Imparable",
+    description: "Racha Alta otorga +50 extra",
+    trigger: "on_pattern",
+    effect: { type: "bonus_if_pattern", patternId: "racha_alta", value: 50 },
+  },
+  {
+    id: "minimalista",
+    name: "Minimalista",
+    description: "Racha Baja otorga x1.5 adicional",
+    trigger: "on_pattern",
+    effect: { type: "multiplier_if_pattern", patternId: "racha_baja", value: 1.5 },
+  },
+  {
+    id: "ritmo_perfecto",
+    name: "Ritmo Perfecto",
+    description: "Alternancia otorga +40 y x1.2",
+    trigger: "on_pattern",
+    effect: { type: "bonus_if_pattern", patternId: "alternancia", value: 40 },
+  },
+  {
+    id: "maestro_cadenas",
+    name: "Maestro de Cadenas",
+    description: "Cadena Maxima otorga x2 adicional",
+    trigger: "on_pattern",
+    effect: { type: "multiplier_if_pattern", patternId: "cadena_maxima", value: 2 },
+  },
+  {
+    id: "reflejo",
+    name: "Reflejo",
+    description: "Patron Espejo otorga +40 extra",
+    trigger: "on_pattern",
+    effect: { type: "bonus_if_pattern", patternId: "espejo", value: 40 },
+  },
+  {
+    id: "pureza_doble",
+    name: "Pureza Doble",
+    description: "Todo Dobles otorga x1.5 adicional",
+    trigger: "on_pattern",
+    effect: { type: "multiplier_if_pattern", patternId: "todo_dobles", value: 1.5 },
+  },
+  {
+    id: "serpiente",
+    name: "Serpiente",
+    description: "Patron Zigzag otorga +50 extra",
+    trigger: "on_pattern",
+    effect: { type: "bonus_if_pattern", patternId: "zigzag", value: 50 },
+  },
+  {
+    id: "avalancha_total",
+    name: "Avalancha Total",
+    description: "Patron Avalancha otorga x1.4 adicional",
+    trigger: "on_pattern",
+    effect: { type: "multiplier_if_pattern", patternId: "avalancha", value: 1.4 },
+  },
+  {
+    id: "fortuna",
+    name: "Fortuna",
+    description: "+60 puntos fijos al score",
+    trigger: "passive",
+    effect: { type: "bonus_flat", value: 60 },
+  },
+  {
+    id: "supernova",
+    name: "Supernova",
+    description: "x1.4 multiplicador global",
+    trigger: "passive",
+    effect: { type: "multiplier", value: 1.4 },
+  },
+  {
+    id: "reloj_arena",
+    name: "Reloj de Arena",
+    description: "+3 acciones por ronda",
+    trigger: "passive",
+    effect: { type: "extra_actions", value: 3 },
+  },
+  {
+    id: "mano_larga",
+    name: "Mano Larga",
+    description: "+1 robo adicional por ronda",
+    trigger: "passive",
+    effect: { type: "extra_draws", value: 1 },
+  },
+  {
+    id: "filtro",
+    name: "Filtro",
+    description: "+1 descarte adicional por ronda",
+    trigger: "passive",
+    effect: { type: "extra_discards", value: 1 },
+  },
+  {
+    id: "reciclador",
+    name: "Reciclador",
+    description: "+15 puntos por cada ficha descartada",
+    trigger: "passive",
+    effect: { type: "bonus_per_discard", value: 15 },
+  },
+  {
+    id: "explorador",
+    name: "Explorador",
+    description: "+20 puntos por cada ficha robada",
+    trigger: "passive",
+    effect: { type: "bonus_on_draw", value: 20 },
+  },
+  {
+    id: "tactico",
+    name: "Tactico",
+    description: "+4 acciones por ronda",
+    trigger: "passive",
+    effect: { type: "extra_actions", value: 4 },
+  },
+];
+
+export function getRandomRelics(count: number, exclude: string[] = []): Relic[] {
+  const available = ALL_RELICS.filter((r) => !exclude.includes(r.id));
+  const shuffled = [...available].sort(() => getGlobalRNG().next() - 0.5);
+  return shuffled.slice(0, count);
+}
+
+export interface RelicBonus {
+  bonus: number;
+  multiplier: number;
+}
+
+export function calculateRelicBonus(
+  relics: Relic[],
+  chain: ChainState,
+  patternAnalysis: PatternAnalysis
+): RelicBonus {
+  let bonus = 0;
+  let multiplier = 1;
+
+  const allNumbers: number[] = [];
+  let doubleCount = 0;
+
+  for (const p of chain.placed) {
+    allNumbers.push(p.tile.top, p.tile.bottom);
+    if (p.tile.top === p.tile.bottom) {
+      doubleCount++;
+    }
+  }
+
+  const patternIds = patternAnalysis.patterns.map((p) => p.id);
+
+  for (const relic of relics) {
+    const effect = relic.effect;
+
+    switch (effect.type) {
+      case "bonus_flat":
+        bonus += effect.value;
+        break;
+
+      case "multiplier":
+        multiplier *= effect.value;
+        break;
+
+      case "bonus_per_tile":
+        bonus += chain.placed.length * effect.value;
+        break;
+
+      case "bonus_per_double":
+        bonus += doubleCount * effect.value;
+        break;
+
+      case "bonus_per_number":
+        if (effect.number === -1) {
+          const evenCount = allNumbers.filter((n) => n % 2 === 0).length;
+          bonus += evenCount * effect.value;
+        } else if (effect.number === -2) {
+          const oddCount = allNumbers.filter((n) => n % 2 === 1).length;
+          bonus += oddCount * effect.value;
+        } else {
+          const count = allNumbers.filter((n) => n === effect.number).length;
+          bonus += count * effect.value;
+        }
+        break;
+
+      case "bonus_low_numbers":
+        const lowCount = allNumbers.filter((n) => n <= 3).length;
+        bonus += lowCount * effect.value;
+        break;
+
+      case "bonus_high_numbers":
+        const highCount = allNumbers.filter((n) => n >= 4).length;
+        bonus += highCount * effect.value;
+        break;
+
+      case "bonus_if_pattern":
+        if (patternIds.includes(effect.patternId)) {
+          bonus += effect.value;
+        }
+        break;
+
+      case "multiplier_if_pattern":
+        if (patternIds.includes(effect.patternId)) {
+          multiplier *= effect.value;
+        }
+        break;
+    }
+  }
+
+  return { bonus, multiplier };
+}
+
+// ---- Rarity classification ----
+// Legendary: run-defining heavy multipliers / uniquely powerful pattern effects
+// Rare: solid multipliers, big flat pattern bonuses
+// Common (default): small flat/per-number/per-tile bonuses
+
+const LEGENDARY_IDS = new Set<string>([
+  "amplificador",         // x1.25 global
+  "maestro_cadenas",      // cadena_maxima x2
+  "minimalista",          // racha_baja x1.5
+  "parejas_perfectas",    // parejas x1.4
+]);
+
+const RARE_IDS = new Set<string>([
+  "precision",            // x1.15 global
+  "doble_corona",         // doubles x1.3
+  "doble_amenaza",        // doble_doble x1.3
+  "cadena_tensa",         // cadena_larga x1.2
+  "final_pesado",         // cierre +50
+  "dominio_total",        // dominio +40
+  "escalador",            // escalera +45
+  "racha_imparable",      // racha_alta +50
+  "ritmo_perfecto",       // alternancia +40
+  "doble_filo",           // doubles +25
+  "cadena_maestra",       // +8/tile
+  "base_solida",          // +40 flat
+]);
+
+export function getRelicRarity(relic: Relic): RelicRarity {
+  if (relic.rarity) return relic.rarity;
+  if (LEGENDARY_IDS.has(relic.id)) return "legendary";
+  if (RARE_IDS.has(relic.id)) return "rare";
+  return "common";
+}
+
+// ---- Family classification ----
+// Families group relics by playstyle. Owning 3+ of a family grants a set bonus.
+//
+// Patron: relics that trigger on pattern activation
+// Numero: relics that grant bonuses per specific number occurrence
+// Fuerza: flat score bonuses and global multipliers
+// Cadena: per-tile and double-focused scoring
+// Accion: action-economy, draws, discards
+
+const FAMILY_MAP: Record<string, RelicFamily> = {
+  // Patron
+  final_pesado: "patron",
+  cadena_tensa: "patron",
+  dominio_total: "patron",
+  simple_efectivo: "patron",
+  doble_amenaza: "patron",
+  escalador: "patron",
+  parejas_perfectas: "patron",
+  racha_imparable: "patron",
+  minimalista: "patron",
+  ritmo_perfecto: "patron",
+  maestro_cadenas: "patron",
+  reflejo: "patron",
+  pureza_doble: "patron",
+  serpiente: "patron",
+  avalancha_total: "patron",
+
+  // Numero
+  eco_par: "numero",
+  pulso_bajo: "numero",
+  corona_alta: "numero",
+  seis_dorado: "numero",
+  cero_vacio: "numero",
+  tres_magico: "numero",
+  uno_solitario: "numero",
+  cuatro_estable: "numero",
+  cinco_central: "numero",
+  dos_gemelos: "numero",
+  impar_salvaje: "numero",
+
+  // Fuerza
+  impulso_inicial: "fuerza",
+  base_solida: "fuerza",
+  precision: "fuerza",
+  amplificador: "fuerza",
+  fortuna: "fuerza",
+  supernova: "fuerza",
+
+  // Cadena
+  mano_firme: "cadena",
+  cadena_maestra: "cadena",
+  doble_corona: "cadena",
+  doble_filo: "cadena",
+
+  // Accion
+  reloj_arena: "accion",
+  mano_larga: "accion",
+  filtro: "accion",
+  reciclador: "accion",
+  explorador: "accion",
+  tactico: "accion",
+};
+
+export function getRelicFamily(relic: Relic): RelicFamily | null {
+  if (relic.family) return relic.family;
+  return FAMILY_MAP[relic.id] ?? null;
+}
+
+export const FAMILY_META: Record<RelicFamily, { name: string; color: string; icon: string; setBonusDescription: string }> = {
+  patron: {
+    name: "Patron",
+    color: "accent-gold",
+    icon: "◈",
+    setBonusDescription: "3+ reliquias: +25% a todos los bonos de patron",
+  },
+  numero: {
+    name: "Numero",
+    color: "blue",
+    icon: "#",
+    setBonusDescription: "3+ reliquias: +30 score fijo por ronda",
+  },
+  fuerza: {
+    name: "Fuerza",
+    color: "red",
+    icon: "✦",
+    setBonusDescription: "3+ reliquias: x1.10 multiplicador global adicional",
+  },
+  cadena: {
+    name: "Cadena",
+    color: "purple",
+    icon: "⬡",
+    setBonusDescription: "3+ reliquias: +4 score por ficha jugada",
+  },
+  accion: {
+    name: "Accion",
+    color: "green",
+    icon: "◉",
+    setBonusDescription: "3+ reliquias: +1 accion disponible por ronda",
+  },
+};
+
+export interface FamilySetBonus {
+  patronPatternBoost: number;      // multiply bonus_if_pattern / multiplier_if_pattern delta
+  numeroFlatBonus: number;         // flat bonus per round
+  fuerzaGlobalMultiplier: number;  // extra multiplier applied at end
+  cadenaPerTile: number;           // extra per tile played
+  accionExtraActions: number;      // extra actions per round
+  /** Families currently activated (for UI) */
+  activeFamilies: RelicFamily[];
+}
+
+/**
+ * Given a list of owned relic IDs, compute which families have 3+ relics
+ * and return the bonuses to apply. Stackless: one tier only (3+).
+ */
+export function computeFamilySetBonuses(ownedRelicIds: string[]): FamilySetBonus {
+  const counts: Record<RelicFamily, number> = {
+    patron: 0, numero: 0, fuerza: 0, cadena: 0, accion: 0,
+  };
+  for (const id of ownedRelicIds) {
+    const family = FAMILY_MAP[id];
+    if (family) counts[family]++;
+  }
+  const activeFamilies: RelicFamily[] = [];
+  const result: FamilySetBonus = {
+    patronPatternBoost: 0,
+    numeroFlatBonus: 0,
+    fuerzaGlobalMultiplier: 1,
+    cadenaPerTile: 0,
+    accionExtraActions: 0,
+    activeFamilies,
+  };
+  if (counts.patron >= 3) { result.patronPatternBoost = 0.25; activeFamilies.push("patron"); }
+  if (counts.numero >= 3) { result.numeroFlatBonus = 30; activeFamilies.push("numero"); }
+  if (counts.fuerza >= 3) { result.fuerzaGlobalMultiplier = 1.10; activeFamilies.push("fuerza"); }
+  if (counts.cadena >= 3) { result.cadenaPerTile = 4; activeFamilies.push("cadena"); }
+  if (counts.accion >= 3) { result.accionExtraActions = 1; activeFamilies.push("accion"); }
+  return result;
+}
+
+/** Count of each family in the owned set (for progress UI). */
+export function getFamilyCounts(ownedRelicIds: string[]): Record<RelicFamily, number> {
+  const counts: Record<RelicFamily, number> = {
+    patron: 0, numero: 0, fuerza: 0, cadena: 0, accion: 0,
+  };
+  for (const id of ownedRelicIds) {
+    const family = FAMILY_MAP[id];
+    if (family) counts[family]++;
+  }
+  return counts;
+}
+

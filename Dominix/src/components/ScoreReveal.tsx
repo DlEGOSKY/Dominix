@@ -1,0 +1,165 @@
+import { motion } from "framer-motion";
+import type { ScoreBreakdown } from "@/engine/score";
+
+export interface ScoreRevealExtras {
+  editionFlat?: number;
+  editionMultiplier?: number;
+  talentFlat?: number;
+  talentMultiplier?: number;
+  familyFlat?: number;
+  familyMultiplier?: number;
+  characterBonus?: number;
+}
+
+interface RevealLine {
+  label: string;
+  value: string;
+  color: string;
+  isMult?: boolean;
+  indent?: boolean;
+}
+
+interface ScoreRevealProps {
+  breakdown: ScoreBreakdown;
+  finalScore: number;
+  target: number;
+  won: boolean;
+  extras?: ScoreRevealExtras;
+}
+
+export default function ScoreReveal({ breakdown, finalScore, target, won, extras = {} }: ScoreRevealProps) {
+  const lines: RevealLine[] = [];
+
+  // --- Base ---
+  lines.push({ label: "Base de cadena", value: `+${breakdown.baseScore}`, color: "text-white" });
+
+  if (breakdown.lengthBonus > 0) {
+    lines.push({ label: `Longitud (${breakdown.patternAnalysis ? "+" : ""}${breakdown.lengthBonus})`, value: `+${breakdown.lengthBonus}`, color: "text-blue-300" });
+  }
+
+  // --- Patrones individuales ---
+  if (breakdown.patternAnalysis.patterns.length > 0) {
+    for (const p of breakdown.patternAnalysis.patterns) {
+      if (p.bonus > 0) {
+        lines.push({ label: p.name, value: `+${p.bonus}`, color: "text-cyan-300", indent: true });
+      }
+      if (p.multiplier > 1) {
+        lines.push({ label: `${p.name} ×`, value: `x${p.multiplier.toFixed(2)}`, color: "text-cyan-400", indent: true, isMult: true });
+      }
+    }
+    if (breakdown.patternAnalysis.combo) {
+      lines.push({ label: `Combo: ${breakdown.patternAnalysis.combo.name}`, value: `+${breakdown.patternAnalysis.combo.bonus}`, color: "text-violet-300", indent: true });
+    }
+  }
+
+  // --- Reliquias ---
+  if (breakdown.relicBonus > 0) {
+    lines.push({ label: "Reliquias (flat)", value: `+${breakdown.relicBonus}`, color: "text-purple-300" });
+  }
+  if (breakdown.relicMultiplier > 1) {
+    lines.push({ label: "Reliquias (mult)", value: `x${breakdown.relicMultiplier.toFixed(2)}`, color: "text-purple-400", isMult: true });
+  }
+
+  // --- Ediciones ---
+  if (extras.editionFlat && extras.editionFlat > 0) {
+    lines.push({ label: "Ediciones (flat)", value: `+${extras.editionFlat}`, color: "text-pink-300" });
+  }
+  if (extras.editionMultiplier && extras.editionMultiplier > 1) {
+    lines.push({ label: "Ediciones (mult)", value: `x${extras.editionMultiplier.toFixed(2)}`, color: "text-pink-400", isMult: true });
+  }
+
+  // --- Talents / Familia ---
+  if (extras.talentFlat && extras.talentFlat > 0) {
+    lines.push({ label: "Talentos", value: `+${extras.talentFlat}`, color: "text-amber-300" });
+  }
+  if (extras.familyFlat && extras.familyFlat > 0) {
+    lines.push({ label: "Familia (flat)", value: `+${extras.familyFlat}`, color: "text-emerald-300" });
+  }
+  if (extras.familyMultiplier && extras.familyMultiplier > 1) {
+    lines.push({ label: "Familia (mult)", value: `x${extras.familyMultiplier.toFixed(2)}`, color: "text-emerald-400", isMult: true });
+  }
+  if (extras.characterBonus && extras.characterBonus > 0) {
+    lines.push({ label: "Pasivo de personaje", value: `+${extras.characterBonus}`, color: "text-accent-gold" });
+  }
+
+  // --- Multiplicador total ---
+  if (breakdown.multiplier > 1) {
+    lines.push({ label: "Multiplicador global", value: `x${breakdown.multiplier.toFixed(2)}`, color: "text-accent-gold", isMult: true });
+  }
+
+  const STEP = 0.13;
+  const totalDelay = 0.15 + lines.length * STEP + 0.15;
+
+  return (
+    <div className="flex flex-col gap-1.5 w-full max-w-sm px-4 py-3 rounded-xl bg-surface-800/60 border border-surface-600/30 backdrop-blur-sm">
+      {lines.map((line, i) => (
+        <motion.div
+          key={`${line.label}-${i}`}
+          initial={{ opacity: 0, x: -12 }}
+          animate={{ opacity: 1, x: 0 }}
+          transition={{ delay: 0.15 + i * STEP, duration: 0.25, ease: [0.22, 1, 0.36, 1] }}
+          className={["flex items-center justify-between", line.indent ? "pl-4 border-l border-surface-600/30" : ""].join(" ")}
+        >
+          <span className="text-[11px] text-accent-silver/50 truncate max-w-[60%]">{line.label}</span>
+          <motion.span
+            initial={{ opacity: 0, scale: 0.75 }}
+            animate={{ opacity: 1, scale: 1 }}
+            transition={{ delay: 0.2 + i * STEP, duration: 0.2, type: "spring", stiffness: 500 }}
+            className={[
+              "font-mono font-bold text-sm shrink-0",
+              line.isMult ? "text-base" : "",
+              line.color,
+            ].join(" ")}
+          >
+            {line.value}
+          </motion.span>
+        </motion.div>
+      ))}
+
+      {/* Divider */}
+      <motion.div
+        initial={{ scaleX: 0, opacity: 0 }}
+        animate={{ scaleX: 1, opacity: 1 }}
+        transition={{ delay: totalDelay - 0.1, duration: 0.35 }}
+        className="h-px bg-gradient-to-r from-transparent via-accent-silver/20 to-transparent origin-left mt-1"
+      />
+
+      {/* Total */}
+      <motion.div
+        initial={{ opacity: 0, y: 8, scale: 0.95 }}
+        animate={{ opacity: 1, y: 0, scale: 1 }}
+        transition={{ delay: totalDelay, duration: 0.4, ease: [0.22, 1, 0.36, 1] }}
+        className="flex items-center justify-between pt-0.5"
+      >
+        <span className="text-[10px] font-bold text-accent-silver/40 uppercase tracking-[0.18em]">Total</span>
+        <div className="flex items-center gap-2">
+          <motion.span
+            initial={{ scale: 0.8 }}
+            animate={{ scale: [0.8, 1.12, 1] }}
+            transition={{ delay: totalDelay + 0.05, duration: 0.45, ease: "easeOut" }}
+            className={`font-mono font-black text-3xl ${won ? "text-green-400" : "text-red-400"}`}
+            style={{
+              textShadow: won
+                ? "0 0 24px rgba(74,222,128,0.5), 0 0 6px rgba(74,222,128,0.3)"
+                : "0 0 24px rgba(239,68,68,0.5), 0 0 6px rgba(239,68,68,0.3)",
+            }}
+          >
+            {finalScore}
+          </motion.span>
+          <div className="flex flex-col items-start">
+            <span className="text-[9px] text-accent-silver/25 font-mono uppercase tracking-widest">meta</span>
+            <span className="text-sm text-accent-silver/35 font-mono">{target}</span>
+          </div>
+        </div>
+      </motion.div>
+
+      {/* Win/lose bar */}
+      <motion.div
+        initial={{ scaleX: 0 }}
+        animate={{ scaleX: 1 }}
+        transition={{ delay: totalDelay + 0.2, duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
+        className={`h-0.5 rounded-full origin-left ${won ? "bg-green-400/50" : "bg-red-400/40"}`}
+      />
+    </div>
+  );
+}
