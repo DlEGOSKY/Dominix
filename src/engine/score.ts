@@ -28,14 +28,16 @@ export interface ScoreBreakdown {
   total: number;
 }
 
-export function calculateScore(chain: ChainState, relicIds: string[] = []): ScoreBreakdown {
+export function calculateScore(chain: ChainState, relicIds: string[] = [], patternBonusMultiplier: number = 1): ScoreBreakdown {
   const count = chain.placed.length;
   
   // Golden tiles give double base score
   let baseScore = 0;
   for (const p of chain.placed) {
     const tileScore = SCORE_PER_TILE;
-    baseScore += p.tile.type === "golden" ? tileScore * 2 : tileScore;
+    if (p.tile.type === "golden") baseScore += tileScore * 2;
+    else if (p.tile.type === "bomb") baseScore += tileScore + 15;
+    else baseScore += tileScore;
   }
   
   const lengthBonusValue = lengthBonus(count);
@@ -44,7 +46,8 @@ export function calculateScore(chain: ChainState, relicIds: string[] = []): Scor
   const activeRelics = ALL_RELICS.filter((r) => relicIds.includes(r.id));
   const relicResult = calculateRelicBonus(activeRelics, chain, patternAnalysis);
 
-  const subtotal = baseScore + lengthBonusValue + patternAnalysis.totalBonus + relicResult.bonus;
+  const effectivePatternBonus = Math.floor(patternAnalysis.totalBonus * patternBonusMultiplier);
+  const subtotal = baseScore + lengthBonusValue + effectivePatternBonus + relicResult.bonus;
   const multiplier = patternAnalysis.totalMultiplier * relicResult.multiplier;
   const total = Math.floor(subtotal * multiplier);
 

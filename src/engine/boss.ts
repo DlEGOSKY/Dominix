@@ -1,3 +1,9 @@
+export interface BossPhase {
+  targetMultiplier: number;
+  restriction?: BossRestriction;
+  description: string;
+}
+
 export interface Boss {
   id: string;
   name: string;
@@ -5,20 +11,25 @@ export interface Boss {
   targetMultiplier: number;
   restriction?: BossRestriction;
   reward: BossReward;
+  phases?: BossPhase[];
 }
 
 export type BossRestriction =
   | { type: "no_doubles" }
   | { type: "max_tiles"; count: number }
   | { type: "min_patterns"; count: number }
-  | { type: "no_wild" };
+  | { type: "no_wild" }
+  | { type: "only_doubles" }
+  | { type: "only_low"; max: number }
+  | { type: "min_chain_length"; count: number }
+  | { type: "no_repeat_number" };
 
 export interface BossReward {
   gold: number;
   extraRelic: boolean;
 }
 
-const ALL_BOSSES: Boss[] = [
+export const ALL_BOSSES: Boss[] = [
   {
     id: "guardian",
     name: "Guardian de la Cadena",
@@ -57,6 +68,93 @@ const ALL_BOSSES: Boss[] = [
     targetMultiplier: 1.8,
     restriction: { type: "no_wild" },
     reward: { gold: 60, extraRelic: false },
+  },
+  {
+    id: "espejista",
+    name: "El Espejista",
+    description: "Meta x1.5. Solo puedes jugar dobles.",
+    targetMultiplier: 1.5,
+    restriction: { type: "only_doubles" },
+    reward: { gold: 55, extraRelic: true },
+  },
+  {
+    id: "susurro",
+    name: "El Susurro",
+    description: "Meta x1.4. Solo fichas con suma menor o igual a 6.",
+    targetMultiplier: 1.4,
+    restriction: { type: "only_low", max: 6 },
+    reward: { gold: 50, extraRelic: false },
+  },
+  {
+    id: "arquitecto",
+    name: "El Arquitecto",
+    description: "Meta x1.6. La cadena debe tener al menos 5 fichas para ganar.",
+    targetMultiplier: 1.6,
+    restriction: { type: "min_chain_length", count: 5 },
+    reward: { gold: 55, extraRelic: false },
+  },
+  {
+    id: "caos",
+    name: "Agente del Caos",
+    description: "Meta x1.7. No puedes conectar el mismo numero dos veces seguidas.",
+    targetMultiplier: 1.7,
+    restriction: { type: "no_repeat_number" },
+    reward: { gold: 65, extraRelic: true },
+  },
+  {
+    id: "titan",
+    name: "El Titan",
+    description: "Meta x2.2. Sin restricciones. Pura fuerza bruta.",
+    targetMultiplier: 2.2,
+    reward: { gold: 80, extraRelic: true },
+  },
+  {
+    id: "fantasma",
+    name: "El Fantasma",
+    description: "Meta x1.5. Solo fichas con suma menor o igual a 4.",
+    targetMultiplier: 1.5,
+    restriction: { type: "only_low", max: 4 },
+    reward: { gold: 60, extraRelic: false },
+  },
+  {
+    id: "perfeccionista",
+    name: "El Perfeccionista",
+    description: "Meta x1.8. Debes activar al menos 3 patrones.",
+    targetMultiplier: 1.8,
+    restriction: { type: "min_patterns", count: 3 },
+    reward: { gold: 70, extraRelic: true },
+  },
+  {
+    id: "inquisidor",
+    name: "El Inquisidor",
+    description: "Meta x1.7. Sin comodines y al menos 4 fichas.",
+    targetMultiplier: 1.7,
+    restriction: { type: "no_wild" },
+    reward: { gold: 65, extraRelic: false },
+    phases: [
+      { targetMultiplier: 1.7, restriction: { type: "no_wild" }, description: "Fase 1: Sin comodines" },
+      { targetMultiplier: 1.4, restriction: { type: "min_chain_length", count: 4 }, description: "Fase 2: Minimo 4 fichas" },
+    ],
+  },
+  {
+    id: "verdugo",
+    name: "El Verdugo",
+    description: "Meta x2. Solo dobles y al menos 2 patrones.",
+    targetMultiplier: 2,
+    restriction: { type: "only_doubles" },
+    reward: { gold: 85, extraRelic: true },
+    phases: [
+      { targetMultiplier: 2, restriction: { type: "only_doubles" }, description: "Fase 1: Solo dobles" },
+      { targetMultiplier: 1.5, restriction: { type: "min_patterns", count: 2 }, description: "Fase 2: 2 patrones" },
+    ],
+  },
+  {
+    id: "abismo",
+    name: "El Abismo",
+    description: "Meta x1.6. Solo fichas bajas y sin repetir numero.",
+    targetMultiplier: 1.6,
+    restriction: { type: "only_low", max: 5 },
+    reward: { gold: 75, extraRelic: true },
   },
 ];
 

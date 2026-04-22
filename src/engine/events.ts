@@ -1,3 +1,5 @@
+import { getGlobalRNG } from "@/engine/rng";
+
 export interface GameEvent {
   id: string;
   name: string;
@@ -15,6 +17,7 @@ export type EventEffect =
   | { type: "reduce_target"; percent: number }
   | { type: "increase_target"; percent: number }
   | { type: "heal_hand"; count: number }
+  | { type: "bonus_actions"; actions: number; discards: number; draws: number }
   | { type: "choice"; options: ChoiceOption[] };
 
 export interface ChoiceOption {
@@ -163,11 +166,125 @@ export const ALL_EVENTS: GameEvent[] = [
     effect: { type: "increase_target", percent: 25 },
     minRound: 6,
   },
+  {
+    id: "eco_dorado",
+    name: "Eco Dorado",
+    description: "Una ficha de tu pool se convierte en dorada",
+    type: "blessing",
+    effect: { type: "bonus_score", value: 35 },
+    minRound: 3,
+  },
+  {
+    id: "terremoto",
+    name: "Terremoto",
+    description: "El suelo tiembla y pierdes 2 fichas del pool",
+    type: "curse",
+    effect: { type: "remove_random_tile", count: 2 },
+    minRound: 5,
+  },
+  {
+    id: "vision_futura",
+    name: "Vision del Futuro",
+    description: "Elige entre prepararte o arriesgarte",
+    type: "choice",
+    effect: {
+      type: "choice",
+      options: [
+        {
+          label: "Preparacion",
+          description: "Meta -15%, +1 ficha extra en mano",
+          effect: { type: "reduce_target", percent: 15 },
+        },
+        {
+          label: "Ambicion",
+          description: "Meta +20%, pero +50 puntos de bonus",
+          effect: { type: "bonus_score", value: 50 },
+        },
+      ],
+    },
+    minRound: 4,
+  },
+  {
+    id: "lluvia_fichas",
+    name: "Lluvia de Fichas",
+    description: "El cielo se abre y caen fichas nuevas",
+    type: "blessing",
+    effect: { type: "add_tiles", count: 3 },
+    minRound: 5,
+  },
+  {
+    id: "flujo_tactico",
+    name: "Flujo Tactico",
+    description: "Tus reflejos se agudizan: +3 acciones esta ronda",
+    type: "blessing",
+    effect: { type: "bonus_actions", actions: 3, discards: 0, draws: 0 },
+    minRound: 2,
+  },
+  {
+    id: "manos_agiles",
+    name: "Manos Agiles",
+    description: "Puedes descartar y robar con mas libertad",
+    type: "blessing",
+    effect: { type: "bonus_actions", actions: 0, discards: 1, draws: 1 },
+    minRound: 3,
+  },
+  {
+    id: "bloqueo_temporal",
+    name: "Bloqueo Temporal",
+    description: "Tu energia se drena. Pierdes 3 acciones esta ronda",
+    type: "curse",
+    effect: { type: "bonus_actions", actions: -3, discards: 0, draws: 0 },
+    minRound: 4,
+  },
+  {
+    id: "intercambio_tactico",
+    name: "Intercambio Tactico",
+    description: "Cambia tu estilo de juego",
+    type: "choice",
+    effect: {
+      type: "choice",
+      options: [
+        {
+          label: "Mas acciones",
+          description: "+4 acciones, pero -1 descarte",
+          effect: { type: "bonus_actions", actions: 4, discards: -1, draws: 0 },
+        },
+        {
+          label: "Mas flexibilidad",
+          description: "+1 descarte y +1 robo, pero -2 acciones",
+          effect: { type: "bonus_actions", actions: -2, discards: 1, draws: 1 },
+        },
+      ],
+    },
+    minRound: 4,
+  },
+  {
+    id: "pacto_oscuro",
+    name: "Pacto Oscuro",
+    description: "Un poder oscuro te ofrece un trato",
+    type: "choice",
+    effect: {
+      type: "choice",
+      options: [
+        {
+          label: "Aceptar poder",
+          description: "Meta +35%, pero +75 puntos de bonus",
+          effect: { type: "bonus_score", value: 75 },
+        },
+        {
+          label: "Rechazar",
+          description: "Pierdes 1 ficha pero meta -10%",
+          effect: { type: "reduce_target", percent: 10 },
+        },
+      ],
+    },
+    minRound: 7,
+  },
 ];
 
 export function getRandomEvent(round: number): GameEvent | null {
   // 30% de probabilidad de evento
-  if (Math.random() > 0.3) return null;
+  if (getGlobalRNG().next() > 0.3) return null;
 
   const availableEvents = ALL_EVENTS.filter(
     (e) => !e.minRound || round >= e.minRound
@@ -183,7 +300,7 @@ export function getRandomEvent(round: number): GameEvent | null {
   });
 
   const totalWeight = weights.reduce((a, b) => a + b, 0);
-  let random = Math.random() * totalWeight;
+  let random = getGlobalRNG().next() * totalWeight;
 
   for (let i = 0; i < availableEvents.length; i++) {
     random -= weights[i]!;
@@ -195,10 +312,19 @@ export function getRandomEvent(round: number): GameEvent | null {
   return availableEvents[0] ?? null;
 }
 
+export interface EventResult {
+  targetModifier: number;
+  scoreBonus: number;
+  handBonus: number;
+  tileChange: number;
+  relicId?: string;
+  actionBonus?: { actions: number; discards: number; draws: number };
+}
+
 export function applyEventEffect(
   effect: Exclude<EventEffect, { type: "choice" }>
-): { targetModifier: number; scoreBonus: number; handBonus: number; tileChange: number } {
-  const result = {
+): EventResult {
+  const result: EventResult = {
     targetModifier: 1,
     scoreBonus: 0,
     handBonus: 0,
@@ -223,6 +349,12 @@ export function applyEventEffect(
       break;
     case "remove_random_tile":
       result.tileChange = -effect.count;
+      break;
+    case "add_relic":
+      result.relicId = effect.relicId;
+      break;
+    case "bonus_actions":
+      result.actionBonus = { actions: effect.actions, discards: effect.discards, draws: effect.draws };
       break;
   }
 

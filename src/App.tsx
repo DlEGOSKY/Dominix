@@ -1,18 +1,47 @@
 import { useState, useCallback, useEffect } from "react";
+import { motion, AnimatePresence } from "framer-motion";
 import type { RunStats, SavedData } from "./types/domino";
 import type { Achievement } from "./engine/achievements";
 import type { ModifierConfig } from "./engine/modifiers";
 import { loadSavedData, saveBestData } from "./engine/storage";
 import { saveDailyProgress } from "./engine/daily";
 import { checkNewAchievements } from "./engine/achievements";
-import { applyModifiers, getDefaultConfig } from "./engine/modifiers";
+import { applyModifiers, getDefaultConfig, ALL_MODIFIERS } from "./engine/modifiers";
 import HomeScreen from "./components/HomeScreen";
 import GameBoard from "./components/GameBoard";
 import GameOverScreen from "./components/GameOverScreen";
 import AchievementsScreen from "./components/AchievementsScreen";
+import LeaderboardScreen from "./components/LeaderboardScreen";
+import HowToPlayScreen from "./components/HowToPlayScreen";
+import StatsScreen from "./components/StatsScreen";
+import CollectionScreen from "./components/CollectionScreen";
 import AchievementToast from "./components/AchievementToast";
+import CharacterSelectScreen from "./components/CharacterSelectScreen";
+import TalentTreeScreen from "./components/TalentTreeScreen";
+import { addRunRecord } from "./engine/runHistory";
+import { addLeaderboardEntry } from "./engine/leaderboard";
+import { addXP, calculateRunXP } from "./engine/progression";
+import {
+  ALL_CHARACTERS,
+  loadSelectedCharacter,
+  unlockCharacter,
+  loadUnlockedCharacters,
+} from "./engine/characters";
+import type { CharacterId } from "./engine/characters";
+import {
+  applyAscensionToModifier,
+  setSelectedAscension,
+  markAscensionCleared,
+  loadAscension,
+} from "./engine/ascension";
 
-type AppScreen = "home" | "playing" | "daily" | "gameover" | "achievements";
+const pageVariants = {
+  initial: { opacity: 0, y: 12 },
+  animate: { opacity: 1, y: 0, transition: { duration: 0.25, ease: "easeOut" } },
+  exit: { opacity: 0, y: -8, transition: { duration: 0.15 } },
+};
+
+type AppScreen = "home" | "character_select" | "playing" | "daily" | "endless" | "gameover" | "achievements" | "leaderboard" | "howtoplay" | "stats" | "collection" | "talents";
 
 interface GameOverData {
   stats: RunStats;
@@ -20,6 +49,7 @@ interface GameOverData {
   finalRound: number;
   isNewBest: boolean;
   isDaily: boolean;
+  isEndless: boolean;
 }
 
 export default function App() {
@@ -29,6 +59,9 @@ export default function App() {
   const [pendingAchievements, setPendingAchievements] = useState<Achievement[]>([]);
   const [currentToast, setCurrentToast] = useState<Achievement | null>(null);
   const [modifierConfig, setModifierConfig] = useState<ModifierConfig>(getDefaultConfig);
+  const [activeModifierIds, setActiveModifierIds] = useState<string[]>([]);
+  const [selectedCharacter, setSelectedCharacter] = useState<CharacterId>(loadSelectedCharacter);
+  const [pendingModifiers, setPendingModifiers] = useState<string[]>([]);
 
   useEffect(() => {
     if (pendingAchievements.length > 0 && !currentToast) {
@@ -45,17 +78,51 @@ export default function App() {
   }, [currentToast]);
 
   const handleStartRun = useCallback((modifierIds: string[]) => {
-    const config = applyModifiers(modifierIds);
-    setModifierConfig(config);
-    setScreen("playing");
+    setPendingModifiers(modifierIds);
+    setScreen("character_select");
   }, []);
+
+  const handleConfirmCharacter = useCallback((id: CharacterId, ascensionLevel: number) => {
+    setSelectedCharacter(id);
+    setSelectedAscension(ascensionLevel);
+    const config = applyAscensionToModifier(applyModifiers(pendingModifiers), ascensionLevel);
+    setModifierConfig(config);
+    setActiveModifierIds(pendingModifiers);
+    setScreen("playing");
+  }, [pendingModifiers]);
 
   const handleStartDaily = useCallback(() => {
     setScreen("daily");
   }, []);
 
+  const handleStartEndless = useCallback(() => {
+    setModifierConfig(getDefaultConfig());
+    setActiveModifierIds([]);
+    setScreen("endless");
+  }, []);
+
   const handleShowAchievements = useCallback(() => {
     setScreen("achievements");
+  }, []);
+
+  const handleShowLeaderboard = useCallback(() => {
+    setScreen("leaderboard");
+  }, []);
+
+  const handleShowHowToPlay = useCallback(() => {
+    setScreen("howtoplay");
+  }, []);
+
+  const handleShowStats = useCallback(() => {
+    setScreen("stats");
+  }, []);
+
+  const handleShowCollection = useCallback(() => {
+    setScreen("collection");
+  }, []);
+
+  const handleShowTalents = useCallback(() => {
+    setScreen("talents");
   }, []);
 
   const handleGameOver = useCallback(
@@ -63,10 +130,20 @@ export default function App() {
       const currentBest = savedData.bestRound;
       const isNewBest = finalRound > currentBest;
       const isDaily = screen === "daily";
+      const isEndless = screen === "endless";
 
       saveBestData(finalRound, stats.totalScore);
       if (isDaily) {
         saveDailyProgress(finalRound, true);
+      }
+      if (isEndless) {
+        addLeaderboardEntry({
+          totalScore: stats.totalScore,
+          rounds: finalRound,
+          patternsActivated: stats.patternsActivated,
+          relicsCollected: stats.relicsCollected,
+          modifier: "Endless",
+        });
       }
       
       const newSaved = loadSavedData();
@@ -77,12 +154,53 @@ export default function App() {
         setPendingAchievements(newAchievements);
       }
 
+      const modName = activeModifierIds.length > 0
+        ? activeModifierIds.map((id) => ALL_MODIFIERS.find((m) => m.id === id)?.name).filter(Boolean).join(", ")
+        : undefined;
+      if (!isEndless) {
+        addLeaderboardEntry({
+          totalScore: stats.totalScore,
+          rounds: finalRound,
+          patternsActivated: stats.patternsActivated,
+          relicsCollected: stats.relicsCollected,
+          modifier: modName || undefined,
+        });
+      }
+
+      addRunRecord(stats, relicIds, finalRound, isDaily, modName || undefined);
+
+      // Progression XP
+      const runXP = calculateRunXP(finalRound, stats.totalScore, stats.bossesDefeated, stats.patternsActivated);
+      addXP(runXP);
+
+      // Ascension: mark cleared if player defeated any boss on a linear/map run with ascension > 0
+      if (!isDaily && !isEndless && stats.bossesDefeated >= 1) {
+        const st = loadAscension();
+        if (st.selected > 0) {
+          markAscensionCleared(st.selected);
+        }
+      }
+
+      // Character unlocks based on run outcomes
+      const alreadyUnlocked = loadUnlockedCharacters();
+      for (const char of ALL_CHARACTERS) {
+        if (alreadyUnlocked.has(char.id)) continue;
+        const cond = char.unlockCondition;
+        if (!cond) continue;
+        if (cond.type === "reach_round" && typeof cond.value === "number" && finalRound >= cond.value) {
+          unlockCharacter(char.id);
+        } else if (cond.type === "defeat_boss" && stats.bossesDefeated > 0) {
+          unlockCharacter(char.id);
+        }
+      }
+
       setGameOverData({
         stats,
         relicIds,
         finalRound,
         isNewBest,
         isDaily,
+        isEndless,
       });
       setScreen("gameover");
     },
@@ -91,9 +209,10 @@ export default function App() {
 
   const handleRestart = useCallback(() => {
     const wasDaily = gameOverData?.isDaily;
+    const wasEndless = gameOverData?.isEndless;
     setGameOverData(null);
-    setScreen(wasDaily ? "daily" : "playing");
-  }, [gameOverData?.isDaily]);
+    setScreen(wasEndless ? "endless" : wasDaily ? "daily" : "playing");
+  }, [gameOverData?.isDaily, gameOverData?.isEndless]);
 
   const handleHome = useCallback(() => {
     setGameOverData(null);
@@ -105,48 +224,104 @@ export default function App() {
     setCurrentToast(null);
   }, []);
 
-  if (screen === "achievements") {
-    return <AchievementsScreen savedData={savedData} onBack={handleHome} />;
-  }
-
-  if (screen === "home") {
-    return (
-      <>
-        <AchievementToast achievement={currentToast} onDismiss={dismissToast} />
-        <HomeScreen
-          savedData={savedData}
-          onStartRun={handleStartRun}
-          onStartDaily={handleStartDaily}
-          onShowAchievements={handleShowAchievements}
-        />
-      </>
-    );
-  }
-
-  if (screen === "gameover" && gameOverData) {
-    return (
-      <>
-        <AchievementToast achievement={currentToast} onDismiss={dismissToast} />
-        <GameOverScreen
-          stats={gameOverData.stats}
-          relicIds={gameOverData.relicIds}
-          finalRound={gameOverData.finalRound}
-          isNewBest={gameOverData.isNewBest}
-          onRestart={handleRestart}
-          onHome={handleHome}
-        />
-      </>
-    );
-  }
+  const renderScreen = () => {
+    switch (screen) {
+      case "achievements":
+        return (
+          <motion.div key="achievements" {...pageVariants}>
+            <AchievementsScreen savedData={savedData} onBack={handleHome} />
+          </motion.div>
+        );
+      case "leaderboard":
+        return (
+          <motion.div key="leaderboard" {...pageVariants}>
+            <LeaderboardScreen onBack={handleHome} />
+          </motion.div>
+        );
+      case "howtoplay":
+        return (
+          <motion.div key="howtoplay" {...pageVariants}>
+            <HowToPlayScreen onBack={handleHome} />
+          </motion.div>
+        );
+      case "stats":
+        return (
+          <motion.div key="stats" {...pageVariants}>
+            <StatsScreen onBack={handleHome} />
+          </motion.div>
+        );
+      case "collection":
+        return (
+          <motion.div key="collection" {...pageVariants}>
+            <CollectionScreen savedData={savedData} onBack={handleHome} />
+          </motion.div>
+        );
+      case "character_select":
+        return (
+          <motion.div key="character_select" {...pageVariants}>
+            <CharacterSelectScreen
+              onConfirm={handleConfirmCharacter}
+              onBack={handleHome}
+            />
+          </motion.div>
+        );
+      case "talents":
+        return (
+          <motion.div key="talents" {...pageVariants}>
+            <TalentTreeScreen onBack={handleHome} />
+          </motion.div>
+        );
+      case "home":
+        return (
+          <motion.div key="home" {...pageVariants}>
+            <HomeScreen
+              savedData={savedData}
+              onStartRun={handleStartRun}
+              onStartDaily={handleStartDaily}
+              onStartEndless={handleStartEndless}
+              onShowAchievements={handleShowAchievements}
+              onShowLeaderboard={handleShowLeaderboard}
+              onShowHowToPlay={handleShowHowToPlay}
+              onShowStats={handleShowStats}
+              onShowCollection={handleShowCollection}
+              onShowTalents={handleShowTalents}
+            />
+          </motion.div>
+        );
+      case "gameover":
+        return gameOverData ? (
+          <motion.div key="gameover" {...pageVariants}>
+            <GameOverScreen
+              stats={gameOverData.stats}
+              relicIds={gameOverData.relicIds}
+              finalRound={gameOverData.finalRound}
+              isNewBest={gameOverData.isNewBest}
+              onRestart={handleRestart}
+              onHome={handleHome}
+            />
+          </motion.div>
+        ) : null;
+      default:
+        return (
+          <motion.div key="playing" {...pageVariants}>
+            <GameBoard
+              onGameOver={handleGameOver}
+              isDaily={screen === "daily"}
+              isEndless={screen === "endless"}
+              modifierConfig={modifierConfig}
+              characterId={selectedCharacter}
+            />
+          </motion.div>
+        );
+    }
+  };
 
   return (
     <>
       <AchievementToast achievement={currentToast} onDismiss={dismissToast} />
-      <GameBoard
-        onGameOver={handleGameOver}
-        isDaily={screen === "daily"}
-        modifierConfig={modifierConfig}
-      />
+      <AnimatePresence mode="wait">
+        {renderScreen()}
+      </AnimatePresence>
     </>
   );
 }

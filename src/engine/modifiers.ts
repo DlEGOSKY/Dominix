@@ -15,7 +15,8 @@ export interface ModifierEffect {
     | "pattern_bonus"
     | "no_mutations"
     | "limited_rerolls"
-    | "score_multiplier";
+    | "score_multiplier"
+    | "action_bonus";
   value: number | string;
 }
 
@@ -110,6 +111,28 @@ export const ALL_MODIFIERS: RunModifier[] = [
     ],
     unlockCondition: { type: "runs", value: 8 },
   },
+  {
+    id: "quick_mode",
+    name: "Modo Rapido",
+    description: "Solo 8 acciones por ronda, pero score x1.3",
+    type: "challenge",
+    effects: [
+      { type: "action_bonus", value: -4 },
+      { type: "score_multiplier", value: 1.3 },
+    ],
+    unlockCondition: { type: "rounds", value: 6 },
+  },
+  {
+    id: "tactical_mode",
+    name: "Modo Tactico",
+    description: "+6 acciones, +2 descartes, pero metas +20%",
+    type: "variant",
+    effects: [
+      { type: "action_bonus", value: 6 },
+      { type: "target_multiplier", value: 1.2 },
+    ],
+    unlockCondition: { type: "rounds", value: 7 },
+  },
 ];
 
 export interface ModifierConfig {
@@ -119,6 +142,7 @@ export interface ModifierConfig {
   patternBonus: number;
   noMutations: boolean;
   scoreMultiplier: number;
+  actionBonus: number;
 }
 
 export function getDefaultConfig(): ModifierConfig {
@@ -129,6 +153,7 @@ export function getDefaultConfig(): ModifierConfig {
     patternBonus: 1,
     noMutations: false,
     scoreMultiplier: 1,
+    actionBonus: 0,
   };
 }
 
@@ -158,6 +183,9 @@ export function applyModifiers(modifierIds: string[]): ModifierConfig {
           break;
         case "score_multiplier":
           config.scoreMultiplier *= effect.value as number;
+          break;
+        case "action_bonus":
+          config.actionBonus += effect.value as number;
           break;
       }
     }

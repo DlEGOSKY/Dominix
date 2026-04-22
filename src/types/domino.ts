@@ -1,4 +1,6 @@
-export type TileType = "normal" | "wild" | "golden" | "locked";
+export type TileType = "normal" | "wild" | "golden" | "locked" | "mirror" | "bomb";
+
+export type TileEdition = "foil" | "holo" | "polychrome" | "negative";
 
 export interface Tile {
   id: string;
@@ -6,6 +8,8 @@ export interface Tile {
   bottom: number;
   type?: TileType;
   lockedUntilRound?: number;
+  /** Optional visual+mechanical edition layered on top of type */
+  edition?: TileEdition;
 }
 
 export type PlacementSide = "left" | "right";
@@ -24,7 +28,7 @@ export interface ChainState {
   rightEnd: number | null;
 }
 
-export type RoundResult = "playing" | "win" | "lose" | "reward" | "event" | "shop" | "boss_intro";
+export type RoundResult = "playing" | "win" | "lose" | "reward" | "event" | "shop" | "boss_intro" | "boss_reward" | "map_select" | "sanctuary";
 
 export interface RunStats {
   roundsCompleted: number;
@@ -33,6 +37,13 @@ export interface RunStats {
   relicsCollected: number;
   tilesPlayed: number;
   highestRoundScore: number;
+  bossesDefeated: number;
+  shopPurchases: number;
+  bestCombo: number;
+  goldEarned: number;
+  tilesDiscarded: number;
+  tilesDrawn: number;
+  roundScores: number[];
 }
 
 export interface GameState {
@@ -45,6 +56,7 @@ export interface GameState {
   relics: string[];
   tilePool: Tile[];
   stats: RunStats;
+  actions?: import("@/engine/actions").ActionState;
 }
 
 export interface SavedData {

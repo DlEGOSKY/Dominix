@@ -49,6 +49,32 @@ export const TUTORIAL_STEPS: TutorialStep[] = [
     action: "any",
   },
   {
+    id: "actions",
+    title: "Acciones",
+    content: "Cada ronda tienes un limite de acciones. Jugar, descartar y robar fichas consumen acciones. Planifica bien tu turno.",
+    action: "any",
+  },
+  {
+    id: "discard",
+    title: "Descartar",
+    content: "Pasa el cursor sobre una ficha y pulsa X para descartarla. Esto libera espacio pero consume una accion y un descarte.",
+    highlight: "hand",
+    action: "any",
+  },
+  {
+    id: "draw",
+    title: "Robar",
+    content: "Puedes robar fichas del pool con el boton Robar. Esto te da mas opciones pero consume una accion.",
+    action: "any",
+  },
+  {
+    id: "relics",
+    title: "Reliquias",
+    content: "Al superar rondas puedes elegir reliquias. Cada una tiene una familia (Patron, Numero, Fuerza, Cadena, Accion) y una rareza. Tres reliquias de la misma familia activan un bonus de set permanente.",
+    highlight: "relics",
+    action: "any",
+  },
+  {
     id: "end",
     title: "Listo para Jugar",
     content: "Supera rondas, elige recompensas y construye tu build. Buena suerte!",

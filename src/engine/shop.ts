@@ -3,7 +3,7 @@ import { getRandomRelics } from "./relics";
 
 export interface ShopItem {
   id: string;
-  type: "relic" | "tile_upgrade" | "remove_tile" | "heal";
+  type: "relic" | "tile_upgrade" | "remove_tile" | "heal" | "wild_tile" | "extra_hand" | "forge_edition";
   name: string;
   description: string;
   cost: number;
@@ -17,19 +17,23 @@ export interface ShopState {
 
 export function generateShopItems(
   ownedRelicIds: string[],
-  round: number
+  round: number,
+  relicDiscount: number = 0,
+  relicCostMultiplier: number = 1,
 ): ShopItem[] {
   const items: ShopItem[] = [];
 
   // 2 random relics
   const availableRelics = getRandomRelics(2, ownedRelicIds);
+  const baseRelicCost = 30 + round * 5;
+  const discountedRelicCost = Math.max(5, Math.round(baseRelicCost * (1 - relicDiscount) * relicCostMultiplier));
   for (const relic of availableRelics) {
     items.push({
       id: `shop-relic-${relic.id}`,
       type: "relic",
       name: relic.name,
       description: relic.description,
-      cost: 30 + round * 5,
+      cost: discountedRelicCost,
       relic,
     });
   }
@@ -63,7 +67,44 @@ export function generateShopItems(
     });
   }
 
+  // Wild tile (from round 4)
+  if (round >= 4) {
+    items.push({
+      id: "shop-wild",
+      type: "wild_tile",
+      name: "Ficha Salvaje",
+      description: "Convierte una ficha de tu pool en wild",
+      cost: 35 + round * 3,
+    });
+  }
+
+  // Extra hand size (from round 5)
+  if (round >= 5) {
+    items.push({
+      id: "shop-extra-hand",
+      type: "extra_hand",
+      name: "Mano Grande",
+      description: "+1 ficha en tu mano la proxima ronda",
+      cost: 30,
+    });
+  }
+
+  // Edition forge (from round 4, rare: 30% chance appears)
+  if (round >= 4 && Math.random() < 0.35) {
+    items.push({
+      id: "shop-forge-edition",
+      type: "forge_edition",
+      name: "Forja Misteriosa",
+      description: "Transforma una ficha de tu pool en edicion aleatoria (foil / holo / polychrome / negativa)",
+      cost: 60 + round * 4,
+    });
+  }
+
   return items;
+}
+
+export function getRerollCost(timesRerolled: number): number {
+  return 5 + timesRerolled * 5;
 }
 
 export function calculateGoldEarned(roundScore: number, round: number): number {

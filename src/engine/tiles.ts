@@ -1,4 +1,5 @@
 import type { Tile, TileType } from "@/types/domino";
+import { getGlobalRNG } from "@/engine/rng";
 
 let tileCounter = 0;
 
@@ -23,7 +24,7 @@ export function addSpecialTiles(tiles: Tile[], round: number): Tile[] {
   // Add wild tile starting from round 3 (10% chance per tile)
   if (round >= 3) {
     for (let i = 0; i < result.length; i++) {
-      if (Math.random() < 0.03) {
+      if (getGlobalRNG().next() < 0.03) {
         result[i] = { ...result[i]!, type: "wild" };
         break; // Only one wild per round
       }
@@ -34,7 +35,7 @@ export function addSpecialTiles(tiles: Tile[], round: number): Tile[] {
   if (round >= 2) {
     let goldenCount = 0;
     for (let i = 0; i < result.length; i++) {
-      if (result[i]!.type === "normal" && Math.random() < 0.05 && goldenCount < 2) {
+      if (result[i]!.type === "normal" && getGlobalRNG().next() < 0.05 && goldenCount < 2) {
         result[i] = { ...result[i]!, type: "golden" };
         goldenCount++;
       }
@@ -45,9 +46,29 @@ export function addSpecialTiles(tiles: Tile[], round: number): Tile[] {
   if (round >= 5) {
     let lockedCount = 0;
     for (let i = 0; i < result.length; i++) {
-      if (result[i]!.type === "normal" && Math.random() < 0.08 && lockedCount < 1) {
+      if (result[i]!.type === "normal" && getGlobalRNG().next() < 0.08 && lockedCount < 1) {
         result[i] = { ...result[i]!, type: "locked", lockedUntilRound: round + 1 };
         lockedCount++;
+      }
+    }
+  }
+
+  // Mirror tile: copies the end value it connects to (both sides become that value)
+  if (round >= 4) {
+    for (let i = 0; i < result.length; i++) {
+      if (result[i]!.type === "normal" && getGlobalRNG().next() < 0.03) {
+        result[i] = { ...result[i]!, type: "mirror" };
+        break;
+      }
+    }
+  }
+
+  // Bomb tile: when played, removes adjacent tiles from hand for bonus score
+  if (round >= 6) {
+    for (let i = 0; i < result.length; i++) {
+      if (result[i]!.type === "normal" && getGlobalRNG().next() < 0.025) {
+        result[i] = { ...result[i]!, type: "bomb" };
+        break;
       }
     }
   }
@@ -58,7 +79,7 @@ export function addSpecialTiles(tiles: Tile[], round: number): Tile[] {
 export function shuffle<T>(arr: T[]): T[] {
   const copy = [...arr];
   for (let i = copy.length - 1; i > 0; i--) {
-    const j = Math.floor(Math.random() * (i + 1));
+    const j = Math.floor(getGlobalRNG().next() * (i + 1));
     [copy[i], copy[j]] = [copy[j]!, copy[i]!];
   }
   return copy;

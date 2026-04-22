@@ -11,8 +11,8 @@ export function canPlace(chain: ChainState, tile: Tile, side: PlacementSide): bo
   const end = side === "left" ? chain.leftEnd : chain.rightEnd;
   if (end === null) return false;
 
-  // Wild tiles can connect to any number
-  if (tile.type === "wild") return true;
+  // Wild and mirror tiles can connect to any number
+  if (tile.type === "wild" || tile.type === "mirror") return true;
 
   return tile.top === end || tile.bottom === end;
 }
@@ -51,6 +51,11 @@ export function placeTile(
 
   if (side === "left") {
     const end = chain.leftEnd!;
+    // Mirror: exposed end becomes the connecting end (creates a "bridge")
+    if (tile.type === "mirror") {
+      const placed: PlacedTile = { tile, exposedLeft: end, exposedRight: end };
+      return { placed: [placed, ...chain.placed], leftEnd: end, rightEnd: chain.rightEnd };
+    }
     const connectingValue = tile.top === end ? tile.top : tile.bottom;
     const exposedValue = tile.top === end ? tile.bottom : tile.top;
 
@@ -67,6 +72,11 @@ export function placeTile(
     };
   } else {
     const end = chain.rightEnd!;
+    // Mirror: exposed end becomes the connecting end
+    if (tile.type === "mirror") {
+      const placed: PlacedTile = { tile, exposedLeft: end, exposedRight: end };
+      return { placed: [...chain.placed, placed], leftEnd: chain.leftEnd, rightEnd: end };
+    }
     const connectingValue = tile.top === end ? tile.top : tile.bottom;
     const exposedValue = tile.top === end ? tile.bottom : tile.top;
 
