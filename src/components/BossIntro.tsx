@@ -232,5 +232,17 @@ function getRestrictionText(restriction: Boss["restriction"]): string {
       return `Requisito: La cadena debe tener al menos ${restriction.count} fichas`;
     case "no_repeat_number":
       return "Restriccion: No puedes repetir el mismo numero de conexion consecutivo";
+    case "max_doubles":
+      return `Restriccion: Maximo ${restriction.count} ficha(s) doble en la cadena`;
+    case "even_sum_only":
+      return "Restriccion: Solo fichas con suma par son validas";
+    case "exact_chain_length":
+      return `Requisito: La cadena debe tener exactamente ${restriction.count} fichas`;
+    default: {
+      // Exhaustiveness guard: forces future BossRestriction types to be handled here.
+      const _never: never = restriction;
+      void _never;
+      return "";
+    }
   }
 }
