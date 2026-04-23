@@ -70,16 +70,16 @@ export const ALL_RELICS: Relic[] = [
   {
     id: "seis_dorado",
     name: "Seis Dorado",
-    description: "Cada 6 en la cadena otorga +8",
+    description: "Cada 6 en la cadena otorga +12",
     trigger: "on_score",
-    effect: { type: "bonus_per_number", number: 6, value: 8 },
+    effect: { type: "bonus_per_number", number: 6, value: 12 },
   },
   {
     id: "cero_vacio",
     name: "Cero Vacio",
-    description: "Cada 0 en la cadena otorga +10",
+    description: "Cada 0 en la cadena otorga +14",
     trigger: "on_score",
-    effect: { type: "bonus_per_number", number: 0, value: 10 },
+    effect: { type: "bonus_per_number", number: 0, value: 14 },
   },
   {
     id: "dominio_total",
@@ -91,37 +91,37 @@ export const ALL_RELICS: Relic[] = [
   {
     id: "tres_magico",
     name: "Tres Magico",
-    description: "Cada 3 en la cadena otorga +7",
+    description: "Cada 3 en la cadena otorga +10",
     trigger: "on_score",
-    effect: { type: "bonus_per_number", number: 3, value: 7 },
+    effect: { type: "bonus_per_number", number: 3, value: 10 },
   },
   {
     id: "uno_solitario",
     name: "Uno Solitario",
-    description: "Cada 1 en la cadena otorga +6",
+    description: "Cada 1 en la cadena otorga +9",
     trigger: "on_score",
-    effect: { type: "bonus_per_number", number: 1, value: 6 },
+    effect: { type: "bonus_per_number", number: 1, value: 9 },
   },
   {
     id: "cuatro_estable",
     name: "Cuatro Estable",
-    description: "Cada 4 en la cadena otorga +5",
+    description: "Cada 4 en la cadena otorga +8",
     trigger: "on_score",
-    effect: { type: "bonus_per_number", number: 4, value: 5 },
+    effect: { type: "bonus_per_number", number: 4, value: 8 },
   },
   {
     id: "cinco_central",
     name: "Cinco Central",
-    description: "Cada 5 en la cadena otorga +6",
+    description: "Cada 5 en la cadena otorga +9",
     trigger: "on_score",
-    effect: { type: "bonus_per_number", number: 5, value: 6 },
+    effect: { type: "bonus_per_number", number: 5, value: 9 },
   },
   {
     id: "dos_gemelos",
     name: "Dos Gemelos",
-    description: "Cada 2 en la cadena otorga +5",
+    description: "Cada 2 en la cadena otorga +8",
     trigger: "on_score",
-    effect: { type: "bonus_per_number", number: 2, value: 5 },
+    effect: { type: "bonus_per_number", number: 2, value: 8 },
   },
   {
     id: "amplificador",
@@ -298,6 +298,134 @@ export const ALL_RELICS: Relic[] = [
     trigger: "passive",
     effect: { type: "extra_actions", value: 4 },
   },
+  // ---- Legendarias nuevas (S6) ----
+  {
+    id: "cascada_patrones",
+    name: "Cascada de Patrones",
+    description: "x1.15 multiplicador por cada patron activado",
+    trigger: "on_pattern",
+    effect: { type: "multiplier_per_pattern", value: 0.15 },
+    rarity: "legendary",
+    family: "patron",
+  },
+  {
+    id: "corona_rota",
+    name: "Corona Rota",
+    description: "+50 puntos por cada doble en la cadena",
+    trigger: "on_double",
+    effect: { type: "bonus_per_double", value: 50 },
+    rarity: "legendary",
+    family: "fuerza",
+  },
+  {
+    id: "sello_firmamento",
+    name: "Sello del Firmamento",
+    description: "Potencia todas las cartas celestes un 25%",
+    trigger: "passive",
+    effect: { type: "celestial_boost", value: 0.25 },
+    rarity: "legendary",
+    family: "patron",
+  },
+  {
+    id: "reloj_arena",
+    name: "Reloj de Arena",
+    description: "+12 puntos por cada ficha y +2 acciones",
+    trigger: "passive",
+    effect: { type: "bonus_per_tile", value: 12 },
+    rarity: "legendary",
+    family: "cadena",
+  },
+  // ---- S7: reliquias para nuevos patrones y sinergias ----
+  {
+    id: "dedo_luminoso",
+    name: "Dedo Luminoso",
+    description: "Constelacion otorga +70 extra",
+    trigger: "on_pattern",
+    effect: { type: "bonus_if_pattern", patternId: "constelacion", value: 70 },
+    rarity: "rare",
+    family: "patron",
+  },
+  {
+    id: "caida_prolongada",
+    name: "Caida Prolongada",
+    description: "Diminuendo otorga x1.5 adicional",
+    trigger: "on_pattern",
+    effect: { type: "multiplier_if_pattern", patternId: "diminuendo", value: 1.5 },
+    rarity: "rare",
+    family: "patron",
+  },
+  {
+    id: "coronacion",
+    name: "Coronacion",
+    description: "Corona otorga +60 extra",
+    trigger: "on_pattern",
+    effect: { type: "bonus_if_pattern", patternId: "corona", value: 60 },
+    rarity: "rare",
+    family: "patron",
+  },
+  {
+    id: "hexagrama_sagrado",
+    name: "Hexagrama Sagrado",
+    description: "Hexagrama otorga x2.0 adicional",
+    trigger: "on_pattern",
+    effect: { type: "multiplier_if_pattern", patternId: "hexagrama", value: 2.0 },
+    rarity: "legendary",
+    family: "patron",
+  },
+  {
+    id: "lector_formas",
+    name: "Lector de Formas",
+    description: "x1.06 multiplicador por cada patron activado",
+    trigger: "on_pattern",
+    effect: { type: "multiplier_per_pattern", value: 0.06 },
+    rarity: "rare",
+    family: "patron",
+  },
+  {
+    id: "oraculo_cosmico",
+    name: "Oraculo Cosmico",
+    description: "Potencia todas las cartas celestes un 18%",
+    trigger: "passive",
+    effect: { type: "celestial_boost", value: 0.18 },
+    rarity: "rare",
+    family: "patron",
+  },
+  {
+    id: "disciplina",
+    name: "Disciplina",
+    description: "x1.10 multiplicador global",
+    trigger: "passive",
+    effect: { type: "multiplier", value: 1.1 },
+    rarity: "common",
+    family: "fuerza",
+  },
+  {
+    id: "tres_lineas",
+    name: "Tres Lineas",
+    description: "Trinidad otorga +40 extra",
+    trigger: "on_pattern",
+    effect: { type: "bonus_if_pattern", patternId: "trinidad", value: 40 },
+    rarity: "common",
+    family: "patron",
+  },
+  {
+    id: "eco_roto",
+    name: "Eco Roto",
+    description: "Fractal otorga +120 extra",
+    trigger: "on_pattern",
+    effect: { type: "bonus_if_pattern", patternId: "fractal", value: 120 },
+    rarity: "legendary",
+    family: "patron",
+  },
+  {
+    id: "armonia_divina",
+    name: "Armonia Divina",
+    description: "Armonia otorga x1.4 adicional",
+    trigger: "on_pattern",
+    effect: { type: "multiplier_if_pattern", patternId: "armonia", value: 1.4 },
+    rarity: "rare",
+    family: "patron",
+  },
 ];
 
 export function getRandomRelics(count: number, exclude: string[] = []): Relic[] {
@@ -385,6 +513,17 @@ export function calculateRelicBonus(
           multiplier *= effect.value;
         }
         break;
+
+      case "multiplier_per_pattern":
+        // Stacks: x(1 + value * patternsCount)
+        multiplier *= 1 + effect.value * patternIds.length;
+        break;
+
+      case "celestial_boost":
+        // No-op here; applied directly inside celestialTotalBonus where the
+        // engine can see owned cards. We intentionally ignore it so the score
+        // pipeline stays clean.
+        break;
     }
   }
 
@@ -401,6 +540,10 @@ const LEGENDARY_IDS = new Set<string>([
   "maestro_cadenas",      // cadena_maxima x2
   "minimalista",          // racha_baja x1.5
   "parejas_perfectas",    // parejas x1.4
+  "cascada_patrones",     // x1.15 per pattern
+  "corona_rota",          // +50 per double
+  "sello_firmamento",     // +25% celestial
+  "reloj_arena",          // +12/tile
 ]);
 
 const RARE_IDS = new Set<string>([

@@ -13,6 +13,7 @@ export interface HomeScreenProps {
   savedData: SavedData;
   onStartRun: (modifiers: string[]) => void;
   onStartDaily: () => void;
+  onShowWeekly: () => void;
   onStartEndless: () => void;
   onShowAchievements: () => void;
   onShowLeaderboard: () => void;
@@ -20,11 +21,12 @@ export interface HomeScreenProps {
   onShowStats: () => void;
   onShowCollection: () => void;
   onShowTalents: () => void;
+  onShowSettings: () => void;
+  onShowCodex: () => void;
 }
 
-export default function HomeScreen({ savedData, onStartRun, onStartDaily, onStartEndless, onShowAchievements, onShowLeaderboard, onShowHowToPlay, onShowStats, onShowCollection, onShowTalents }: HomeScreenProps) {
+export default function HomeScreen({ savedData, onStartRun, onStartDaily, onShowWeekly, onStartEndless, onShowAchievements, onShowLeaderboard, onShowHowToPlay, onShowStats, onShowCollection, onShowTalents, onShowSettings, onShowCodex }: HomeScreenProps) {
   const hasPlayed = savedData.totalRuns > 0;
-  const [muted, setMuted] = useState(audio.isMuted());
   const [showModifiers, setShowModifiers] = useState(false);
   const dailyPlayed = hasDailyBeenPlayed();
   const nextUnlocks = getNextUnlocks(savedData, 2);
@@ -34,13 +36,6 @@ export default function HomeScreen({ savedData, onStartRun, onStartDaily, onStar
   const ascension = loadAscension();
   const availableSkins = ["default", ...bonuses.unlockedSkins];
   const [selectedSkin, setSelectedSkin] = useState(loadActiveSkin);
-
-  const toggleMute = () => {
-    const newMuted = !muted;
-    audio.setMuted(newMuted);
-    setMuted(newMuted);
-    if (!newMuted) audio.play("button_click");
-  };
 
   return (
     <div className="min-h-screen flex flex-col items-center ambient-grain relative">
@@ -79,6 +74,7 @@ export default function HomeScreen({ savedData, onStartRun, onStartDaily, onStar
             { label: "Stats", action: onShowStats, style: "text-accent-silver/50" },
             { label: "Ranking", action: onShowLeaderboard, style: "text-accent-silver/50" },
             { label: "Coleccion", action: onShowCollection, style: "text-purple-400/60" },
+            { label: "Codex", action: onShowCodex, style: "text-indigo-400/70" },
             { label: "Logros", action: onShowAchievements, style: "text-accent-gold/60" },
           ].map((item) => (
             <button
@@ -90,10 +86,10 @@ export default function HomeScreen({ savedData, onStartRun, onStartDaily, onStar
             </button>
           ))}
           <button
-            onClick={toggleMute}
+            onClick={onShowSettings}
             className="px-2.5 py-1.5 rounded-lg bg-surface-800/60 border border-surface-600/40 text-xs text-accent-silver/40 hover:border-surface-500 transition"
           >
-            {muted ? "Sonido OFF" : "Sonido ON"}
+            Opciones
           </button>
         </div>
       </motion.nav>
@@ -111,7 +107,7 @@ export default function HomeScreen({ savedData, onStartRun, onStartDaily, onStar
             DOMINIX
           </h1>
           <p className="text-accent-silver/40 text-[10px] tracking-[0.3em] uppercase font-medium">
-            Roguelike de domino
+            El ritual del dominio
           </p>
         </motion.div>
 
@@ -145,6 +141,18 @@ export default function HomeScreen({ savedData, onStartRun, onStartDaily, onStar
             ].join(" ")}
           >
             {dailyPlayed ? "Diario completado" : "Reto Diario"}
+          </motion.button>
+
+          <motion.button
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.45, duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
+            whileHover={{ scale: 1.03 }}
+            whileTap={{ scale: 0.97 }}
+            onClick={onShowWeekly}
+            className="flex-1 sm:flex-none px-10 py-3.5 rounded-2xl bg-gradient-to-b from-emerald-500 to-emerald-700 text-white font-bold text-base tracking-wide btn-premium"
+          >
+            Reto Semanal
           </motion.button>
 
           <motion.button
@@ -298,15 +306,28 @@ export default function HomeScreen({ savedData, onStartRun, onStartDaily, onStar
         )}
       </div>
 
-      {/* Footer */}
-      <motion.p
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        transition={{ delay: 0.7 }}
-        className="absolute bottom-6 text-[9px] text-accent-silver/15 tracking-[0.2em] uppercase font-medium"
-      >
-        Construye cadenas. Activa patrones. Rompe la run.
-      </motion.p>
+      {/* Footer — narrative flavor, rotates slowly across runs */}
+      {(() => {
+        const FLAVORS = [
+          "Cada ficha es un verso.",
+          "El dominio no se impone, se pacta.",
+          "Toda cadena encuentra su ultimo eco.",
+          "Lo que no entra en el ritual, se pierde.",
+          "Un buen patron no se busca, se reconoce.",
+          "La ceremonia recuerda a quienes la sostienen.",
+        ];
+        const idx = savedData.totalRuns % FLAVORS.length;
+        return (
+          <motion.p
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ delay: 0.7 }}
+            className="absolute bottom-6 italic text-[10px] text-accent-silver/30 tracking-widest font-medium"
+          >
+            {FLAVORS[idx]}
+          </motion.p>
+        );
+      })()}
 
       <AnimatePresence>
         {showModifiers && (

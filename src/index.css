@@ -501,3 +501,49 @@ body {
 .chromatic-aberration {
   animation: aberration-flicker 0.9s ease-in-out 1;
 }
+
+/* ---- Accessibility ---- */
+
+/* Reduce motion: disables non-essential animations.
+   Respects layout animations but neutralizes ambient loops and flashy effects. */
+body.reduce-motion *,
+body.reduce-motion *::before,
+body.reduce-motion *::after {
+  animation-duration: 0.001ms !important;
+  animation-iteration-count: 1 !important;
+  transition-duration: 0.08s !important;
+}
+
+body.reduce-motion .ambient-grain::before,
+body.reduce-motion .ambient-pulse {
+  animation: none !important;
+}
+
+/* Fast animations: cut durations roughly in half */
+body.fast-anim * {
+  animation-duration: 0.5s !important;
+  transition-duration: 0.1s !important;
+}
+
+/* Colorblind modes: CSS variables consumed where color matters */
+body {
+  --cb-success: #4ade80;
+  --cb-danger: #f87171;
+  --cb-pattern: #c084fc;
+}
+
+body.cb-protanopia {
+  --cb-success: #60a5fa;
+  --cb-danger: #eab308;
+  --cb-pattern: #e879f9;
+}
+body.cb-deuteranopia {
+  --cb-success: #38bdf8;
+  --cb-danger: #fb923c;
+  --cb-pattern: #f0abfc;
+}
+body.cb-tritanopia {
+  --cb-success: #f472b6;
+  --cb-danger: #f97316;
+  --cb-pattern: #fbbf24;
+}

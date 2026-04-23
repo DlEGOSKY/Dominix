@@ -2,11 +2,17 @@ type SoundName =
   | "tile_place"
   | "tile_hover"
   | "pattern_activate"
+  | "pattern_combo"
+  | "pattern_mega"
   | "round_win"
   | "round_lose"
   | "relic_select"
   | "button_click"
-  | "score_tick";
+  | "score_tick"
+  | "pact_play"
+  | "alignment"
+  | "cosmic"
+  | "boss_rage";
 
 interface SynthSound {
   frequency: number;
@@ -20,11 +26,17 @@ const SYNTH_SOUNDS: Record<SoundName, SynthSound> = {
   tile_place: { frequency: 440, duration: 0.08, type: "sine", volume: 0.3 },
   tile_hover: { frequency: 600, duration: 0.03, type: "sine", volume: 0.1 },
   pattern_activate: { frequency: 880, duration: 0.15, type: "triangle", volume: 0.4, decay: 0.1 },
+  pattern_combo: { frequency: 988, duration: 0.18, type: "triangle", volume: 0.45, decay: 0.12 },
+  pattern_mega: { frequency: 1174, duration: 0.25, type: "triangle", volume: 0.5, decay: 0.15 },
   round_win: { frequency: 523, duration: 0.3, type: "sine", volume: 0.5 },
   round_lose: { frequency: 220, duration: 0.4, type: "sawtooth", volume: 0.3 },
   relic_select: { frequency: 660, duration: 0.12, type: "sine", volume: 0.35 },
   button_click: { frequency: 800, duration: 0.05, type: "square", volume: 0.15 },
   score_tick: { frequency: 1000, duration: 0.02, type: "sine", volume: 0.1 },
+  pact_play: { frequency: 523, duration: 0.35, type: "sine", volume: 0.5, decay: 0.2 },
+  alignment: { frequency: 784, duration: 0.22, type: "sine", volume: 0.45, decay: 0.15 },
+  cosmic: { frequency: 1047, duration: 0.5, type: "sine", volume: 0.55, decay: 0.3 },
+  boss_rage: { frequency: 147, duration: 0.4, type: "sawtooth", volume: 0.4, decay: 0.2 },
 };
 
 class AudioManager {
@@ -102,6 +114,46 @@ class AudioManager {
   playLoseSting() {
     this.playChord([293, 349, 440], 0.3);
     setTimeout(() => this.playChord([261, 311, 392], 0.5), 250);
+  }
+
+  /**
+   * Play a pattern sound whose intensity scales with the number of patterns
+   * simultaneously activated on that play. 1 → simple, 2-3 → combo,
+   * 4+ → mega. Legendary-tier patterns can force the mega tier even alone.
+   */
+  playPatternByTier(patternCount: number, forceMega: boolean = false) {
+    if (this.muted) return;
+    if (forceMega || patternCount >= 4) {
+      this.play("pattern_mega");
+      setTimeout(() => this.playChord([659, 784, 988], 0.22), 40);
+    } else if (patternCount >= 2) {
+      this.play("pattern_combo");
+      setTimeout(() => this.playChord([587, 740], 0.15), 30);
+    } else {
+      this.play("pattern_activate");
+    }
+  }
+
+  /** Warm, affirming chord for when a celestial alignment first activates. */
+  playAlignmentChord() {
+    this.playChord([523, 659, 784], 0.25);
+  }
+
+  /** Wide, shimmering chord for cosmic alignment — the biggest positive sfx. */
+  playCosmicChord() {
+    this.playChord([523, 659, 784, 988, 1175], 0.55);
+  }
+
+  /** Deep rumble when the boss reaches 100% Furor. */
+  playBossRage() {
+    this.play("boss_rage");
+    setTimeout(() => this.playChord([110, 146], 0.3), 80);
+  }
+
+  /** Glowing single-shot for playing the pact tile — majestic. */
+  playPactHit() {
+    this.play("pact_play");
+    setTimeout(() => this.playChord([659, 784, 988], 0.25), 60);
   }
 
   setMuted(muted: boolean) {

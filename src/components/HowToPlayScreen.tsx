@@ -14,6 +14,7 @@ const SECTIONS = [
   { id: "gameplay", title: "Como se juega", icon: "2" },
   { id: "patterns", title: "Patrones", icon: "3" },
   { id: "advanced", title: "Sistemas avanzados", icon: "4" },
+  { id: "meta", title: "Sistemas meta", icon: "5" },
 ];
 
 // Demo tiles for examples
@@ -689,6 +690,121 @@ function SectionAdvanced() {
   );
 }
 
+function SectionMeta() {
+  const blocks: { title: string; body: string; color: string; border: string; tag: string }[] = [
+    {
+      title: "Consumibles",
+      tag: "Tarot",
+      body: "Items de un solo uso que encuentras en tiendas y recompensas. Cambian la mano, revelan fichas, transforman dobles o dan puntos de golpe. Se guardan hasta que los uses.",
+      color: "bg-blue-500/5",
+      border: "border-blue-500/25",
+    },
+    {
+      title: "Ediciones de ficha",
+      tag: "Edicion",
+      body: "Algunas fichas tienen una edicion (Dorada, Holografica, etc) que les da un bonus extra al jugarlas. Se descubren en el codex y se pueden generar mediante eventos o con el Alquimista.",
+      color: "bg-amber-500/5",
+      border: "border-amber-500/25",
+    },
+    {
+      title: "Cartas celestes",
+      tag: "Firmamento",
+      body: "Cartas coleccionables que multiplican tu puntaje segun su firmamento (Solar, Lunar, Estelar, Cometa, Profundo). Cada firmamento potencia un estilo distinto: dobles, cadenas largas, patrones rapidos o pocas fichas.",
+      color: "bg-cyan-500/5",
+      border: "border-cyan-500/25",
+    },
+    {
+      title: "Alineaciones",
+      tag: "Set bonus",
+      body: "Tener 3 cartas del mismo firmamento activa la Alineacion de ese firmamento con un bonus extra. Si acumulas 5 cartas distintas activas la Alineacion Cosmica: tu jugada mas devastadora.",
+      color: "bg-purple-500/5",
+      border: "border-purple-500/25",
+    },
+    {
+      title: "Pacto Sagrado",
+      tag: "Modifier",
+      body: "Una ficha elegida al empezar la run queda marcada como pactada: +100 al jugarla. Evoluciona si la juegas dentro de un patron o con una edition. Con alineacion cosmica activa su bonus se amplifica un 20%.",
+      color: "bg-red-500/5",
+      border: "border-red-500/25",
+    },
+    {
+      title: "Modo Caos",
+      tag: "Modifier",
+      body: "Cada ronda rolea un giro aleatorio: buff (score+, meta-, accion+), nerf (meta+, accion-, patron-) o raro (shuffle, consumible gratis). Activado con el modifier Caos; da +10% score base de compensacion.",
+      color: "bg-violet-500/5",
+      border: "border-violet-500/25",
+    },
+    {
+      title: "Codex",
+      tag: "Discovery",
+      body: "Registra automaticamente cada patron, jefe, carta celeste y giro de caos que descubres. Los no descubiertos se muestran como '???' hasta que los vivas en una run. Accesible desde el menu principal.",
+      color: "bg-indigo-500/5",
+      border: "border-indigo-500/25",
+    },
+    {
+      title: "Legado",
+      tag: "Herencia",
+      body: "Al terminar cada run se guarda automaticamente 1 carta celeste + 1 consumible. Tu proxima run los hereda al iniciar: un toast te avisa cuando activas el legado. Conecta tus partidas entre si.",
+      color: "bg-emerald-500/5",
+      border: "border-emerald-500/25",
+    },
+    {
+      title: "Personajes",
+      tag: "Passive",
+      body: "Cada personaje empieza con condiciones distintas: Arquitecto (+5 por patron), Matematica (+score con dobles), Bombardero (bombas), Mercader (+oro), Alquimista (editions), Oraculo (celeste gratis), Cartografo (+score), Ermitaño (pacto gratis).",
+      color: "bg-teal-500/5",
+      border: "border-teal-500/25",
+    },
+  ];
+
+  return (
+    <div className="flex flex-col gap-6">
+      <div className="flex flex-col gap-2">
+        <h3 className="text-xl font-bold text-white">Capas meta del juego</h3>
+        <p className="text-accent-silver/70 leading-relaxed">
+          Dominix se profundiza con sistemas que se revelan a medida que juegas.
+          No necesitas dominar todos desde el inicio: emerge naturalmente al explorar.
+        </p>
+      </div>
+
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+        {blocks.map((b) => (
+          <div
+            key={b.title}
+            className={`p-4 rounded-xl border ${b.color} ${b.border}`}
+          >
+            <div className="flex items-baseline justify-between gap-2 mb-2">
+              <h4 className="text-sm font-bold text-white">{b.title}</h4>
+              <span className="text-[9px] uppercase tracking-widest font-bold text-accent-silver/40">
+                {b.tag}
+              </span>
+            </div>
+            <p className="text-xs text-accent-silver/65 leading-relaxed">{b.body}</p>
+          </div>
+        ))}
+      </div>
+
+      <div className="flex flex-col gap-2 pt-4 border-t border-surface-700/30">
+        <h4 className="text-sm font-bold text-accent-silver/80">Atajos de teclado</h4>
+        <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 text-xs">
+          <div className="flex items-center justify-between px-3 py-1.5 rounded-lg bg-surface-800/60 border border-surface-600/30">
+            <span className="text-accent-silver/60">1-7</span>
+            <span className="text-accent-silver/80">Jugar ficha</span>
+          </div>
+          <div className="flex items-center justify-between px-3 py-1.5 rounded-lg bg-surface-800/60 border border-surface-600/30">
+            <span className="text-accent-silver/60">R</span>
+            <span className="text-accent-silver/80">Robar</span>
+          </div>
+          <div className="flex items-center justify-between px-3 py-1.5 rounded-lg bg-surface-800/60 border border-surface-600/30">
+            <span className="text-accent-silver/60">U</span>
+            <span className="text-accent-silver/80">Deshacer</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export default function HowToPlayScreen({ onBack }: HowToPlayScreenProps) {
   const [activeSection, setActiveSection] = useState("basics");
 
@@ -751,6 +867,7 @@ export default function HowToPlayScreen({ onBack }: HowToPlayScreenProps) {
             {activeSection === "gameplay" && <SectionGameplay />}
             {activeSection === "patterns" && <SectionPatterns />}
             {activeSection === "advanced" && <SectionAdvanced />}
+            {activeSection === "meta" && <SectionMeta />}
           </motion.div>
         </AnimatePresence>
       </div>

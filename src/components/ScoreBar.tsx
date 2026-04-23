@@ -1,5 +1,5 @@
 import { motion } from "framer-motion";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 interface ScoreBarProps {
   score: number;
@@ -12,13 +12,23 @@ export default function ScoreBar({ score, target, round }: ScoreBarProps) {
   const met = score >= target;
   const [displayScore, setDisplayScore] = useState(score);
   const [isAnimating, setIsAnimating] = useState(false);
+  const [bigJump, setBigJump] = useState(false);
+  const lastJumpRef = useRef(0);
 
   useEffect(() => {
     if (score === displayScore) return;
 
     setIsAnimating(true);
     const diff = score - displayScore;
-    const steps = Math.min(Math.abs(diff), 20);
+    const absDiff = Math.abs(diff);
+    lastJumpRef.current = absDiff;
+    const isBig = absDiff >= 100;
+    setBigJump(isBig);
+
+    // Adaptive: bigger jumps get more steps but not linearly (log scale), and
+    // small jumps tick quickly. Clamped so anything feels snappy.
+    const steps = Math.min(Math.max(Math.ceil(Math.log2(absDiff + 1) * 5), 8), 28);
+    const tickMs = absDiff < 40 ? 18 : absDiff < 150 ? 26 : 34;
     const increment = diff / steps;
     let current = displayScore;
     let step = 0;
@@ -32,8 +42,10 @@ export default function ScoreBar({ score, target, round }: ScoreBarProps) {
         setDisplayScore(score);
         setIsAnimating(false);
         clearInterval(interval);
+        // Release big-jump state shortly after settle
+        if (isBig) setTimeout(() => setBigJump(false), 450);
       }
-    }, 30);
+    }, tickMs);
 
     return () => clearInterval(interval);
   }, [score]);
@@ -71,14 +83,16 @@ export default function ScoreBar({ score, target, round }: ScoreBarProps) {
 
       <motion.span
         animate={{
-          scale: isAnimating ? [1, 1.12, 1] : 1,
+          scale: bigJump ? [1, 1.28, 0.94, 1.05, 1] : isAnimating ? [1, 1.12, 1] : 1,
           color: met ? "#4ade80" : "#ffffff",
         }}
-        transition={{ duration: 0.2 }}
+        transition={{ duration: bigJump ? 0.55 : 0.2, ease: bigJump ? [0.34, 1.56, 0.64, 1] : "easeOut" }}
         className="font-mono font-black text-5xl tabular-nums tracking-tighter"
         style={{
           textShadow: met
-            ? "0 0 24px rgba(74,222,128,0.4), 0 0 48px rgba(74,222,128,0.15)"
+            ? "0 0 24px rgba(74,222,128,0.5), 0 0 48px rgba(74,222,128,0.2)"
+            : bigJump
+            ? "0 0 32px rgba(251,191,36,0.7), 0 0 64px rgba(251,191,36,0.35), 0 0 8px rgba(255,255,255,0.4)"
             : isAnimating
             ? "0 0 20px rgba(255,255,255,0.2)"
             : "0 0 8px rgba(255,255,255,0.05)",

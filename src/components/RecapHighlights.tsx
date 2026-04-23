@@ -1,10 +1,12 @@
 import { motion, AnimatePresence } from "framer-motion";
 import { useEffect, useState } from "react";
 import type { RunStats } from "@/types/domino";
+import { getActForRound } from "@/engine/acts";
 
 interface RecapHighlightsProps {
   stats: RunStats;
   finalRound: number;
+  relicIds?: string[];
   onFinished: () => void;
   durationPerSlideMs?: number;
 }
@@ -12,12 +14,14 @@ interface RecapHighlightsProps {
 interface Slide {
   label: string;
   value: string;
+  subtext?: string;
   color: string;
   icon: React.ReactNode;
+  tone?: "narrative";
 }
 
-export default function RecapHighlights({ stats, finalRound, onFinished, durationPerSlideMs = 1400 }: RecapHighlightsProps) {
-  const slides: Slide[] = buildSlides(stats, finalRound);
+export default function RecapHighlights({ stats, finalRound, relicIds, onFinished, durationPerSlideMs = 1400 }: RecapHighlightsProps) {
+  const slides: Slide[] = buildSlides(stats, finalRound, relicIds ?? []);
   const [idx, setIdx] = useState(0);
 
   useEffect(() => {
@@ -74,19 +78,43 @@ export default function RecapHighlights({ stats, finalRound, onFinished, duratio
             initial={{ y: 10, opacity: 0 }}
             animate={{ y: 0, opacity: 1 }}
             transition={{ delay: 0.15 }}
-            className="text-center"
+            className="text-center flex flex-col items-center"
           >
             <p className="text-[11px] uppercase tracking-[0.35em] text-accent-silver/40 font-bold mb-3">{slide.label}</p>
-            <motion.p
-              key={slide.value}
-              initial={{ opacity: 0, letterSpacing: "0.2em" }}
-              animate={{ opacity: 1, letterSpacing: "-0.03em" }}
-              transition={{ duration: 0.5 }}
-              className="font-mono font-black text-7xl md:text-8xl text-white tabular-nums"
-              style={{ textShadow: "0 0 40px rgba(255,255,255,0.2)" }}
-            >
-              {slide.value}
-            </motion.p>
+            {slide.tone === "narrative" ? (
+              <>
+                <motion.p
+                  key={slide.value}
+                  initial={{ opacity: 0, letterSpacing: "0.4em" }}
+                  animate={{ opacity: 1, letterSpacing: "-0.02em" }}
+                  transition={{ duration: 0.7 }}
+                  className="font-display font-black text-5xl md:text-6xl text-transparent bg-clip-text bg-gradient-to-b from-white via-white to-white/50"
+                >
+                  {slide.value}
+                </motion.p>
+                {slide.subtext && (
+                  <motion.p
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 0.6 }}
+                    transition={{ delay: 0.4, duration: 0.6 }}
+                    className="mt-4 italic text-[13px] text-accent-silver/60 max-w-md"
+                  >
+                    {slide.subtext}
+                  </motion.p>
+                )}
+              </>
+            ) : (
+              <motion.p
+                key={slide.value}
+                initial={{ opacity: 0, letterSpacing: "0.2em" }}
+                animate={{ opacity: 1, letterSpacing: "-0.03em" }}
+                transition={{ duration: 0.5 }}
+                className="font-mono font-black text-7xl md:text-8xl text-white tabular-nums"
+                style={{ textShadow: "0 0 40px rgba(255,255,255,0.2)" }}
+              >
+                {slide.value}
+              </motion.p>
+            )}
           </motion.div>
         </motion.div>
       </AnimatePresence>
@@ -114,8 +142,19 @@ export default function RecapHighlights({ stats, finalRound, onFinished, duratio
   );
 }
 
-function buildSlides(stats: RunStats, finalRound: number): Slide[] {
+function buildSlides(stats: RunStats, finalRound: number, relicIds: string[]): Slide[] {
   const slides: Slide[] = [];
+
+  // Narrative opener: the act the run reached
+  const act = getActForRound(Math.max(1, finalRound));
+  slides.push({
+    label: act.numeral,
+    value: act.name,
+    subtext: `"${act.tagline}"`,
+    color: "bg-white/8",
+    icon: <IconAct />,
+    tone: "narrative",
+  });
 
   slides.push({
     label: "Alcanzaste la ronda",
@@ -158,6 +197,15 @@ function buildSlides(stats: RunStats, finalRound: number): Slide[] {
     });
   }
 
+  if (relicIds.length >= 3) {
+    slides.push({
+      label: "Reliquias acumuladas",
+      value: relicIds.length.toString(),
+      color: "bg-purple-500/15",
+      icon: <IconGem />,
+    });
+  }
+
   return slides;
 }
 
@@ -197,6 +245,25 @@ function IconCrown() {
   return (
     <svg width="36" height="36" viewBox="0 0 24 24" fill="none">
       <path d="M4 8l3 3 5-6 5 6 3-3v9H4V8z" stroke="currentColor" strokeWidth="1.6" fill="currentColor" fillOpacity="0.2" strokeLinejoin="round" className="text-red-300" />
+    </svg>
+  );
+}
+
+function IconAct() {
+  return (
+    <svg width="36" height="36" viewBox="0 0 24 24" fill="none">
+      <circle cx="12" cy="12" r="8" stroke="currentColor" strokeWidth="1.4" className="text-accent-silver/70" />
+      <path d="M12 6v12M6 12h12" stroke="currentColor" strokeWidth="0.9" strokeLinecap="round" className="text-accent-silver/40" />
+      <circle cx="12" cy="12" r="2" fill="currentColor" className="text-white" />
+    </svg>
+  );
+}
+
+function IconGem() {
+  return (
+    <svg width="36" height="36" viewBox="0 0 24 24" fill="none">
+      <path d="M12 3l6 5-6 13-6-13 6-5z" stroke="currentColor" strokeWidth="1.5" fill="currentColor" fillOpacity="0.25" strokeLinejoin="round" className="text-purple-300" />
+      <path d="M6 8h12M9 8l3 13M15 8l-3 13" stroke="currentColor" strokeWidth="0.8" className="text-purple-300/60" />
     </svg>
   );
 }

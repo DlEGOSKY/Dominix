@@ -16,7 +16,9 @@ export interface ModifierEffect {
     | "no_mutations"
     | "limited_rerolls"
     | "score_multiplier"
-    | "action_bonus";
+    | "action_bonus"
+    | "pact"
+    | "chaos";
   value: number | string;
 }
 
@@ -133,6 +135,28 @@ export const ALL_MODIFIERS: RunModifier[] = [
     ],
     unlockCondition: { type: "rounds", value: 7 },
   },
+  {
+    id: "pact",
+    name: "Pacto Sagrado",
+    description: "Una ficha queda marcada: +100 score al jugarla, pero metas +8%",
+    type: "challenge",
+    effects: [
+      { type: "pact", value: 1 },
+      { type: "target_multiplier", value: 1.08 },
+    ],
+    unlockCondition: { type: "runs", value: 4 },
+  },
+  {
+    id: "chaos",
+    name: "Modo Caos",
+    description: "Cada ronda sufre un giro aleatorio: buff, nerf o rareza",
+    type: "challenge",
+    effects: [
+      { type: "chaos", value: 1 },
+      { type: "score_multiplier", value: 1.1 },
+    ],
+    unlockCondition: { type: "runs", value: 3 },
+  },
 ];
 
 export interface ModifierConfig {
@@ -143,6 +167,8 @@ export interface ModifierConfig {
   noMutations: boolean;
   scoreMultiplier: number;
   actionBonus: number;
+  pact: boolean;
+  chaos: boolean;
 }
 
 export function getDefaultConfig(): ModifierConfig {
@@ -154,6 +180,8 @@ export function getDefaultConfig(): ModifierConfig {
     noMutations: false,
     scoreMultiplier: 1,
     actionBonus: 0,
+    pact: false,
+    chaos: false,
   };
 }
 
@@ -186,6 +214,12 @@ export function applyModifiers(modifierIds: string[]): ModifierConfig {
           break;
         case "action_bonus":
           config.actionBonus += effect.value as number;
+          break;
+        case "pact":
+          config.pact = true;
+          break;
+        case "chaos":
+          config.chaos = true;
           break;
       }
     }

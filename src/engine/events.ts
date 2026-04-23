@@ -280,6 +280,74 @@ export const ALL_EVENTS: GameEvent[] = [
     },
     minRound: 7,
   },
+  {
+    id: "viajero_misterioso",
+    name: "Viajero Misterioso",
+    description: "Un extraño con una caja cerrada ofrece un intercambio",
+    type: "choice",
+    effect: {
+      type: "choice",
+      options: [
+        {
+          label: "Aceptar caja",
+          description: "+3 fichas nuevas en el pool, pero meta +10%",
+          effect: { type: "add_tiles", count: 3 },
+        },
+        {
+          label: "Dar una ficha",
+          description: "Pierdes 1 ficha, empiezas con +60 puntos",
+          effect: { type: "bonus_score", value: 60 },
+        },
+      ],
+    },
+    minRound: 2,
+  },
+  {
+    id: "astro_errante",
+    name: "Astro Errante",
+    description: "Una luz cruza el cielo y bendice tu juego con energia cosmica",
+    type: "blessing",
+    effect: { type: "bonus_score", value: 45 },
+    minRound: 4,
+  },
+  {
+    id: "apuesta_coleccionista",
+    name: "Apuesta del Coleccionista",
+    description: "Un coleccionista apuesta su fortuna contra la tuya",
+    type: "choice",
+    effect: {
+      type: "choice",
+      options: [
+        {
+          label: "Doblar apuesta",
+          description: "Meta +50%, pero +120 puntos de bonus si ganas",
+          effect: { type: "bonus_score", value: 120 },
+        },
+        {
+          label: "Retirarse",
+          description: "Meta -5% y no pierdes nada",
+          effect: { type: "reduce_target", percent: 5 },
+        },
+      ],
+    },
+    minRound: 5,
+  },
+  {
+    id: "duelo_sombras",
+    name: "Duelo de Sombras",
+    description: "Un eco de ti mismo te roba energia, pero deja una marca en sus manos",
+    type: "curse",
+    effect: { type: "bonus_actions", actions: -2, discards: 0, draws: 0 },
+    minRound: 6,
+  },
+  {
+    id: "ultimo_soplido",
+    name: "Ultimo Soplido",
+    description: "Una racha de viento agita las fichas y te da ventaja",
+    type: "blessing",
+    effect: { type: "bonus_actions", actions: 2, discards: 1, draws: 0 },
+    minRound: 4,
+  },
 ];
 
 export function getRandomEvent(round: number): GameEvent | null {

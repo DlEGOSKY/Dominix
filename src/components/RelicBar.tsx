@@ -11,6 +11,10 @@ import RelicCard from "./RelicCard";
 
 interface RelicBarProps {
   relicIds: string[];
+  /** Increments to trigger a pulse wave on all relics (e.g., when a pattern fires) */
+  pulseKey?: number;
+  /** Optional subset of relic ids to emphasize in the next pulse */
+  highlightIds?: string[];
 }
 
 function familyBorder(family: RelicFamily | null, active: boolean): string {
@@ -35,7 +39,7 @@ function familyText(family: RelicFamily | null): string {
   }
 }
 
-export default function RelicBar({ relicIds }: RelicBarProps) {
+export default function RelicBar({ relicIds, pulseKey = 0, highlightIds }: RelicBarProps) {
   const [hoveredId, setHoveredId] = useState<string | null>(null);
 
   if (relicIds.length === 0) return null;
@@ -77,19 +81,39 @@ export default function RelicBar({ relicIds }: RelicBarProps) {
 
       <div className="flex flex-wrap justify-center gap-2">
         <AnimatePresence mode="popLayout">
-          {relics.map((relic, i) => (
-            <motion.div
-              key={relic.id}
-              initial={{ opacity: 0, scale: 0.8 }}
-              animate={{ opacity: 1, scale: 1 }}
-              transition={{ delay: i * 0.05, type: "spring", stiffness: 400, damping: 25 }}
-              onMouseEnter={() => setHoveredId(relic.id)}
-              onMouseLeave={() => setHoveredId(null)}
-              className="relative"
-            >
-              <RelicCard relicId={relic.id} size="xs" showName={false} />
-            </motion.div>
-          ))}
+          {relics.map((relic, i) => {
+            const isHighlight = highlightIds?.includes(relic.id);
+            return (
+              <motion.div
+                key={relic.id}
+                initial={{ opacity: 0, scale: 0.8 }}
+                animate={{ opacity: 1, scale: 1 }}
+                transition={{ delay: i * 0.05, type: "spring", stiffness: 400, damping: 25 }}
+                onMouseEnter={() => setHoveredId(relic.id)}
+                onMouseLeave={() => setHoveredId(null)}
+                className="relative"
+              >
+                <RelicCard relicId={relic.id} size="xs" showName={false} />
+                {pulseKey > 0 && (
+                  <motion.div
+                    key={`pulse-${pulseKey}-${relic.id}`}
+                    initial={{ opacity: 0, scale: 1 }}
+                    animate={{
+                      opacity: [0, isHighlight ? 0.95 : 0.55, 0],
+                      scale: [1, isHighlight ? 1.22 : 1.12, 1],
+                    }}
+                    transition={{ delay: i * 0.04, duration: 0.55, ease: "easeOut" }}
+                    className="absolute inset-0 rounded-lg pointer-events-none"
+                    style={{
+                      boxShadow: isHighlight
+                        ? "0 0 18px 2px rgba(212,168,83,0.9), 0 0 3px 0 rgba(255,255,255,0.6) inset"
+                        : "0 0 14px 1px rgba(212,168,83,0.5)",
+                    }}
+                  />
+                )}
+              </motion.div>
+            );
+          })}
         </AnimatePresence>
       </div>
 

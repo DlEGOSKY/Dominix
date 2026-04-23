@@ -277,6 +277,32 @@ export function loadCompletedChallenges(): Set<string> {
 }
 
 /**
+ * Non-persistent check used during the run to trigger a live toast the
+ * moment a challenge's condition becomes true. The caller should track
+ * which ids it has already celebrated this run so the same toast does
+ * not fire twice.
+ *
+ * Final persistence still happens via `resolveRunChallenges` at game over.
+ */
+export function peekNewlyCompletedChallenges(
+  characterId: CharacterId,
+  stats: RunStats,
+  roundReached: number,
+  alreadyCelebrated: Set<string>
+): CharacterChallenge[] {
+  const completedGlobally = loadCompletedChallenges();
+  const result: CharacterChallenge[] = [];
+  for (const challenge of getChallengesFor(characterId)) {
+    if (completedGlobally.has(challenge.id)) continue;
+    if (alreadyCelebrated.has(challenge.id)) continue;
+    if (challenge.check(stats, roundReached)) {
+      result.push(challenge);
+    }
+  }
+  return result;
+}
+
+/**
  * Evaluate every challenge for the given character against a finished run.
  * Persists newly-completed ones and returns them so the UI can celebrate.
  */

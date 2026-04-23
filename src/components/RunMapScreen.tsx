@@ -1,5 +1,5 @@
-import { motion } from "framer-motion";
-import { useMemo } from "react";
+import { motion, AnimatePresence } from "framer-motion";
+import { useLayoutEffect, useMemo, useRef, useState } from "react";
 import type { RunMap, MapNode, NodeType } from "@/engine/runMap";
 import { getAvailableNodes, nodeLabel, findNode } from "@/engine/runMap";
 
@@ -47,6 +47,35 @@ export default function RunMapScreen({ map, onSelectNode, gold, round }: RunMapS
     };
   }
 
+  // Auto-scale: measure available area and shrink map so it always fits
+  const mapAreaRef = useRef<HTMLDivElement>(null);
+  const [mapScale, setMapScale] = useState(1);
+  const [scaleReady, setScaleReady] = useState(false);
+  const [isNarrow, setIsNarrow] = useState(typeof window !== "undefined" ? window.innerWidth < 768 : false);
+  const [legendOpen, setLegendOpen] = useState(false);
+
+  useLayoutEffect(() => {
+    const el = mapAreaRef.current;
+    if (!el) return;
+    const update = () => {
+      const rect = el.getBoundingClientRect();
+      if (rect.width <= 0 || rect.height <= 0) return;
+      const sx = (rect.width - 16) / boardWidth;
+      const sy = (rect.height - 16) / boardHeight;
+      setMapScale(Math.min(sx, sy, 1));
+      setIsNarrow(window.innerWidth < 768);
+      setScaleReady(true);
+    };
+    update();
+    const ro = new ResizeObserver(update);
+    ro.observe(el);
+    window.addEventListener("resize", update);
+    return () => {
+      ro.disconnect();
+      window.removeEventListener("resize", update);
+    };
+  }, [boardWidth, boardHeight]);
+
   return (
     <div className="h-screen flex flex-col overflow-hidden">
       {/* Mobile portrait: rotate overlay */}
@@ -83,16 +112,25 @@ export default function RunMapScreen({ map, onSelectNode, gold, round }: RunMapS
       </div>
 
       {/* Body: map + legend side by side */}
-      <div className="flex-1 flex flex-row items-center justify-center gap-6 px-6 py-4 overflow-hidden min-h-0">
+      <div className="flex-1 flex flex-row gap-3 sm:gap-6 px-3 sm:px-6 py-2 sm:py-4 overflow-hidden min-h-0 relative">
 
-      {/* Map board */}
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.4 }}
-        className="relative rounded-2xl bg-surface-800/40 border border-surface-600/30 backdrop-blur-sm overflow-hidden shrink-0"
-        style={{ width: boardWidth, height: boardHeight }}
-      >
+      {/* Map area (auto-scales to fit) */}
+      <div ref={mapAreaRef} className="flex-1 min-w-0 min-h-0 flex items-center justify-center overflow-auto">
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.4 }}
+          className="relative rounded-2xl bg-surface-800/40 border border-surface-600/30 backdrop-blur-sm overflow-hidden shrink-0"
+          style={{
+            width: boardWidth,
+            height: boardHeight,
+            transform: `scale(${mapScale})`,
+            transformOrigin: "center center",
+            // Reserve only the scaled footprint in flex layout so it stays centered
+            margin: mapScale < 1 ? `${(boardHeight * (mapScale - 1)) / 2}px ${(boardWidth * (mapScale - 1)) / 2}px` : undefined,
+            visibility: scaleReady ? "visible" : "hidden",
+          }}
+        >
         {/* Background gradient */}
         <div className="absolute inset-0 bg-gradient-to-b from-transparent via-surface-900/20 to-surface-900/40 pointer-events-none" />
 
@@ -186,33 +224,75 @@ export default function RunMapScreen({ map, onSelectNode, gold, round }: RunMapS
             );
           })
         )}
-      </motion.div>
+        </motion.div>
+      </div>
 
-      {/* Legend sidebar — always visible on desktop */}
-      <div className="flex flex-col gap-3 w-56 shrink-0">
-        <p className="text-[10px] text-accent-silver/30 uppercase tracking-widest">Tipos de nodo</p>
-        <div className="flex flex-col gap-2">
-          {NODE_DESCRIPTIONS.map((nd) => (
-            <div
-              key={nd.type}
-              className="flex items-start gap-2.5 px-3 py-2.5 rounded-xl bg-surface-800/40 border border-surface-600/20"
-            >
-              <div className={`w-6 h-6 rounded-full flex items-center justify-center shrink-0 mt-0.5 ${nodeBgClass(nd.type, true, false, false)} border ${nodeBorderClass(nd.type, true, false, false)}`}>
-                <NodeIcon type={nd.type} tiny />
-              </div>
-              <div className="flex flex-col gap-0.5 min-w-0">
-                <span className={`text-[10px] font-bold uppercase tracking-wider ${nd.color}`}>{nodeLabel(nd.type)}</span>
-                <span className="text-[9px] text-accent-silver/45 leading-snug">{nd.desc}</span>
-              </div>
+      {/* Legend sidebar (md+ always visible, mobile via overlay) */}
+      {!isNarrow && <LegendPanel className="w-56 shrink-0" />}
+
+      {/* Mobile: floating ? button + overlay legend */}
+      {isNarrow && (
+        <>
+          <button
+            onClick={() => setLegendOpen((v) => !v)}
+            className="absolute top-3 right-3 z-30 w-9 h-9 rounded-full bg-surface-800/90 border border-accent-gold/40 text-accent-gold flex items-center justify-center shadow-lg backdrop-blur-sm"
+            aria-label="Tipos de nodo"
+          >
+            <span className="font-bold text-sm">?</span>
+          </button>
+          <AnimatePresence>
+            {legendOpen && (
+              <>
+                <motion.div
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  exit={{ opacity: 0 }}
+                  className="absolute inset-0 bg-surface-900/70 backdrop-blur-sm z-20"
+                  onClick={() => setLegendOpen(false)}
+                />
+                <motion.div
+                  initial={{ opacity: 0, x: 30 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  exit={{ opacity: 0, x: 30 }}
+                  transition={{ duration: 0.2 }}
+                  className="absolute top-3 right-3 bottom-3 z-30 w-64 max-w-[80vw] overflow-y-auto rounded-xl bg-surface-800/95 border border-surface-600/40 backdrop-blur-md p-3 shadow-2xl"
+                >
+                  <LegendPanel />
+                </motion.div>
+              </>
+            )}
+          </AnimatePresence>
+        </>
+      )}
+
+      </div>
+    </div>
+  );
+}
+
+function LegendPanel({ className = "" }: { className?: string }) {
+  return (
+    <div className={`flex flex-col gap-3 ${className}`}>
+      <p className="text-[10px] text-accent-silver/30 uppercase tracking-widest">Tipos de nodo</p>
+      <div className="flex flex-col gap-2">
+        {NODE_DESCRIPTIONS.map((nd) => (
+          <div
+            key={nd.type}
+            className="flex items-start gap-2.5 px-3 py-2.5 rounded-xl bg-surface-800/40 border border-surface-600/20"
+          >
+            <div className={`w-6 h-6 rounded-full flex items-center justify-center shrink-0 mt-0.5 ${nodeBgClass(nd.type, true, false, false)} border ${nodeBorderClass(nd.type, true, false, false)}`}>
+              <NodeIcon type={nd.type} tiny />
             </div>
-          ))}
-        </div>
-        <p className="text-[9px] text-accent-silver/30 leading-relaxed pt-1 border-t border-surface-600/20">
-          Los nodos con brillo son los que puedes elegir ahora
-        </p>
+            <div className="flex flex-col gap-0.5 min-w-0">
+              <span className={`text-[10px] font-bold uppercase tracking-wider ${nd.color}`}>{nodeLabel(nd.type)}</span>
+              <span className="text-[9px] text-accent-silver/45 leading-snug">{nd.desc}</span>
+            </div>
+          </div>
+        ))}
       </div>
-
-      </div>
+      <p className="text-[9px] text-accent-silver/30 leading-relaxed pt-1 border-t border-surface-600/20">
+        Los nodos con brillo son los que puedes elegir ahora
+      </p>
     </div>
   );
 }

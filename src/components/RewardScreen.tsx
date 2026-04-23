@@ -2,6 +2,8 @@ import { motion } from "framer-motion";
 import type { RewardOption } from "@/types/reward";
 import { audio } from "@/engine/audio";
 import { getRelicRarity, getRelicFamily, FAMILY_META } from "@/engine/relics";
+import { getConsumable } from "@/engine/consumables";
+import { getCelestial, patternName } from "@/engine/celestial";
 import RelicCard from "./RelicCard";
 
 interface RewardScreenProps {
@@ -37,6 +39,33 @@ function getCardStyle(option: RewardOption) {
       badge: "bg-accent-gold/20 text-accent-gold border-accent-gold/30",
       badgeText: "Reliquia",
       topGlow: "bg-gradient-to-b from-accent-gold/10 to-transparent",
+    };
+  }
+  if (option.reward.type === "consumable") {
+    return {
+      border: "border-amber-500/50",
+      glow: "hover:shadow-[0_0_35px_rgba(251,191,36,0.35)]",
+      badge: "bg-amber-500/20 text-amber-300 border-amber-400/40",
+      badgeText: "Consumible",
+      topGlow: "bg-gradient-to-b from-amber-500/15 to-transparent",
+    };
+  }
+  if (option.reward.type === "active_mutation") {
+    return {
+      border: "border-purple-500/40",
+      glow: "hover:shadow-[0_0_30px_rgba(168,85,247,0.25)]",
+      badge: "bg-purple-500/20 text-purple-300 border-purple-400/40",
+      badgeText: "Poder",
+      topGlow: "bg-gradient-to-b from-purple-500/10 to-transparent",
+    };
+  }
+  if (option.reward.type === "celestial") {
+    return {
+      border: "border-indigo-400/50",
+      glow: "hover:shadow-[0_0_35px_rgba(129,140,248,0.4)]",
+      badge: "bg-indigo-500/20 text-indigo-200 border-indigo-400/40",
+      badgeText: "Celeste",
+      topGlow: "bg-gradient-to-b from-indigo-500/20 to-transparent",
     };
   }
   return {
@@ -120,6 +149,34 @@ export default function RewardScreen({ options, onSelect, onSkip }: RewardScreen
                   <div className="relative flex justify-center w-full">
                     <RelicCard relicId={option.reward.relic.id} size="md" showName={false} />
                   </div>
+                ) : option.reward.type === "consumable" ? (
+                  (() => {
+                    const c = getConsumable(option.reward.consumableId);
+                    return (
+                      <div className="relative w-14 h-16 rounded-xl bg-amber-500/15 border-2 border-amber-400/60 flex flex-col items-center justify-center gap-0.5 shadow-[0_0_18px_rgba(251,191,36,0.4)]">
+                        <div className="text-2xl font-black font-display text-amber-200" style={{ textShadow: "0 0 8px rgba(251,191,36,0.7)" }}>
+                          {c?.glyph ?? "?"}
+                        </div>
+                        <div className="text-[7px] uppercase tracking-widest font-bold text-amber-300/70">
+                          {c?.rarity ?? ""}
+                        </div>
+                      </div>
+                    );
+                  })()
+                ) : option.reward.type === "celestial" ? (
+                  (() => {
+                    const c = getCelestial(option.reward.celestialId);
+                    return (
+                      <div className="relative w-16 h-16 rounded-xl bg-gradient-to-b from-indigo-500/25 to-purple-500/15 border-2 border-indigo-400/70 flex flex-col items-center justify-center shadow-[0_0_20px_rgba(129,140,248,0.5)]">
+                        <svg width="30" height="30" viewBox="0 0 24 24" fill="none" className="text-indigo-200">
+                          <path d="M12 3l2.5 6.5L21 11l-5 4.5 1.5 6.5L12 18.5 6.5 22 8 15.5 3 11l6.5-1.5z" stroke="currentColor" strokeWidth="1.6" strokeLinejoin="round" fill="currentColor" fillOpacity="0.3" />
+                        </svg>
+                        <div className="text-[7px] uppercase tracking-widest font-bold text-indigo-300/70 mt-0.5">
+                          {c ? patternName(c.patternId) : ""}
+                        </div>
+                      </div>
+                    );
+                  })()
                 ) : (
                   <div className="relative w-12 h-12 rounded-xl bg-cyan-500/10 border border-cyan-400/30 flex items-center justify-center">
                     <div className="w-5 h-5 rounded-full bg-cyan-400/50" />

@@ -1,4 +1,5 @@
 import type { RunStats, SavedData } from "@/types/domino";
+import { loadCodex } from "./codex";
 
 export interface Achievement {
   id: string;
@@ -289,6 +290,109 @@ export const ALL_ACHIEVEMENTS: Achievement[] = [
     description: "Roba 15 fichas en una run",
     icon: "compass",
     condition: (stats) => stats.tilesDrawn >= 15,
+  },
+  // ---- Codex-based achievements ----
+  {
+    id: "codex_patterns_10",
+    name: "Curioso",
+    description: "Descubre 10 patrones distintos",
+    icon: "eye",
+    condition: () => loadCodex().patterns.discovered >= 10,
+  },
+  {
+    id: "codex_patterns_all",
+    name: "Enciclopedista",
+    description: "Descubre todos los patrones",
+    icon: "book",
+    condition: () => {
+      const c = loadCodex();
+      return c.patterns.discovered >= c.patterns.total;
+    },
+  },
+  {
+    id: "codex_bosses_10",
+    name: "Cazador Infatigable",
+    description: "Enfrenta 10 jefes distintos",
+    icon: "swords",
+    condition: () => loadCodex().bosses.discovered >= 10,
+  },
+  {
+    id: "codex_celestial_8",
+    name: "Astronomo",
+    description: "Descubre 8 cartas celestes",
+    icon: "sparkles",
+    condition: () => loadCodex().celestial.discovered >= 8,
+  },
+  {
+    id: "codex_celestial_all",
+    name: "Cartografo del Firmamento",
+    description: "Descubre todas las cartas celestes",
+    icon: "stars",
+    condition: () => {
+      const c = loadCodex();
+      return c.celestial.discovered >= c.celestial.total;
+    },
+  },
+  {
+    id: "codex_chaos_all",
+    name: "Casa del Caos",
+    description: "Vive todos los giros del Modo Caos",
+    icon: "zap",
+    condition: () => {
+      const c = loadCodex();
+      return c.chaos.discovered >= c.chaos.total;
+    },
+  },
+  {
+    id: "codex_complete",
+    name: "Dominix Pleno",
+    description: "Descubre todo el contenido del Codex",
+    icon: "crown",
+    condition: () => {
+      const c = loadCodex();
+      return (
+        c.patterns.discovered >= c.patterns.total &&
+        c.bosses.discovered >= c.bosses.total &&
+        c.celestial.discovered >= c.celestial.total &&
+        c.chaos.discovered >= c.chaos.total
+      );
+    },
+  },
+  // ---- New system achievements ----
+  {
+    id: "combo_8",
+    name: "Ceremonia Perfecta",
+    description: "Activa 8 patrones en una misma cadena",
+    icon: "stars",
+    condition: (stats) => stats.bestCombo >= 8,
+  },
+  {
+    id: "round_score_700",
+    name: "Catarsis",
+    description: "Consigue 700 puntos en una sola ronda",
+    icon: "bolt",
+    condition: (stats) => stats.highestRoundScore >= 700,
+  },
+  {
+    id: "score_3000",
+    name: "Abismo Puntos",
+    description: "Consigue 3000 puntos totales en una run",
+    icon: "flame",
+    condition: (stats) => stats.totalScore >= 3000,
+  },
+  {
+    id: "round_25",
+    name: "Inquebrantable",
+    description: "Alcanza la ronda 25",
+    icon: "shield",
+    condition: (_, saved) => saved.bestRound >= 25,
+  },
+  {
+    id: "runs_100",
+    name: "Ceremonia Eterna",
+    description: "Completa 100 runs",
+    icon: "infinity",
+    condition: (_, saved) => saved.totalRuns >= 100,
   },
 ];
 

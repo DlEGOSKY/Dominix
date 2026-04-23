@@ -365,6 +365,150 @@ function detectAvalancha(chain: ChainState): PatternResult | null {
   return null;
 }
 
+/**
+ * Trinidad: 3+ fichas consecutivas que comparten un valor común entre todas.
+ * Ejemplo: 3|5, 5|6, 6|3 — no comparte uno, no activa.
+ *          4|1, 4|7, 4|2 — comparten 4, activa.
+ */
+function detectTrinidad(chain: ChainState): PatternResult | null {
+  if (chain.placed.length < 3) return null;
+  for (let i = 0; i <= chain.placed.length - 3; i++) {
+    const t1 = chain.placed[i]!.tile;
+    const t2 = chain.placed[i + 1]!.tile;
+    const t3 = chain.placed[i + 2]!.tile;
+    const vals1 = new Set([t1.top, t1.bottom]);
+    const vals2 = new Set([t2.top, t2.bottom]);
+    const vals3 = new Set([t3.top, t3.bottom]);
+    const common = [...vals1].filter((v) => vals2.has(v) && vals3.has(v));
+    if (common.length > 0) {
+      return { id: "trinidad", name: "Trinidad", bonus: 45, multiplier: 1.15 };
+    }
+  }
+  return null;
+}
+
+/**
+ * Fractal: cadena donde TODAS las fichas tienen suma que es potencia de 2 (1,2,4,8).
+ * Extremadamente raro pero muy rewarding cuando pasa.
+ */
+function detectFractal(chain: ChainState): PatternResult | null {
+  if (chain.placed.length < 4) return null;
+  const validSums = new Set([1, 2, 4, 8]);
+  const allFractal = chain.placed.every((p) => validSums.has(p.tile.top + p.tile.bottom));
+  if (allFractal) {
+    return { id: "fractal", name: "Fractal", bonus: 60, multiplier: 1.2 };
+  }
+  return null;
+}
+
+/**
+ * Armonia: la suma total de todos los pips de la cadena es un número primo.
+ * Premia cadenas de tamaño intermedio con suma específica.
+ */
+function isPrime(n: number): boolean {
+  if (n < 2) return false;
+  if (n === 2) return true;
+  if (n % 2 === 0) return false;
+  for (let i = 3; i * i <= n; i += 2) {
+    if (n % i === 0) return false;
+  }
+  return true;
+}
+
+/**
+ * Constelacion: at least 5 DISTINCT numbers appear across the chain's
+ * connections. Rewards diverse builds and careful draws.
+ */
+function detectConstelacion(chain: ChainState): PatternResult | null {
+  if (chain.placed.length < 5) return null;
+  const numbers = new Set<number>();
+  for (const p of chain.placed) {
+    numbers.add(p.tile.top);
+    numbers.add(p.tile.bottom);
+  }
+  if (numbers.size >= 6) {
+    return { id: "constelacion", name: "Constelacion", bonus: 55, multiplier: 1.25 };
+  }
+  return null;
+}
+
+/**
+ * Diminuendo: 4+ consecutive tiles whose sums are strictly decreasing.
+ * The counterpart of Avalancha — rewards "fall" progressions.
+ */
+function detectDiminuendo(chain: ChainState): PatternResult | null {
+  if (chain.placed.length < 4) return null;
+  let decreasing = true;
+  for (let i = 1; i < chain.placed.length; i++) {
+    const prev = chain.placed[i - 1]!.tile;
+    const curr = chain.placed[i]!.tile;
+    if (curr.top + curr.bottom >= prev.top + prev.bottom) {
+      decreasing = false;
+      break;
+    }
+  }
+  if (decreasing) {
+    return { id: "diminuendo", name: "Diminuendo", bonus: 35, multiplier: 1.3 };
+  }
+  return null;
+}
+
+/**
+ * Corona: 3+ doubles whose values form a consecutive run (e.g. 3|3, 4|4, 5|5).
+ * Order in chain doesn't matter — only the values.
+ */
+function detectCorona(chain: ChainState): PatternResult | null {
+  const doubleValues = chain.placed
+    .filter((p) => isDouble(p.tile.top, p.tile.bottom))
+    .map((p) => p.tile.top)
+    .sort((a, b) => a - b);
+  if (doubleValues.length < 3) return null;
+  // Check for any consecutive run of length 3+ in the sorted unique values
+  const unique = [...new Set(doubleValues)];
+  let runLen = 1;
+  let maxRun = 1;
+  for (let i = 1; i < unique.length; i++) {
+    if (unique[i]! === unique[i - 1]! + 1) {
+      runLen++;
+      maxRun = Math.max(maxRun, runLen);
+    } else {
+      runLen = 1;
+    }
+  }
+  if (maxRun >= 3) {
+    return { id: "corona", name: "Corona", bonus: 50, multiplier: 1.2 };
+  }
+  return null;
+}
+
+/**
+ * Hexagrama: chain of EXACTLY 6 tiles where no number repeats across tiles
+ * (each of the 12 halves must be a distinct value — impossible with only 7
+ * numbers, so relax: at least 6 distinct values among the 12 halves).
+ * Difficult and specific — a legendary condition.
+ */
+function detectHexagrama(chain: ChainState): PatternResult | null {
+  if (chain.placed.length !== 6) return null;
+  const numbers = new Set<number>();
+  for (const p of chain.placed) {
+    numbers.add(p.tile.top);
+    numbers.add(p.tile.bottom);
+  }
+  if (numbers.size >= 6) {
+    return { id: "hexagrama", name: "Hexagrama", bonus: 80, multiplier: 1.5 };
+  }
+  return null;
+}
+
+function detectArmonia(chain: ChainState): PatternResult | null {
+  if (chain.placed.length < 3) return null;
+  const total = chain.placed.reduce((s, p) => s + p.tile.top + p.tile.bottom, 0);
+  if (isPrime(total)) {
+    return { id: "armonia", name: "Armonia", bonus: 40, multiplier: 1.35 };
+  }
+  return null;
+}
+
 export function analyzePatterns(chain: ChainState): PatternAnalysis {
   const detectors = [
     detectCadenaSimple,
@@ -387,6 +531,13 @@ export function analyzePatterns(chain: ChainState): PatternAnalysis {
     detectZigzag,
     detectSumaImpar,
     detectAvalancha,
+    detectTrinidad,
+    detectFractal,
+    detectArmonia,
+    detectConstelacion,
+    detectDiminuendo,
+    detectCorona,
+    detectHexagrama,
   ];
 
   const patterns: PatternResult[] = [];
@@ -449,6 +600,13 @@ export const ALL_PATTERNS: PatternInfo[] = [
   { id: "zigzag", name: "Zigzag", description: "5+ conexiones alternando subir/bajar", bonus: 35, multiplier: 1.25 },
   { id: "suma_impar", name: "Suma Impar", description: "4+ fichas donde todas suman impar", bonus: 30, multiplier: 1.2 },
   { id: "avalancha", name: "Avalancha", description: "4+ fichas con sumas crecientes", bonus: 35, multiplier: 1.3 },
+  { id: "trinidad", name: "Trinidad", description: "3+ fichas consecutivas con un numero en comun", bonus: 45, multiplier: 1.15 },
+  { id: "fractal", name: "Fractal", description: "Cadena donde todas las sumas son potencia de 2 (1,2,4,8)", bonus: 60, multiplier: 1.2 },
+  { id: "armonia", name: "Armonia", description: "Suma total de la cadena es un numero primo", bonus: 40, multiplier: 1.35 },
+  { id: "constelacion", name: "Constelacion", description: "Cadena de 5+ fichas con 6+ numeros distintos", bonus: 55, multiplier: 1.25 },
+  { id: "diminuendo", name: "Diminuendo", description: "4+ fichas con sumas estrictamente decrecientes", bonus: 35, multiplier: 1.3 },
+  { id: "corona", name: "Corona", description: "3+ dobles con valores consecutivos (ej 3|3, 4|4, 5|5)", bonus: 50, multiplier: 1.2 },
+  { id: "hexagrama", name: "Hexagrama", description: "Cadena exacta de 6 fichas con 6+ numeros distintos", bonus: 80, multiplier: 1.5 },
 ];
 
 function detectCombo(patterns: PatternResult[]): ComboResult | null {

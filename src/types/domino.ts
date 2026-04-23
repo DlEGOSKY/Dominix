@@ -10,6 +10,8 @@ export interface Tile {
   lockedUntilRound?: number;
   /** Optional visual+mechanical edition layered on top of type */
   edition?: TileEdition;
+  /** Pacto Sagrado marker: this tile grants a big score bonus when played */
+  pact?: boolean;
 }
 
 export type PlacementSide = "left" | "right";

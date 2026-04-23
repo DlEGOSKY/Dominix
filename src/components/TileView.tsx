@@ -249,6 +249,16 @@ export default function TileView({
       ].join(" ")}
       style={{ padding: size === "md" ? 8 : 5 }}
     >
+      {tile.pact && (
+        <>
+          <div className="absolute inset-0 rounded-xl pointer-events-none" style={{ boxShadow: "inset 0 0 0 1px rgba(251,191,36,0.7), 0 0 14px rgba(251,191,36,0.5)" }} />
+          <div className="absolute -top-0.5 -left-0.5 w-4 h-4 rounded-full bg-gradient-to-br from-amber-300 to-amber-600 border border-amber-200/80 flex items-center justify-center shadow-[0_0_6px_rgba(251,191,36,0.7)] pointer-events-none">
+            <svg width="8" height="8" viewBox="0 0 24 24" fill="none" className="text-amber-950">
+              <path d="M12 3l2.5 6.5L21 11l-5 4.5 1.5 6.5L12 18.5 6.5 22 8 15.5 3 11l6.5-1.5z" stroke="currentColor" strokeWidth="1.8" strokeLinejoin="round" fill="currentColor" />
+            </svg>
+          </div>
+        </>
+      )}
       {isWild && (
         <div className="absolute -top-0.5 -right-0.5 px-1.5 py-0.5 rounded-bl-lg bg-purple-500/90 text-[7px] text-white font-bold uppercase tracking-wider">
           Wild

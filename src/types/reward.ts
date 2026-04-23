@@ -1,6 +1,6 @@
 import type { Relic } from "./relic";
 
-export type RewardType = "relic" | "remove_tile" | "duplicate_tile" | "convert_number" | "active_mutation";
+export type RewardType = "relic" | "remove_tile" | "duplicate_tile" | "convert_number" | "active_mutation" | "consumable" | "celestial";
 
 export interface RelicReward {
   type: "relic";
@@ -24,7 +24,17 @@ export interface ActiveMutationReward {
   mutationId: string;
 }
 
-export type Reward = RelicReward | RemoveTileReward | DuplicateTileReward | ConvertNumberReward | ActiveMutationReward;
+export interface ConsumableReward {
+  type: "consumable";
+  consumableId: string;
+}
+
+export interface CelestialReward {
+  type: "celestial";
+  celestialId: string;
+}
+
+export type Reward = RelicReward | RemoveTileReward | DuplicateTileReward | ConvertNumberReward | ActiveMutationReward | ConsumableReward | CelestialReward;
 
 export interface RewardOption {
   id: string;

@@ -91,6 +91,37 @@ export const ASCENSION_LEVELS: AscensionLevel[] = [
     description: "Reliquias legendarias son la mitad de comunes.",
     effects: [{ kind: "legendary_weight_multiplier", value: 0.5 }],
   },
+  // ---- S7: endgame ascensions (11-15) ----
+  {
+    level: 11,
+    name: "Voragine",
+    description: "Bonos de patron reducidos 20% adicional.",
+    effects: [{ kind: "pattern_bonus_multiplier", value: 0.80 }],
+  },
+  {
+    level: 12,
+    name: "Escasez",
+    description: "-1 ficha adicional en tu mano inicial.",
+    effects: [{ kind: "hand_size_delta", value: -1 }],
+  },
+  {
+    level: 13,
+    name: "Usurero",
+    description: "Reliquias en tienda cuestan 25% mas (acumulado).",
+    effects: [{ kind: "shop_relic_cost_multiplier", value: 1.25 }],
+  },
+  {
+    level: 14,
+    name: "Tirania",
+    description: "Los jefes tienen +15% meta adicional.",
+    effects: [{ kind: "boss_target_multiplier", value: 1.15 }],
+  },
+  {
+    level: 15,
+    name: "Abismo",
+    description: "Metas +15% adicionales. El fin de toda ceremonia.",
+    effects: [{ kind: "target_multiplier", value: 1.15 }],
+  },
 ];
 
 export interface AccumulatedAscension {

@@ -22,7 +22,10 @@ export type BossRestriction =
   | { type: "only_doubles" }
   | { type: "only_low"; max: number }
   | { type: "min_chain_length"; count: number }
-  | { type: "no_repeat_number" };
+  | { type: "no_repeat_number" }
+  | { type: "max_doubles"; count: number }
+  | { type: "even_sum_only" }
+  | { type: "exact_chain_length"; count: number };
 
 export interface BossReward {
   gold: number;
@@ -155,6 +158,63 @@ export const ALL_BOSSES: Boss[] = [
     targetMultiplier: 1.6,
     restriction: { type: "only_low", max: 5 },
     reward: { gold: 75, extraRelic: true },
+  },
+  {
+    id: "coleccionista",
+    name: "El Coleccionista",
+    description: "Meta x1.7. Solo 1 doble permitido en toda la cadena.",
+    targetMultiplier: 1.7,
+    restriction: { type: "max_doubles", count: 1 },
+    reward: { gold: 70, extraRelic: true },
+  },
+  {
+    id: "equinoccio",
+    name: "El Equinoccio",
+    description: "Meta x1.5. Solo fichas con suma par son validas.",
+    targetMultiplier: 1.5,
+    restriction: { type: "even_sum_only" },
+    reward: { gold: 60, extraRelic: false },
+  },
+  {
+    id: "ritual",
+    name: "El Ritual",
+    description: "Meta x1.7. La cadena debe tener exactamente 6 fichas.",
+    targetMultiplier: 1.7,
+    restriction: { type: "exact_chain_length", count: 6 },
+    reward: { gold: 75, extraRelic: true },
+  },
+  // ---- S7: nuevos jefes ----
+  {
+    id: "astrologo",
+    name: "El Astrologo",
+    description: "Meta x1.8. La cadena debe tener exactamente 7 fichas.",
+    targetMultiplier: 1.8,
+    restriction: { type: "exact_chain_length", count: 7 },
+    reward: { gold: 80, extraRelic: true },
+  },
+  {
+    id: "heresiarca",
+    name: "El Heresiarca",
+    description: "Meta x1.9. Dos fases: sin dobles, luego cadena exacta de 6.",
+    targetMultiplier: 1.9,
+    restriction: { type: "no_doubles" },
+    reward: { gold: 90, extraRelic: true },
+    phases: [
+      { targetMultiplier: 1.9, restriction: { type: "no_doubles" }, description: "Fase 1: Sin dobles" },
+      { targetMultiplier: 1.5, restriction: { type: "exact_chain_length", count: 6 }, description: "Fase 2: Cadena de 6" },
+    ],
+  },
+  {
+    id: "desvanecido",
+    name: "El Desvanecido",
+    description: "Meta x1.7. Dos fases: solo dobles, luego sin repetir numero.",
+    targetMultiplier: 1.7,
+    restriction: { type: "only_doubles" },
+    reward: { gold: 85, extraRelic: true },
+    phases: [
+      { targetMultiplier: 1.7, restriction: { type: "only_doubles" }, description: "Fase 1: Solo dobles" },
+      { targetMultiplier: 1.4, restriction: { type: "no_repeat_number" }, description: "Fase 2: Sin repetir numero" },
+    ],
   },
 ];
 

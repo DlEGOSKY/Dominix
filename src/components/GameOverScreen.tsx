@@ -3,7 +3,25 @@ import { useMemo, useState } from "react";
 import type { RunStats } from "@/types/domino";
 import { ALL_RELICS } from "@/engine/relics";
 import { calculateRunXP, loadProgression, getXPForNextLevel } from "@/engine/progression";
+import { getActForRound } from "@/engine/acts";
+import { getLevelRewardText, getMasteryProgress, MAX_MASTERY_LEVEL } from "@/engine/characterMastery";
+import type { CharacterChallenge } from "@/engine/characterChallenges";
+import { getCharacter, type CharacterId } from "@/engine/characters";
 import RecapHighlights from "./RecapHighlights";
+
+/**
+ * Short poetic epilogue depending on how far the run went — gives the run
+ * a feeling of having a "verdict" beyond raw numbers.
+ */
+function epilogueFor(finalRound: number, totalScore: number): string {
+  if (finalRound <= 2) return "La ceremonia apenas habia comenzado.";
+  if (finalRound <= 5) return "El umbral se cerro antes de tiempo.";
+  if (finalRound <= 9) return "Caminaste la travesia. El dominio te probo.";
+  if (finalRound <= 10) return "Sostuviste el ritual hasta que el peso te alcanzo.";
+  if (finalRound <= 15) return "Llegaste a la culminacion. El eco recuerda tu nombre.";
+  if (totalScore >= 10000) return "Atravesaste el eco. Ya no juegas, eres el juego.";
+  return "Mas alla del dominio, solo queda lo que tu cadena dejo atras.";
+}
 
 interface GameOverScreenProps {
   stats: RunStats;
@@ -12,6 +30,14 @@ interface GameOverScreenProps {
   onRestart: () => void;
   onHome: () => void;
   isNewBest: boolean;
+  mastery?: {
+    characterId: CharacterId;
+    xpGained: number;
+    previousLevel: number;
+    newLevel: number;
+    leveledUp: boolean;
+    challengesCompleted: CharacterChallenge[];
+  };
 }
 
 function RoundScoreChart({ scores }: { scores: number[] }) {
@@ -89,6 +115,7 @@ export default function GameOverScreen({
   onRestart,
   onHome,
   isNewBest,
+  mastery,
 }: GameOverScreenProps) {
   const relics = ALL_RELICS.filter((r) => relicIds.includes(r.id));
   const [recapDone, setRecapDone] = useState(false);
@@ -107,6 +134,7 @@ export default function GameOverScreen({
           <RecapHighlights
             stats={stats}
             finalRound={finalRound}
+            relicIds={relicIds}
             onFinished={() => setRecapDone(true)}
           />
         )}
@@ -134,9 +162,20 @@ export default function GameOverScreen({
             <span className="text-accent-gold text-xs font-bold uppercase tracking-widest">Nuevo record</span>
           </motion.div>
         )}
-        <h2 className="font-display font-black text-4xl bg-gradient-to-b from-red-300 to-red-500 bg-clip-text text-transparent">
-          Run Terminada
+        {(() => {
+          const act = getActForRound(Math.max(1, finalRound));
+          return (
+            <span className="text-[10px] font-bold uppercase tracking-[0.4em] text-accent-silver/45">
+              {act.numeral} · {act.name}
+            </span>
+          );
+        })()}
+        <h2 className="font-display font-black text-4xl bg-gradient-to-b from-white via-white/80 to-accent-silver/40 bg-clip-text text-transparent">
+          Fin del ritual
         </h2>
+        <p className="italic text-center text-[13px] text-accent-silver/55 max-w-sm leading-relaxed">
+          "{epilogueFor(finalRound, stats.totalScore)}"
+        </p>
       </motion.div>
 
       <motion.div
@@ -222,6 +261,10 @@ export default function GameOverScreen({
         <span className="text-[10px] font-mono text-accent-silver/30">{xpData.current}/{xpData.needed} XP</span>
       </motion.div>
 
+      {mastery && mastery.xpGained > 0 && (
+        <MasteryBlock info={mastery} />
+      )}
+
       {relics.length > 0 && (
         <motion.div
           initial={{ opacity: 0 }}
@@ -267,5 +310,105 @@ export default function GameOverScreen({
       </motion.div>
     </motion.div>
     </>
+  );
+}
+
+/**
+ * Post-run mastery summary: animated XP bar, XP gained, and a celebratory
+ * ribbon when the run pushes the character to a new mastery level.
+ */
+function MasteryBlock({
+  info,
+}: {
+  info: {
+    characterId: CharacterId;
+    xpGained: number;
+    previousLevel: number;
+    newLevel: number;
+    leveledUp: boolean;
+    challengesCompleted: CharacterChallenge[];
+  };
+}) {
+  const character = getCharacter(info.characterId);
+  const progress = getMasteryProgress(info.characterId);
+  const unlockText = info.leveledUp ? getLevelRewardText(info.newLevel) : "";
+
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 10 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ delay: 0.75 }}
+      className={[
+        "flex flex-col items-center gap-3 w-full max-w-sm px-4 py-4 rounded-xl border",
+        info.leveledUp
+          ? "bg-accent-gold/10 border-accent-gold/40 shadow-lg shadow-accent-gold/10"
+          : "bg-surface-800/60 border-surface-600/30",
+      ].join(" ")}
+    >
+      {info.leveledUp && (
+        <motion.div
+          initial={{ scale: 0.5, opacity: 0 }}
+          animate={{ scale: 1, opacity: 1 }}
+          transition={{ delay: 0.85, type: "spring", stiffness: 260, damping: 18 }}
+          className="px-3 py-1 rounded-full bg-accent-gold/20 border border-accent-gold/50"
+        >
+          <span className="text-accent-gold text-[10px] font-bold uppercase tracking-widest">
+            Mastery Lv {info.newLevel} desbloqueado
+          </span>
+        </motion.div>
+      )}
+
+      <div className="flex items-center justify-between w-full">
+        <div className="flex items-center gap-2">
+          <span className="text-[10px] font-bold text-accent-silver/40 uppercase tracking-widest">
+            {character.name}
+          </span>
+          <span className="px-1.5 py-0.5 rounded-md bg-surface-900/60 border border-surface-600/40 text-[10px] font-bold text-accent-gold tabular-nums">
+            Lv {progress.level}/{MAX_MASTERY_LEVEL}
+          </span>
+        </div>
+        <span className="text-sm font-mono font-bold text-accent-gold">+{info.xpGained} XP</span>
+      </div>
+
+      <div className="relative w-full h-2.5 rounded-full bg-surface-700 overflow-hidden">
+        <motion.div
+          initial={{ width: 0 }}
+          animate={{ width: `${progress.percent}%` }}
+          transition={{ delay: 0.9, duration: 0.9, ease: [0.22, 1, 0.36, 1] }}
+          className="h-full rounded-full bg-gradient-to-r from-accent-gold/60 to-accent-gold"
+        />
+      </div>
+
+      {unlockText && (
+        <span className="text-[11px] italic text-accent-gold/80 text-center leading-tight">
+          {unlockText}
+        </span>
+      )}
+
+      {info.challengesCompleted.length > 0 && (
+        <div className="w-full flex flex-col gap-1.5 mt-1 pt-2 border-t border-accent-gold/20">
+          <span className="text-[9px] font-bold uppercase tracking-widest text-accent-silver/40 text-center">
+            Desafios completados
+          </span>
+          {info.challengesCompleted.map((c, i) => (
+            <motion.div
+              key={c.id}
+              initial={{ opacity: 0, x: -8 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ delay: 1.0 + i * 0.12 }}
+              className="flex items-center justify-between gap-2 text-[11px]"
+            >
+              <div className="flex items-center gap-2 min-w-0">
+                <span className="w-4 h-4 rounded-full bg-accent-gold/20 border border-accent-gold/50 flex items-center justify-center text-accent-gold text-[9px] font-bold">
+                  ✓
+                </span>
+                <span className="text-white font-bold truncate">{c.title}</span>
+              </div>
+              <span className="font-mono text-accent-gold tabular-nums shrink-0">+{c.xpReward}</span>
+            </motion.div>
+          ))}
+        </div>
+      )}
+    </motion.div>
   );
 }

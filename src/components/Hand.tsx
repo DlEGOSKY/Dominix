@@ -4,6 +4,7 @@ import type { Tile, PlacementSide, ChainState } from "@/types/domino";
 import { getValidPlacements } from "@/engine/chain";
 import TileView from "./TileView";
 import type { TileSkin } from "./TileView";
+import { useSettings } from "@/hooks/useSettings";
 
 interface HandProps {
   tiles: Tile[];
@@ -18,6 +19,7 @@ interface HandProps {
 }
 
 export default function Hand({ tiles, chain, onPlay, disabled, skin, onDiscard, canDiscard: discardAvailable, getScorePreview }: HandProps) {
+  const [settings] = useSettings();
   const sortedTiles = useMemo(() => {
     return [...tiles].sort((a, b) => {
       const aPlayable = getValidPlacements(chain, a).length > 0 ? 0 : 1;
@@ -67,14 +69,17 @@ export default function Hand({ tiles, chain, onPlay, disabled, skin, onDiscard, 
                   highlight={playable}
                   skin={skin}
                 />
-                {preview !== null && preview > 0 && (
+                {settings.showPreview && preview !== null && preview > 0 && (
                   <motion.div
                     initial={{ opacity: 0, y: 4 }}
                     animate={{ opacity: 1, y: 0 }}
-                    className="absolute -top-2 left-1/2 -translate-x-1/2 px-1.5 py-0.5 rounded-md bg-surface-900/90 border border-accent-gold/40 text-[10px] font-mono font-bold text-accent-gold whitespace-nowrap pointer-events-none opacity-0 group-hover:opacity-100 transition-opacity"
+                    className="absolute -top-2 left-1/2 -translate-x-1/2 px-1.5 py-0.5 rounded-md bg-surface-900/90 border border-accent-gold/40 text-[10px] font-mono font-bold text-accent-gold whitespace-nowrap pointer-events-none opacity-0 group-hover:opacity-100 transition-opacity z-10"
                   >
                     +{preview}
                   </motion.div>
+                )}
+                {settings.showHints && (
+                  <TileTooltip tile={tile} playable={playable} sides={sides} preview={settings.showPreview ? preview : null} />
                 )}
                 {onDiscard && discardAvailable && !disabled && (
                   <button
@@ -90,6 +95,74 @@ export default function Hand({ tiles, chain, onPlay, disabled, skin, onDiscard, 
           })}
         </AnimatePresence>
       </div>
+    </div>
+  );
+}
+
+const EDITION_DESC: Record<NonNullable<Tile["edition"]>, { label: string; desc: string; color: string }> = {
+  foil: { label: "Foil", desc: "+30 score plano", color: "text-blue-300" },
+  holo: { label: "Holo", desc: "x1.15 multiplicador", color: "text-purple-300" },
+  polychrome: { label: "Polychrome", desc: "x1.30 multiplicador (1 max)", color: "text-pink-300" },
+  negative: { label: "Negative", desc: "+1 accion esta ronda", color: "text-slate-200" },
+};
+
+function TypeLabel(tile: Tile): { label: string; color: string; desc: string } {
+  const t = tile.type ?? "normal";
+  const isDouble = tile.top === tile.bottom;
+  switch (t) {
+    case "wild": return { label: "Comodin", color: "text-purple-300", desc: "Conecta con cualquier numero" };
+    case "golden": return { label: "Dorada", color: "text-amber-300", desc: "Score base x2" };
+    case "mirror": return { label: "Espejo", color: "text-cyan-300", desc: "Refleja el extremo" };
+    case "bomb": return { label: "Bomba", color: "text-red-300", desc: "Detona efectos al jugar" };
+    case "locked": return { label: "Bloqueada", color: "text-slate-400", desc: "Se desbloquea mas adelante" };
+    default:
+      return isDouble
+        ? { label: "Doble", color: "text-accent-gold", desc: "Ambos extremos iguales" }
+        : { label: "Normal", color: "text-accent-silver/70", desc: "Ficha estandar" };
+  }
+}
+
+function TileTooltip({ tile, playable, sides, preview }: { tile: Tile; playable: boolean; sides: PlacementSide[]; preview: number | null }) {
+  const sum = tile.top + tile.bottom;
+  const typeInfo = TypeLabel(tile);
+  const edInfo = tile.edition ? EDITION_DESC[tile.edition] : null;
+  const placement =
+    !playable ? "No conecta con los extremos"
+    : sides.length === 2 ? "Encaja en ambos extremos"
+    : sides[0] === "left" ? "Encaja por la izquierda"
+    : "Encaja por la derecha";
+
+  return (
+    <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 w-48 rounded-lg bg-surface-900/95 border border-surface-600/60 px-2.5 py-2 shadow-xl backdrop-blur-sm opacity-0 group-hover:opacity-100 transition-opacity duration-150 pointer-events-none z-20">
+      <div className="flex items-center justify-between gap-2 mb-1">
+        <span className={`text-[10px] font-bold uppercase tracking-wider ${typeInfo.color}`}>
+          {typeInfo.label}
+        </span>
+        <span className="text-[10px] font-mono text-accent-silver/50">
+          {tile.top}|{tile.bottom} · suma {sum}
+        </span>
+      </div>
+      <div className="text-[9px] text-accent-silver/50 leading-tight">{typeInfo.desc}</div>
+      {tile.pact && (
+        <div className="mt-1.5 pt-1.5 border-t border-surface-600/40 text-[9px] font-bold uppercase tracking-wider text-amber-300">
+          Pacto Sagrado
+          <span className="block font-normal normal-case tracking-normal text-accent-silver/50 mt-0.5">+100 al jugarla · +100 extra dentro de patron · +100 si tiene edition</span>
+        </div>
+      )}
+      {edInfo && (
+        <div className={`mt-1.5 pt-1.5 border-t border-surface-600/40 text-[9px] font-bold uppercase tracking-wider ${edInfo.color}`}>
+          {edInfo.label}
+          <span className="block font-normal normal-case tracking-normal text-accent-silver/50 mt-0.5">{edInfo.desc}</span>
+        </div>
+      )}
+      <div className={`mt-1.5 pt-1.5 border-t border-surface-600/40 text-[9px] ${playable ? "text-green-400/80" : "text-red-400/70"}`}>
+        {placement}
+        {preview !== null && preview > 0 && (
+          <span className="text-accent-gold font-mono font-bold ml-1">+{preview}</span>
+        )}
+      </div>
+      {/* Arrow */}
+      <div className="absolute top-full left-1/2 -translate-x-1/2 -translate-y-px w-2 h-2 bg-surface-900/95 border-r border-b border-surface-600/60 rotate-45" />
     </div>
   );
 }

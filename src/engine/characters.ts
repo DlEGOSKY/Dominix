@@ -12,7 +12,11 @@ export type CharacterId =
   | "architect"
   | "mathematician"
   | "bomber"
-  | "merchant";
+  | "merchant"
+  | "alchemist"
+  | "oracle"
+  | "cartographer"
+  | "hermit";
 
 export type CharacterPassive =
   | { type: "bonus_per_pattern"; amount: number }
@@ -20,15 +24,19 @@ export type CharacterPassive =
   | { type: "start_with_bombs"; count: number }
   | { type: "gold_multiplier"; factor: number }
   | { type: "extra_gold_on_round_end"; amount: number }
-  | { type: "wild_on_pattern" }; // wild tile added on pattern activation
+  | { type: "wild_on_pattern" } // wild tile added on pattern activation
+  | { type: "starting_editions"; count: number } // N tiles start with random edition
+  | { type: "celestial_start" } // gets a free celestial at run start
+  | { type: "map_bonus"; amount: number } // flat score bonus per round
+  | { type: "auto_pact" }; // auto-marks the highest double as pact
 
 export interface Character {
   id: CharacterId;
   name: string;
   title: string;
   description: string;
-  color: "gold" | "blue" | "red" | "green";
-  icon: "compass" | "sigma" | "flame" | "coin";
+  color: "gold" | "blue" | "red" | "green" | "purple" | "cyan" | "teal" | "violet";
+  icon: "compass" | "sigma" | "flame" | "coin" | "flask" | "eye" | "map" | "moon";
   startingHandSize: number;
   startingGold: number;
   startingRelicIds: string[];
@@ -97,6 +105,62 @@ export const ALL_CHARACTERS: Character[] = [
     bonusSpecialTiles: [{ type: "wild", count: 1 }],
     passive: { type: "gold_multiplier", factor: 1.5 },
     unlockCondition: { type: "reach_round", value: 15 },
+  },
+  {
+    id: "alchemist",
+    name: "El Alquimista",
+    title: "Forjador de ediciones",
+    description: "Empieza con 2 fichas con edicion aleatoria aplicada.",
+    color: "purple",
+    icon: "flask",
+    startingHandSize: 7,
+    startingGold: 25,
+    startingRelicIds: [],
+    bonusSpecialTiles: [],
+    passive: { type: "starting_editions", count: 2 },
+    unlockCondition: { type: "defeat_boss", value: "coleccionista" },
+  },
+  {
+    id: "oracle",
+    name: "La Oracula",
+    title: "Vidente del firmamento",
+    description: "Empieza con 1 carta celeste aleatoria ya descubierta.",
+    color: "cyan",
+    icon: "eye",
+    startingHandSize: 7,
+    startingGold: 25,
+    startingRelicIds: [],
+    bonusSpecialTiles: [],
+    passive: { type: "celestial_start" },
+    unlockCondition: { type: "reach_round", value: 12 },
+  },
+  {
+    id: "cartographer",
+    name: "El Cartografo",
+    title: "Lector de caminos",
+    description: "+20 score pasivos al terminar cada ronda. Mano +1.",
+    color: "teal",
+    icon: "map",
+    startingHandSize: 8,
+    startingGold: 25,
+    startingRelicIds: [],
+    bonusSpecialTiles: [],
+    passive: { type: "map_bonus", amount: 20 },
+    unlockCondition: { type: "reach_round", value: 10 },
+  },
+  {
+    id: "hermit",
+    name: "El Ermitaño",
+    title: "Guardian del pacto",
+    description: "La doble mas alta del set empieza pactada (+100 al jugarla). Sin penalidad.",
+    color: "violet",
+    icon: "moon",
+    startingHandSize: 7,
+    startingGold: 30,
+    startingRelicIds: [],
+    bonusSpecialTiles: [],
+    passive: { type: "auto_pact" },
+    unlockCondition: { type: "reach_round", value: 18 },
   },
 ];
 

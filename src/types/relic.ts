@@ -36,4 +36,6 @@ export type RelicEffect =
   | { type: "extra_discards"; value: number }
   | { type: "extra_draws"; value: number }
   | { type: "bonus_per_discard"; value: number }
-  | { type: "bonus_on_draw"; value: number };
+  | { type: "bonus_on_draw"; value: number }
+  | { type: "multiplier_per_pattern"; value: number }
+  | { type: "celestial_boost"; value: number };
