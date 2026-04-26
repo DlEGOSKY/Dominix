@@ -1,6 +1,7 @@
 import { useState } from "react";
 import type { Tile } from "@/types/domino";
 import TileView from "./TileView";
+import { useTranslation } from "@/engine/i18n";
 
 interface NumberConverterProps {
   tiles: Tile[];
@@ -13,6 +14,7 @@ export default function NumberConverter({
   onConvert,
   onCancel,
 }: NumberConverterProps) {
+  const { t } = useTranslation();
   const [selectedTile, setSelectedTile] = useState<Tile | null>(null);
   const [selectedPosition, setSelectedPosition] = useState<"top" | "bottom" | null>(null);
 
@@ -36,9 +38,9 @@ export default function NumberConverter({
       <div className="fixed inset-0 bg-surface-900/95 flex items-center justify-center z-50">
         <div className="flex flex-col items-center gap-6 max-w-3xl px-6">
           <h2 className="font-display font-bold text-2xl text-accent-gold tracking-tight">
-            Convertir numero
+            {t("converter.title")}
           </h2>
-          <p className="text-sm text-accent-silver/70">Selecciona la ficha a modificar</p>
+          <p className="text-sm text-accent-silver/70">{t("converter.selectTile")}</p>
 
           <div className="flex flex-wrap justify-center gap-3 max-h-[50vh] overflow-y-auto p-4">
             {tiles.map((tile) => (
@@ -55,7 +57,7 @@ export default function NumberConverter({
             onClick={onCancel}
             className="mt-2 px-4 py-2 text-sm text-accent-silver/50 hover:text-accent-silver transition"
           >
-            Cancelar
+            {t("btn.cancel")}
           </button>
         </div>
       </div>
@@ -67,7 +69,7 @@ export default function NumberConverter({
       <div className="fixed inset-0 bg-surface-900/95 flex items-center justify-center z-50">
         <div className="flex flex-col items-center gap-6 max-w-xl px-6">
           <h2 className="font-display font-bold text-2xl text-accent-gold tracking-tight">
-            Selecciona el lado
+            {t("converter.selectSide")}
           </h2>
 
           <div className="flex items-center gap-8">
@@ -78,13 +80,13 @@ export default function NumberConverter({
                 onClick={() => handleSelectPosition("top")}
                 className="px-6 py-3 rounded-lg border-2 border-surface-600 bg-surface-800 hover:border-accent-gold transition text-white font-medium"
               >
-                Superior: {selectedTile.top}
+                {t("converter.top", { n: selectedTile.top })}
               </button>
               <button
                 onClick={() => handleSelectPosition("bottom")}
                 className="px-6 py-3 rounded-lg border-2 border-surface-600 bg-surface-800 hover:border-accent-gold transition text-white font-medium"
               >
-                Inferior: {selectedTile.bottom}
+                {t("converter.bottom", { n: selectedTile.bottom })}
               </button>
             </div>
           </div>
@@ -93,7 +95,7 @@ export default function NumberConverter({
             onClick={() => setSelectedTile(null)}
             className="mt-2 px-4 py-2 text-sm text-accent-silver/50 hover:text-accent-silver transition"
           >
-            Volver
+            {t("btn.back")}
           </button>
         </div>
       </div>
@@ -106,10 +108,12 @@ export default function NumberConverter({
     <div className="fixed inset-0 bg-surface-900/95 flex items-center justify-center z-50">
       <div className="flex flex-col items-center gap-6 max-w-xl px-6">
         <h2 className="font-display font-bold text-2xl text-accent-gold tracking-tight">
-          Nuevo valor
+          {t("converter.newValue")}
         </h2>
         <p className="text-sm text-accent-silver/70">
-          Cambiando {selectedPosition === "top" ? "superior" : "inferior"} de {currentValue} a:
+          {selectedPosition === "top"
+            ? t("converter.changingTop", { n: currentValue })
+            : t("converter.changingBottom", { n: currentValue })}
         </p>
 
         <div className="flex gap-3">
@@ -134,7 +138,7 @@ export default function NumberConverter({
           onClick={() => setSelectedPosition(null)}
           className="mt-2 px-4 py-2 text-sm text-accent-silver/50 hover:text-accent-silver transition"
         >
-          Volver
+          {t("btn.back")}
         </button>
       </div>
     </div>
