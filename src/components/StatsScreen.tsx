@@ -1,7 +1,9 @@
 import { motion } from "framer-motion";
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { getAggregateStats, getRecentRuns, type RunRecord } from "@/engine/runHistory";
 import { ALL_RELICS } from "@/engine/relics";
+import { getRelicIcon } from "@/engine/relicIcons";
+import Tooltip from "./Tooltip";
 
 interface StatsScreenProps {
   onBack: () => void;
@@ -110,7 +112,12 @@ function OverviewTab() {
 }
 
 function HistoryTab() {
-  const runs = getRecentRuns(20);
+  const runs = getRecentRuns(30);
+  // Identify the best run by total score so we can highlight it
+  const bestRunId = useMemo(() => {
+    if (runs.length === 0) return null;
+    return runs.reduce((best, r) => (r.totalScore > best.totalScore ? r : best), runs[0]!).id;
+  }, [runs]);
 
   if (runs.length === 0) {
     return (
@@ -123,14 +130,27 @@ function HistoryTab() {
   return (
     <div className="flex flex-col gap-3">
       {runs.map((run, i) => (
-        <RunRow key={run.id} run={run} index={i} />
+        <RunRow key={run.id} run={run} index={i} isBest={run.id === bestRunId} />
       ))}
     </div>
   );
 }
 
-function RunRow({ run, index }: { run: RunRecord; index: number }) {
+function shareRun(run: RunRecord): { ok: boolean; text: string } {
+  const summary = `Dominix · R${run.rounds} · ${run.totalScore.toLocaleString()} pts · ${run.patternsActivated} patrones · ${run.relicsCollected} reliquias${run.modifier ? ` · ${run.modifier}` : ""}${run.isDaily ? " · Daily" : ""} · ${run.date}`;
+  try {
+    if (typeof navigator !== "undefined" && navigator.clipboard) {
+      navigator.clipboard.writeText(summary);
+    }
+    return { ok: true, text: summary };
+  } catch {
+    return { ok: false, text: summary };
+  }
+}
+
+function RunRow({ run, index, isBest }: { run: RunRecord; index: number; isBest: boolean }) {
   const [expanded, setExpanded] = useState(false);
+  const [shared, setShared] = useState(false);
 
   return (
     <motion.div
@@ -140,13 +160,23 @@ function RunRow({ run, index }: { run: RunRecord; index: number }) {
     >
       <button
         onClick={() => setExpanded(!expanded)}
-        className="w-full text-left p-4 rounded-xl bg-surface-800/60 border border-surface-600/30 hover:border-surface-600/50 transition-all"
+        className={[
+          "w-full text-left p-4 rounded-xl border transition-all",
+          isBest
+            ? "bg-gradient-to-r from-amber-500/12 to-amber-700/8 border-amber-400/40 hover:border-amber-400/60"
+            : "bg-surface-800/60 border-surface-600/30 hover:border-surface-600/50",
+        ].join(" ")}
       >
         <div className="flex items-center justify-between gap-3">
           <div className="flex items-center gap-3">
-            <span className="font-mono font-bold text-lg text-white tabular-nums">{run.rounds}</span>
+            <span className={["font-mono font-bold text-lg tabular-nums", isBest ? "text-amber-300" : "text-white"].join(" ")}>{run.rounds}</span>
             <div className="flex flex-col">
-              <span className="text-xs text-accent-silver/40">{run.date}</span>
+              <div className="flex items-center gap-2">
+                <span className="text-xs text-accent-silver/40">{run.date}</span>
+                {isBest && (
+                  <span className="px-1.5 py-0.5 rounded text-[9px] font-bold uppercase tracking-widest bg-amber-500/20 text-amber-300 border border-amber-400/30">Best</span>
+                )}
+              </div>
               <div className="flex items-center gap-2">
                 <span className="text-sm font-medium text-accent-gold">{run.totalScore.toLocaleString()} pts</span>
                 {run.isDaily && (
@@ -158,7 +188,7 @@ function RunRow({ run, index }: { run: RunRecord; index: number }) {
               </div>
             </div>
           </div>
-          
+
           <div className="flex items-center gap-3 text-xs text-accent-silver/40">
             <span>{run.patternsActivated}p</span>
             <span>{run.relicsCollected}r</span>
@@ -209,17 +239,49 @@ function RunRow({ run, index }: { run: RunRecord; index: number }) {
           </div>
 
           {run.relicIds.length > 0 && (
-            <div className="flex flex-wrap gap-1.5 mt-3 pt-3 border-t border-surface-600/20">
-              {run.relicIds.map((id) => {
-                const relic = ALL_RELICS.find((r) => r.id === id);
-                return relic ? (
-                  <span key={id} className="px-2 py-1 rounded-md bg-surface-700/60 text-[10px] text-accent-silver/50 font-medium">
-                    {relic.name}
-                  </span>
-                ) : null;
-              })}
+            <div className="mt-3 pt-3 border-t border-surface-600/20">
+              <span className="text-[10px] uppercase tracking-widest text-accent-silver/40 font-bold">Build</span>
+              <div className="flex flex-wrap gap-1.5 mt-2">
+                {run.relicIds.map((id) => {
+                  const relic = ALL_RELICS.find((r) => r.id === id);
+                  if (!relic) return null;
+                  const Icon = getRelicIcon(id);
+                  return (
+                    <Tooltip
+                      key={id}
+                      content={
+                        <div className="flex flex-col gap-0.5">
+                          <span className="font-bold text-white text-xs">{relic.name}</span>
+                          <span className="text-[10px] text-accent-silver/70">{relic.description}</span>
+                        </div>
+                      }
+                      placement="top"
+                      delay={120}
+                    >
+                      <span className="flex items-center gap-1 px-2 py-1 rounded-md bg-surface-700/60 text-[10px] text-accent-silver/65 font-medium hover:bg-surface-700 transition-colors">
+                        {Icon && <Icon size={11} className="text-accent-gold/80" />}
+                        {relic.name}
+                      </span>
+                    </Tooltip>
+                  );
+                })}
+              </div>
             </div>
           )}
+
+          <div className="mt-3 pt-3 border-t border-surface-600/20 flex justify-end">
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                const result = shareRun(run);
+                setShared(result.ok);
+                setTimeout(() => setShared(false), 1500);
+              }}
+              className="px-3 py-1 rounded-md text-[10px] font-bold uppercase tracking-widest bg-surface-700/60 hover:bg-surface-700 text-accent-silver/70 hover:text-white transition-colors"
+            >
+              {shared ? "Copiado!" : "Compartir"}
+            </button>
+          </div>
         </motion.div>
       )}
     </motion.div>

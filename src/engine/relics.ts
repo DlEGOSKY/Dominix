@@ -1,3 +1,5 @@
+import type { IconType } from "react-icons";
+import { GiSpiralBloom, GiRollingDices, GiPunch, GiPathDistance, GiSprint } from "react-icons/gi";
 import type { Relic, RelicRarity, RelicFamily } from "@/types/relic";
 import type { ChainState } from "@/types/domino";
 import type { PatternAnalysis } from "./patterns";
@@ -426,6 +428,79 @@ export const ALL_RELICS: Relic[] = [
     rarity: "rare",
     family: "patron",
   },
+  // ---- S8: nuevas reliquias para variedad de builds ----
+  {
+    id: "pisada_lobo",
+    name: "Pisada del Lobo",
+    description: "Cada 1 en la cadena otorga +12 (sigiloso pero feroz)",
+    trigger: "on_score",
+    effect: { type: "bonus_per_number", number: 1, value: 12 },
+    rarity: "common",
+    family: "numero",
+  },
+  {
+    id: "linaje_estable",
+    name: "Linaje Estable",
+    description: "Los dobles otorgan +18 cada uno",
+    trigger: "on_double",
+    effect: { type: "bonus_per_double", value: 18 },
+    rarity: "common",
+    family: "fuerza",
+  },
+  {
+    id: "filo_roto",
+    name: "Filo Roto",
+    description: "x1.08 multiplicador global. El acero astillado aun corta.",
+    trigger: "passive",
+    effect: { type: "multiplier", value: 1.08 },
+    rarity: "common",
+    family: "fuerza",
+  },
+  {
+    id: "estandarte_andante",
+    name: "Estandarte Andante",
+    description: "+4 puntos por cada ficha jugada",
+    trigger: "on_score",
+    effect: { type: "bonus_per_tile", value: 4 },
+    rarity: "common",
+    family: "cadena",
+  },
+  {
+    id: "sangre_pactada",
+    name: "Sangre Pactada",
+    description: "Los dobles otorgan +35 cada uno (juramento de hierro)",
+    trigger: "on_double",
+    effect: { type: "bonus_per_double", value: 35 },
+    rarity: "rare",
+    family: "fuerza",
+  },
+  {
+    id: "reloj_quebrado",
+    name: "Reloj Quebrado",
+    description: "Alternancia otorga x1.6 adicional",
+    trigger: "on_pattern",
+    effect: { type: "multiplier_if_pattern", patternId: "alternancia", value: 1.6 },
+    rarity: "rare",
+    family: "patron",
+  },
+  {
+    id: "mirada_vacio",
+    name: "Mirada del Vacio",
+    description: "Cada 0 en la cadena otorga +22 (te devuelve la mirada)",
+    trigger: "on_score",
+    effect: { type: "bonus_per_number", number: 0, value: 22 },
+    rarity: "rare",
+    family: "numero",
+  },
+  {
+    id: "eternidad",
+    name: "Eternidad",
+    description: "x1.18 multiplicador por cada patron activado",
+    trigger: "on_pattern",
+    effect: { type: "multiplier_per_pattern", value: 0.18 },
+    rarity: "legendary",
+    family: "patron",
+  },
 ];
 
 export function getRandomRelics(count: number, exclude: string[] = []): Relic[] {
@@ -636,35 +711,35 @@ export function getRelicFamily(relic: Relic): RelicFamily | null {
   return FAMILY_MAP[relic.id] ?? null;
 }
 
-export const FAMILY_META: Record<RelicFamily, { name: string; color: string; icon: string; setBonusDescription: string }> = {
+export const FAMILY_META: Record<RelicFamily, { name: string; color: string; icon: IconType; setBonusDescription: string }> = {
   patron: {
     name: "Patron",
     color: "accent-gold",
-    icon: "◈",
+    icon: GiSpiralBloom,
     setBonusDescription: "3+ reliquias: +25% a todos los bonos de patron",
   },
   numero: {
     name: "Numero",
     color: "blue",
-    icon: "#",
+    icon: GiRollingDices,
     setBonusDescription: "3+ reliquias: +30 score fijo por ronda",
   },
   fuerza: {
     name: "Fuerza",
     color: "red",
-    icon: "✦",
+    icon: GiPunch,
     setBonusDescription: "3+ reliquias: x1.10 multiplicador global adicional",
   },
   cadena: {
     name: "Cadena",
     color: "purple",
-    icon: "⬡",
+    icon: GiPathDistance,
     setBonusDescription: "3+ reliquias: +4 score por ficha jugada",
   },
   accion: {
     name: "Accion",
     color: "green",
-    icon: "◉",
+    icon: GiSprint,
     setBonusDescription: "3+ reliquias: +1 accion disponible por ronda",
   },
 };

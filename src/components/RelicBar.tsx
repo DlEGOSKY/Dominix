@@ -1,13 +1,14 @@
-import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   ALL_RELICS,
   getRelicFamily,
+  getRelicRarity,
   getFamilyCounts,
   FAMILY_META,
 } from "@/engine/relics";
 import type { RelicFamily } from "@/types/relic";
 import RelicCard from "./RelicCard";
+import Tooltip, { RelicTooltipContent } from "./Tooltip";
 
 interface RelicBarProps {
   relicIds: string[];
@@ -40,12 +41,9 @@ function familyText(family: RelicFamily | null): string {
 }
 
 export default function RelicBar({ relicIds, pulseKey = 0, highlightIds }: RelicBarProps) {
-  const [hoveredId, setHoveredId] = useState<string | null>(null);
-
   if (relicIds.length === 0) return null;
 
   const relics = ALL_RELICS.filter((r) => relicIds.includes(r.id));
-  const hoveredRelic = relics.find((r) => r.id === hoveredId);
   const counts = getFamilyCounts(relicIds);
   const activeFamilies = (Object.keys(counts) as RelicFamily[]).filter((f) => counts[f] >= 3);
 
@@ -60,6 +58,7 @@ export default function RelicBar({ relicIds, pulseKey = 0, highlightIds }: Relic
           const count = counts[family];
           const meta = FAMILY_META[family];
           const active = count >= 3;
+          const FamilyIcon = meta.icon;
           return (
             <div
               key={family}
@@ -71,7 +70,7 @@ export default function RelicBar({ relicIds, pulseKey = 0, highlightIds }: Relic
                 familyText(family),
               ].join(" ")}
             >
-              <span className="text-[11px]">{meta.icon}</span>
+              <FamilyIcon size={11} />
               <span>{count}</span>
               {active && <span className="ml-0.5">★</span>}
             </div>
@@ -83,31 +82,67 @@ export default function RelicBar({ relicIds, pulseKey = 0, highlightIds }: Relic
         <AnimatePresence mode="popLayout">
           {relics.map((relic, i) => {
             const isHighlight = highlightIds?.includes(relic.id);
+            const fam = getRelicFamily(relic);
+            const rarity = getRelicRarity(relic);
+            const tooltipContent = (
+              <RelicTooltipContent
+                name={relic.name}
+                description={relic.description}
+                family={fam ? FAMILY_META[fam].name : null}
+                FamilyIcon={fam ? FAMILY_META[fam].icon : undefined}
+                familyColor={fam ? familyText(fam) : undefined}
+                rarity={rarity}
+              />
+            );
             return (
               <motion.div
                 key={relic.id}
                 initial={{ opacity: 0, scale: 0.8 }}
                 animate={{ opacity: 1, scale: 1 }}
                 transition={{ delay: i * 0.05, type: "spring", stiffness: 400, damping: 25 }}
-                onMouseEnter={() => setHoveredId(relic.id)}
-                onMouseLeave={() => setHoveredId(null)}
                 className="relative"
               >
-                <RelicCard relicId={relic.id} size="xs" showName={false} />
-                {pulseKey > 0 && (
+                <Tooltip content={tooltipContent} placement="top" delay={250}>
+                  {/* Inner wrapper handles the bounce + shake on each pulse */}
                   <motion.div
-                    key={`pulse-${pulseKey}-${relic.id}`}
+                    key={`pulse-anim-${pulseKey}-${relic.id}`}
+                    initial={{ scale: 1, rotate: 0, y: 0 }}
+                    animate={
+                      pulseKey > 0
+                        ? isHighlight
+                          ? {
+                              scale: [1, 1.25, 1.05, 1],
+                              rotate: [0, -6, 6, -2, 0],
+                              y: [0, -4, 0],
+                            }
+                          : {
+                              scale: [1, 1.08, 1],
+                              y: [0, -1.5, 0],
+                            }
+                        : { scale: 1, rotate: 0, y: 0 }
+                    }
+                    transition={{
+                      delay: i * 0.03,
+                      duration: isHighlight ? 0.55 : 0.32,
+                      ease: "easeOut",
+                    }}
+                  >
+                    <RelicCard relicId={relic.id} size="xs" showName={false} />
+                  </motion.div>
+                </Tooltip>
+                {pulseKey > 0 && isHighlight && (
+                  <motion.div
+                    key={`pulse-glow-${pulseKey}-${relic.id}`}
                     initial={{ opacity: 0, scale: 1 }}
                     animate={{
-                      opacity: [0, isHighlight ? 0.95 : 0.55, 0],
-                      scale: [1, isHighlight ? 1.22 : 1.12, 1],
+                      opacity: [0, 0.95, 0],
+                      scale: [1, 1.32, 1.05],
                     }}
-                    transition={{ delay: i * 0.04, duration: 0.55, ease: "easeOut" }}
+                    transition={{ delay: i * 0.04, duration: 0.6, ease: "easeOut" }}
                     className="absolute inset-0 rounded-lg pointer-events-none"
                     style={{
-                      boxShadow: isHighlight
-                        ? "0 0 18px 2px rgba(212,168,83,0.9), 0 0 3px 0 rgba(255,255,255,0.6) inset"
-                        : "0 0 14px 1px rgba(212,168,83,0.5)",
+                      boxShadow:
+                        "0 0 22px 3px rgba(212,168,83,0.95), 0 0 4px 0 rgba(255,255,255,0.7) inset",
                     }}
                   />
                 )}
@@ -117,30 +152,6 @@ export default function RelicBar({ relicIds, pulseKey = 0, highlightIds }: Relic
         </AnimatePresence>
       </div>
 
-      <AnimatePresence>
-        {hoveredRelic && (
-          <motion.div
-            key={hoveredRelic.id}
-            initial={{ opacity: 0, y: -5 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -5 }}
-            transition={{ duration: 0.15 }}
-            className="flex flex-col items-center gap-0.5 text-xs text-accent-silver/60 text-center max-w-sm"
-          >
-            <span>{hoveredRelic.description}</span>
-            {(() => {
-              const fam = getRelicFamily(hoveredRelic);
-              if (!fam) return null;
-              return (
-                <span className={`text-[10px] uppercase tracking-widest font-bold ${familyText(fam)}`}>
-                  {FAMILY_META[fam].icon} {FAMILY_META[fam].name}
-                </span>
-              );
-            })()}
-          </motion.div>
-        )}
-      </AnimatePresence>
-
       {/* Active set bonuses summary */}
       {activeFamilies.length > 0 && (
         <motion.div
@@ -148,16 +159,19 @@ export default function RelicBar({ relicIds, pulseKey = 0, highlightIds }: Relic
           animate={{ opacity: 1, y: 0 }}
           className="flex flex-wrap justify-center gap-2 mt-1"
         >
-          {activeFamilies.map((f) => (
-            <div
-              key={f}
-              className={`flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-widest bg-surface-800/70 border ${familyBorder(f, true)} ${familyText(f)}`}
-              title={FAMILY_META[f].setBonusDescription}
-            >
-              <span>{FAMILY_META[f].icon}</span>
-              <span>Set {FAMILY_META[f].name}</span>
-            </div>
-          ))}
+          {activeFamilies.map((f) => {
+            const FamilyIcon = FAMILY_META[f].icon;
+            return (
+              <div
+                key={f}
+                className={`flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-widest bg-surface-800/70 border ${familyBorder(f, true)} ${familyText(f)}`}
+                title={FAMILY_META[f].setBonusDescription}
+              >
+                <FamilyIcon size={11} />
+                <span>Set {FAMILY_META[f].name}</span>
+              </div>
+            );
+          })}
         </motion.div>
       )}
     </div>

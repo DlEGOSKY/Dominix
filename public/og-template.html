@@ -1,0 +1,282 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8" />
+<title>Dominix OG Template</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body {
+    width: 1200px;
+    height: 630px;
+    overflow: hidden;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif;
+    background: #0a0c14;
+    color: white;
+  }
+
+  .canvas {
+    width: 1200px;
+    height: 630px;
+    position: relative;
+    overflow: hidden;
+    background:
+      radial-gradient(ellipse 50% 60% at 30% 50%, rgba(212,168,71,0.18) 0%, transparent 60%),
+      radial-gradient(ellipse 80% 80% at 70% 100%, rgba(120,30,30,0.25) 0%, transparent 60%),
+      linear-gradient(135deg, #1a1d2c 0%, #0a0c14 100%);
+  }
+
+  /* Vignette */
+  .canvas::before {
+    content: "";
+    position: absolute; inset: 0;
+    background: radial-gradient(ellipse at center, transparent 40%, rgba(0,0,0,0.7) 100%);
+    pointer-events: none;
+  }
+
+  /* Subtle dot grid */
+  .canvas::after {
+    content: "";
+    position: absolute; inset: 0;
+    background-image: radial-gradient(rgba(212,168,71,0.08) 1px, transparent 1px);
+    background-size: 32px 32px;
+    pointer-events: none;
+  }
+
+  /* Left side: domino tiles */
+  .tiles {
+    position: absolute;
+    left: 60px;
+    top: 50%;
+    transform: translateY(-50%);
+    display: flex;
+    gap: 14px;
+  }
+
+  .tile {
+    width: 95px;
+    height: 190px;
+    background: linear-gradient(180deg, #22223a 0%, #1a1a2c 100%);
+    border: 2.5px solid rgba(212,168,71,0.55);
+    border-radius: 16px;
+    box-shadow:
+      inset 0 1px 2px rgba(255,255,255,0.06),
+      0 8px 24px rgba(0,0,0,0.55),
+      0 0 18px rgba(212,168,71,0.18);
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: space-between;
+    padding: 14px 0;
+  }
+
+  .tile.special {
+    background: linear-gradient(180deg, #4a2868 0%, #2c1840 100%);
+    border-color: rgba(167,139,250,0.7);
+    box-shadow:
+      inset 0 1px 2px rgba(255,255,255,0.1),
+      0 8px 24px rgba(0,0,0,0.55),
+      0 0 24px rgba(167,139,250,0.4);
+  }
+
+  .tile.gold {
+    background: linear-gradient(180deg, #6b4a14 0%, #422a08 100%);
+    border-color: rgba(252,211,77,0.85);
+    box-shadow:
+      inset 0 1px 2px rgba(255,255,255,0.15),
+      0 8px 24px rgba(0,0,0,0.55),
+      0 0 28px rgba(252,211,77,0.55);
+  }
+
+  .tile-half {
+    flex: 1;
+    width: 100%;
+    display: grid;
+    place-items: center;
+    grid-template-columns: repeat(3, 1fr);
+    grid-template-rows: repeat(3, 1fr);
+    padding: 12px;
+    gap: 4px;
+  }
+
+  .dot {
+    width: 12px;
+    height: 12px;
+    background: radial-gradient(circle, #e8e8f0 15%, #b0b0c0 60%, #707080 100%);
+    border-radius: 50%;
+    box-shadow: 0 0 4px rgba(255,255,255,0.4);
+  }
+
+  .tile.special .dot {
+    background: radial-gradient(circle, #f0e8ff 15%, #c4b5fd 60%, #7c3aed 100%);
+    box-shadow: 0 0 6px rgba(167,139,250,0.6);
+  }
+
+  .tile.gold .dot {
+    background: radial-gradient(circle, #fffbeb 15%, #fde68a 60%, #d97706 100%);
+    box-shadow: 0 0 6px rgba(252,211,77,0.7);
+  }
+
+  .separator {
+    width: 78%;
+    height: 1.5px;
+    background: linear-gradient(90deg, transparent 0%, rgba(212,168,71,0.5) 50%, transparent 100%);
+  }
+
+  /* Specific dot positions for visible numbers */
+  .pos-c   { grid-column: 2; grid-row: 2; }
+  .pos-tl  { grid-column: 1; grid-row: 1; }
+  .pos-tr  { grid-column: 3; grid-row: 1; }
+  .pos-bl  { grid-column: 1; grid-row: 3; }
+  .pos-br  { grid-column: 3; grid-row: 3; }
+  .pos-ml  { grid-column: 1; grid-row: 2; }
+  .pos-mr  { grid-column: 3; grid-row: 2; }
+
+  /* Right side: text */
+  .content {
+    position: absolute;
+    right: 70px;
+    top: 50%;
+    transform: translateY(-50%);
+    text-align: right;
+    max-width: 620px;
+  }
+
+  .badge {
+    display: inline-block;
+    padding: 8px 18px;
+    background: rgba(212,168,71,0.15);
+    border: 1px solid rgba(212,168,71,0.5);
+    border-radius: 999px;
+    font-size: 13px;
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: 0.4em;
+    color: #fbbf24;
+    margin-bottom: 22px;
+  }
+
+  h1 {
+    font-size: 130px;
+    font-weight: 900;
+    line-height: 0.95;
+    letter-spacing: -0.04em;
+    background: linear-gradient(135deg, #fef3c7 0%, #fbbf24 50%, #d4a847 100%);
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+    text-shadow: 0 0 40px rgba(212,168,71,0.3);
+    margin-bottom: 18px;
+  }
+
+  .tagline {
+    font-size: 28px;
+    font-weight: 600;
+    color: rgba(255,255,255,0.85);
+    line-height: 1.25;
+    margin-bottom: 24px;
+  }
+
+  .features {
+    display: flex;
+    gap: 14px;
+    justify-content: flex-end;
+    flex-wrap: wrap;
+  }
+
+  .feature {
+    padding: 8px 16px;
+    background: rgba(255,255,255,0.06);
+    border: 1px solid rgba(255,255,255,0.15);
+    border-radius: 10px;
+    font-size: 14px;
+    font-weight: 600;
+    color: rgba(255,255,255,0.7);
+    letter-spacing: 0.05em;
+  }
+
+  /* Bottom signature */
+  .signature {
+    position: absolute;
+    bottom: 30px;
+    left: 60px;
+    font-size: 12px;
+    font-weight: 700;
+    color: rgba(212,168,71,0.5);
+    letter-spacing: 0.35em;
+    text-transform: uppercase;
+  }
+</style>
+</head>
+<body>
+<div class="canvas">
+  <!-- Domino tiles -->
+  <div class="tiles">
+    <!-- Tile 1: Wild (special) — 5 / 3 -->
+    <div class="tile special">
+      <div class="tile-half">
+        <span class="dot pos-tl"></span>
+        <span class="dot pos-tr"></span>
+        <span class="dot pos-c"></span>
+        <span class="dot pos-bl"></span>
+        <span class="dot pos-br"></span>
+      </div>
+      <div class="separator"></div>
+      <div class="tile-half">
+        <span class="dot pos-tl"></span>
+        <span class="dot pos-c"></span>
+        <span class="dot pos-br"></span>
+      </div>
+    </div>
+    <!-- Tile 2: Gold — 6 / 6 -->
+    <div class="tile gold">
+      <div class="tile-half">
+        <span class="dot pos-tl"></span>
+        <span class="dot pos-tr"></span>
+        <span class="dot pos-ml"></span>
+        <span class="dot pos-mr"></span>
+        <span class="dot pos-bl"></span>
+        <span class="dot pos-br"></span>
+      </div>
+      <div class="separator"></div>
+      <div class="tile-half">
+        <span class="dot pos-tl"></span>
+        <span class="dot pos-tr"></span>
+        <span class="dot pos-ml"></span>
+        <span class="dot pos-mr"></span>
+        <span class="dot pos-bl"></span>
+        <span class="dot pos-br"></span>
+      </div>
+    </div>
+    <!-- Tile 3: Normal — 4 / 2 -->
+    <div class="tile">
+      <div class="tile-half">
+        <span class="dot pos-tl"></span>
+        <span class="dot pos-tr"></span>
+        <span class="dot pos-bl"></span>
+        <span class="dot pos-br"></span>
+      </div>
+      <div class="separator"></div>
+      <div class="tile-half">
+        <span class="dot pos-tl"></span>
+        <span class="dot pos-br"></span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Right text -->
+  <div class="content">
+    <div class="badge">Roguelike de domino</div>
+    <h1>DOMINIX</h1>
+    <div class="tagline">Cadenas, reliquias, patrones.<br/>Rompe tu run.</div>
+    <div class="features">
+      <span class="feature">62 reliquias</span>
+      <span class="feature">31 patrones</span>
+      <span class="feature">22 jefes</span>
+    </div>
+  </div>
+
+  <div class="signature">Construye · Combina · Conquista</div>
+</div>
+</body>
+</html>

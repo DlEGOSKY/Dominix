@@ -51,6 +51,21 @@ class AudioManager {
     return this.audioContext;
   }
 
+  /**
+   * Resume the audio context if it is suspended (required by mobile / Safari
+   * autoplay policies). Should be called from a user gesture handler.
+   */
+  unlock(): void {
+    try {
+      const ctx = this.getContext();
+      if (ctx.state === "suspended") {
+        void ctx.resume();
+      }
+    } catch {
+      // No-op if AudioContext not available
+    }
+  }
+
   play(name: SoundName) {
     if (this.muted) return;
 
@@ -59,6 +74,11 @@ class AudioManager {
 
     try {
       const ctx = this.getContext();
+      // Mobile / Safari may keep context suspended until a user gesture; try
+      // to resume just in case (no-op if already running).
+      if (ctx.state === "suspended") {
+        void ctx.resume();
+      }
       const oscillator = ctx.createOscillator();
       const gainNode = ctx.createGain();
 

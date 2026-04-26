@@ -1,13 +1,16 @@
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { motion } from "framer-motion";
 import { ALL_RELICS } from "@/engine/relics";
 import { ALL_PATTERNS } from "@/engine/patterns";
+import { getPatternIcon } from "@/engine/patternIcons";
 import RelicCard from "./RelicCard";
 import TileView from "./TileView";
 import type { TileSkin } from "./TileView";
 import { getUnlockedRelics, getLockedRelics } from "@/engine/unlocks";
 import { loadProgression, getProgressionBonuses, saveActiveSkin, loadActiveSkin } from "@/engine/progression";
+import { ALL_TILE_SKINS } from "@/engine/tileSkins";
 import { ALL_EDITIONS, loadDiscoveredEditions } from "@/engine/editions";
+import { audio } from "@/engine/audio";
 import type { SavedData } from "@/types/domino";
 
 type Tab = "relics" | "patterns" | "skins" | "editions";
@@ -17,22 +20,37 @@ interface CollectionScreenProps {
   onBack: () => void;
 }
 
-const SKIN_INFO: { id: TileSkin; name: string; unlockLevel: number }[] = [
-  { id: "default",  name: "Clasica",    unlockLevel: 1 },
-  { id: "obsidian", name: "Obsidiana",  unlockLevel: 3 },
-  { id: "emerald",  name: "Esmeralda",  unlockLevel: 6 },
-  { id: "ruby",     name: "Rubi",       unlockLevel: 9 },
-  { id: "ivory",    name: "Marfil",     unlockLevel: 11 },
-  { id: "void",     name: "Vacio",      unlockLevel: 14 },
-  { id: "neon",     name: "Neon",       unlockLevel: 17 },
-  { id: "gold",     name: "Dorado",     unlockLevel: 20 },
-];
+// Source of truth for skins now lives in `engine/tileSkins.tsx`. We just
+// surface the public-facing fields here (name, unlock level, flavor) so
+// the collection screen has everything it needs without re-listing them.
+const SKIN_INFO: { id: TileSkin; name: string; flavor: string; unlockLevel: number }[] = ALL_TILE_SKINS.map((s) => ({
+  id: s.id as TileSkin,
+  name: s.name,
+  flavor: s.flavor,
+  unlockLevel: s.unlockLevel,
+}));
 
-const DEMO_TILE = { id: "skin-demo", top: 3, bottom: 5 };
+// Three tiles arranged like a small play sequence so each skin can be
+// previewed in context (pattern + glyph + dot interactions).
+const DEMO_CHAIN_TILES = [
+  { id: "skin-demo-1", top: 3, bottom: 5 },
+  { id: "skin-demo-2", top: 5, bottom: 2 },
+  { id: "skin-demo-3", top: 2, bottom: 6 },
+] as const;
 
 export default function CollectionScreen({ savedData, onBack }: CollectionScreenProps) {
   const [tab, setTab] = useState<Tab>("relics");
   const [activeSkin, setActiveSkin] = useState<TileSkin>(() => loadActiveSkin() as TileSkin);
+
+  // Throttle the hover tick so sliding the cursor through the skin grid does
+  // not spam audio. ~120ms keeps it tactile but never noisy.
+  const lastHoverSoundRef = useRef<number>(0);
+  const playHoverTick = () => {
+    const now = performance.now();
+    if (now - lastHoverSoundRef.current < 120) return;
+    lastHoverSoundRef.current = now;
+    audio.play("tile_hover");
+  };
 
   const unlocked = getUnlockedRelics(savedData);
   const locked = getLockedRelics(savedData);
@@ -134,28 +152,38 @@ export default function CollectionScreen({ savedData, onBack }: CollectionScreen
 
       {tab === "patterns" && (
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 w-full">
-          {ALL_PATTERNS.map((pattern, i) => (
-            <motion.div
-              key={pattern.id}
-              initial={{ opacity: 0, y: 8 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: i * 0.02 }}
-              className="flex flex-col gap-2 p-4 rounded-xl bg-surface-800/80 border border-blue-500/15"
-            >
-              <div className="flex items-center justify-between">
-                <span className="font-bold text-sm text-white">{pattern.name}</span>
-                <div className="flex items-center gap-2">
-                  {pattern.bonus > 0 && (
-                    <span className="text-[10px] font-mono font-bold text-green-400/70">+{pattern.bonus}</span>
-                  )}
-                  {pattern.multiplier > 1 && (
-                    <span className="text-[10px] font-mono font-bold text-accent-gold/70">x{pattern.multiplier}</span>
-                  )}
+          {ALL_PATTERNS.map((pattern, i) => {
+            const Icon = getPatternIcon(pattern.id);
+            return (
+              <motion.div
+                key={pattern.id}
+                initial={{ opacity: 0, y: 8 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: i * 0.02 }}
+                className="flex items-start gap-3 p-4 rounded-xl bg-surface-800/80 border border-blue-500/15"
+              >
+                {Icon && (
+                  <div className="flex-shrink-0 w-10 h-10 rounded-lg bg-blue-500/10 border border-blue-400/20 flex items-center justify-center">
+                    <Icon className="text-blue-300" size={22} />
+                  </div>
+                )}
+                <div className="flex-1 min-w-0 flex flex-col gap-1">
+                  <div className="flex items-center justify-between gap-2">
+                    <span className="font-bold text-sm text-white truncate">{pattern.name}</span>
+                    <div className="flex items-center gap-2 flex-shrink-0">
+                      {pattern.bonus > 0 && (
+                        <span className="text-[10px] font-mono font-bold text-green-400/70">+{pattern.bonus}</span>
+                      )}
+                      {pattern.multiplier > 1 && (
+                        <span className="text-[10px] font-mono font-bold text-accent-gold/70">x{pattern.multiplier}</span>
+                      )}
+                    </div>
+                  </div>
+                  <span className="text-xs text-accent-silver/50">{pattern.description}</span>
                 </div>
-              </div>
-              <span className="text-xs text-accent-silver/50">{pattern.description}</span>
-            </motion.div>
-          ))}
+              </motion.div>
+            );
+          })}
         </div>
       )}
 
@@ -224,14 +252,22 @@ export default function CollectionScreen({ savedData, onBack }: CollectionScreen
               return (
                 <motion.button
                   key={skin.id}
-                  initial={{ opacity: 0, scale: 0.9 }}
-                  animate={{ opacity: 1, scale: 1 }}
+                  initial="enter"
+                  animate="rest"
+                  whileHover={owned ? "hover" : "rest"}
+                  onHoverStart={owned ? playHoverTick : undefined}
+                  variants={{
+                    enter: { opacity: 0, scale: 0.9 },
+                    rest: { opacity: 1, scale: 1 },
+                    hover: { opacity: 1, scale: 1 },
+                  }}
                   transition={{ delay: i * 0.05 }}
                   disabled={!owned}
                   onClick={() => {
                     if (!owned) return;
                     setActiveSkin(skin.id);
                     saveActiveSkin(skin.id);
+                    audio.play("button_click");
                   }}
                   className={[
                     "flex flex-col items-center gap-3 p-4 rounded-xl border-2 transition-all",
@@ -239,25 +275,103 @@ export default function CollectionScreen({ savedData, onBack }: CollectionScreen
                     isActive
                       ? "border-accent-gold/60 bg-accent-gold/8"
                       : owned
-                        ? "border-surface-600/50 bg-surface-800/60 hover:border-surface-500"
+                        ? "border-surface-600/50 bg-surface-800/60 hover:border-surface-500 hover:bg-surface-800/80"
                         : "border-surface-700/30 bg-surface-900/40",
                   ].join(" ")}
                 >
-                  <div className={["pointer-events-none", !owned ? "grayscale" : ""].join(" ")}>
-                    <TileView tile={DEMO_TILE} disabled skin={skin.id} size="sm" animate={false} />
+                  <div
+                    className={[
+                      "relative pointer-events-none flex items-center justify-center -space-x-1.5",
+                      !owned ? "grayscale" : "",
+                    ].join(" ")}
+                  >
+                    {/* Radial accent glow under the chain on hover */}
+                    {owned && (
+                      <motion.div
+                        aria-hidden
+                        variants={{
+                          rest: { opacity: 0, scale: 0.7 },
+                          hover: { opacity: 0.85, scale: 1 },
+                        }}
+                        transition={{ duration: 0.3 }}
+                        className="absolute inset-x-0 -bottom-2 h-8 rounded-full blur-xl"
+                        style={{
+                          background: `radial-gradient(ellipse at center, ${
+                            ALL_TILE_SKINS.find((s) => s.id === skin.id)?.accent ?? "#a8b2c1"
+                          } 0%, transparent 65%)`,
+                        }}
+                      />
+                    )}
+                    {/* Floating sparkle above center tile on hover */}
+                    {owned && (
+                      <motion.div
+                        aria-hidden
+                        variants={{
+                          rest: { opacity: 0, y: 6, scale: 0 },
+                          hover: { opacity: 1, y: -14, scale: 1 },
+                        }}
+                        transition={{ duration: 0.4, ease: "easeOut" }}
+                        className="absolute left-1/2 -top-2 -translate-x-1/2 z-[3] pointer-events-none"
+                      >
+                        <div
+                          className="w-1.5 h-1.5 rounded-full"
+                          style={{
+                            background: ALL_TILE_SKINS.find((s) => s.id === skin.id)?.accent ?? "#fff",
+                            boxShadow: `0 0 8px 2px ${
+                              ALL_TILE_SKINS.find((s) => s.id === skin.id)?.accent ?? "#fff"
+                            }`,
+                          }}
+                        />
+                      </motion.div>
+                    )}
+                    {DEMO_CHAIN_TILES.map((t, idx) => {
+                      const tilt = idx === 0 ? -4 : idx === 2 ? 4 : 0;
+                      return (
+                        <motion.div
+                          key={t.id}
+                          variants={{
+                            rest: {
+                              y: idx === 1 ? -2 : 0,
+                              scale: idx === 1 ? 1.05 : 1,
+                              rotate: 0,
+                            },
+                            hover: {
+                              y: idx === 1 ? -12 : -6,
+                              scale: idx === 1 ? 1.1 : 1.04,
+                              rotate: tilt,
+                            },
+                          }}
+                          transition={{
+                            type: "spring",
+                            stiffness: 320,
+                            damping: 22,
+                            delay: idx * 0.04,
+                          }}
+                          style={{
+                            zIndex: idx === 1 ? 2 : 1,
+                            transformOrigin: "center bottom",
+                          }}
+                        >
+                          <TileView tile={t} disabled skin={skin.id} size="sm" animate={false} />
+                        </motion.div>
+                      );
+                    })}
                   </div>
-                  <div className="flex flex-col items-center gap-1">
+                  <div className="flex flex-col items-center gap-1 text-center">
                     <span className={[
                       "text-sm font-bold",
                       isActive ? "text-accent-gold" : owned ? "text-white" : "text-accent-silver/40",
                     ].join(" ")}>
                       {skin.name}
                     </span>
+                    <span className={[
+                      "text-[10px] italic leading-tight px-1",
+                      owned ? "text-accent-silver/55" : "text-accent-silver/25",
+                    ].join(" ")}>
+                      {owned ? skin.flavor : `Se desbloquea al nivel ${skin.unlockLevel}`}
+                    </span>
                     {isActive && (
-                      <span className="text-[9px] text-accent-gold/70 uppercase tracking-widest font-bold">Activa</span>
-                    )}
-                    {!owned && (
-                      <span className="text-[9px] text-accent-silver/30 uppercase tracking-wider">Nv. {skin.unlockLevel}</span>
+                      <span className="mt-1 text-[9px] text-accent-gold/70 uppercase tracking-widest font-bold">Activa</span>
                     )}
                   </div>
                 </motion.button>

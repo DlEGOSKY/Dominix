@@ -204,12 +204,14 @@ export default function RewardScreen({ options, onSelect, onSkip }: RewardScreen
                     fam === "fuerza" ? "text-red-300" :
                     fam === "cadena" ? "text-purple-300" :
                     "text-green-300";
+                  const FamilyIcon = meta.icon;
                   return (
                     <span
-                      className={`relative text-[10px] uppercase tracking-widest font-bold ${famTextClass}`}
+                      className={`relative inline-flex items-center gap-1 text-[10px] uppercase tracking-widest font-bold ${famTextClass}`}
                       title={meta.setBonusDescription}
                     >
-                      {meta.icon} {meta.name}
+                      <FamilyIcon size={11} />
+                      {meta.name}
                     </span>
                   );
                 })()}

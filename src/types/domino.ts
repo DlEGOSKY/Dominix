@@ -36,6 +36,8 @@ export interface RunStats {
   roundsCompleted: number;
   totalScore: number;
   patternsActivated: number;
+  /** Count of how many times each pattern id was activated during the run. */
+  patternBreakdown: Record<string, number>;
   relicsCollected: number;
   tilesPlayed: number;
   highestRoundScore: number;

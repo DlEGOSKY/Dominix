@@ -216,6 +216,33 @@ export const ALL_BOSSES: Boss[] = [
       { targetMultiplier: 1.4, restriction: { type: "no_repeat_number" }, description: "Fase 2: Sin repetir numero" },
     ],
   },
+  // ---- S8: nuevos jefes ----
+  {
+    id: "sirena",
+    name: "La Sirena",
+    description: "Meta x1.6. Tres fases: bajos, dobles, sin dobles. Cambia tu juego o muere.",
+    targetMultiplier: 1.6,
+    restriction: { type: "only_low", max: 4 },
+    reward: { gold: 100, extraRelic: true },
+    phases: [
+      { targetMultiplier: 1.6, restriction: { type: "only_low", max: 4 }, description: "Fase 1: Solo fichas de suma <= 4" },
+      { targetMultiplier: 1.4, restriction: { type: "only_doubles" }, description: "Fase 2: Solo dobles" },
+      { targetMultiplier: 1.3, restriction: { type: "no_doubles" }, description: "Fase 3: Sin dobles" },
+    ],
+  },
+  {
+    id: "tejedor",
+    name: "El Tejedor de Astros",
+    description: "Meta x1.8. Tres fases: 2 patrones, cadena 6+, 3 patrones. Para los que dominan el ritual.",
+    targetMultiplier: 1.8,
+    restriction: { type: "min_patterns", count: 2 },
+    reward: { gold: 110, extraRelic: true },
+    phases: [
+      { targetMultiplier: 1.8, restriction: { type: "min_patterns", count: 2 }, description: "Fase 1: Activa 2+ patrones" },
+      { targetMultiplier: 1.5, restriction: { type: "min_chain_length", count: 6 }, description: "Fase 2: Cadena de 6+ fichas" },
+      { targetMultiplier: 1.3, restriction: { type: "min_patterns", count: 3 }, description: "Fase 3: Activa 3+ patrones" },
+    ],
+  },
 ];
 
 export function getBossForRound(round: number): Boss | null {

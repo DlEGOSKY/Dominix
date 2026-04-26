@@ -509,6 +509,68 @@ function detectArmonia(chain: ChainState): PatternResult | null {
   return null;
 }
 
+// ---- S8: nuevos patrones ----
+
+/** Triple Filo — al menos 3 fichas con suma par Y 3 con suma impar (equilibrio). */
+function detectTripleFilo(chain: ChainState): PatternResult | null {
+  if (chain.placed.length < 6) return null;
+  let pares = 0;
+  let impares = 0;
+  for (const p of chain.placed) {
+    const sum = p.tile.top + p.tile.bottom;
+    if (sum % 2 === 0) pares++;
+    else impares++;
+  }
+  if (pares >= 3 && impares >= 3) {
+    return { id: "triple_filo", name: "Triple Filo", bonus: 45, multiplier: 1.2 };
+  }
+  return null;
+}
+
+/** Crescendo — 4+ fichas consecutivas con sumas estrictamente crecientes. */
+function detectCrescendo(chain: ChainState): PatternResult | null {
+  if (chain.placed.length < 4) return null;
+  let bestRun = 1;
+  let currentRun = 1;
+  for (let i = 1; i < chain.placed.length; i++) {
+    const prev = chain.placed[i - 1]!.tile.top + chain.placed[i - 1]!.tile.bottom;
+    const curr = chain.placed[i]!.tile.top + chain.placed[i]!.tile.bottom;
+    if (curr > prev) {
+      currentRun++;
+      if (currentRun > bestRun) bestRun = currentRun;
+    } else {
+      currentRun = 1;
+    }
+  }
+  if (bestRun >= 4) {
+    return { id: "crescendo", name: "Crescendo", bonus: 50, multiplier: 1.35 };
+  }
+  return null;
+}
+
+/** Cuna — primera y última ficha tienen el mismo total. */
+function detectCuna(chain: ChainState): PatternResult | null {
+  if (chain.placed.length < 3) return null;
+  const first = chain.placed[0]!.tile;
+  const last = chain.placed[chain.placed.length - 1]!.tile;
+  const firstTotal = first.top + first.bottom;
+  const lastTotal = last.top + last.bottom;
+  if (firstTotal === lastTotal) {
+    return { id: "cuna", name: "Cuna", bonus: 40, multiplier: 1.3 };
+  }
+  return null;
+}
+
+/** Ouroboros — cierre exacto (extremos iguales) + cadena de 7+ fichas. */
+function detectOuroboros(chain: ChainState): PatternResult | null {
+  if (chain.placed.length < 7) return null;
+  if (chain.leftEnd === null || chain.rightEnd === null) return null;
+  if (chain.leftEnd === chain.rightEnd) {
+    return { id: "ouroboros", name: "Ouroboros", bonus: 100, multiplier: 1.6 };
+  }
+  return null;
+}
+
 export function analyzePatterns(chain: ChainState): PatternAnalysis {
   const detectors = [
     detectCadenaSimple,
@@ -538,6 +600,10 @@ export function analyzePatterns(chain: ChainState): PatternAnalysis {
     detectDiminuendo,
     detectCorona,
     detectHexagrama,
+    detectTripleFilo,
+    detectCrescendo,
+    detectCuna,
+    detectOuroboros,
   ];
 
   const patterns: PatternResult[] = [];
@@ -607,6 +673,10 @@ export const ALL_PATTERNS: PatternInfo[] = [
   { id: "diminuendo", name: "Diminuendo", description: "4+ fichas con sumas estrictamente decrecientes", bonus: 35, multiplier: 1.3 },
   { id: "corona", name: "Corona", description: "3+ dobles con valores consecutivos (ej 3|3, 4|4, 5|5)", bonus: 50, multiplier: 1.2 },
   { id: "hexagrama", name: "Hexagrama", description: "Cadena exacta de 6 fichas con 6+ numeros distintos", bonus: 80, multiplier: 1.5 },
+  { id: "triple_filo", name: "Triple Filo", description: "Cadena de 6+ con 3 fichas pares y 3 impares (equilibrio)", bonus: 45, multiplier: 1.2 },
+  { id: "crescendo", name: "Crescendo", description: "4+ fichas consecutivas con sumas estrictamente crecientes", bonus: 50, multiplier: 1.35 },
+  { id: "cuna", name: "Cuna", description: "Primera y ultima ficha tienen el mismo total", bonus: 40, multiplier: 1.3 },
+  { id: "ouroboros", name: "Ouroboros", description: "Cierre exacto + cadena de 7+ fichas (raro)", bonus: 100, multiplier: 1.6 },
 ];
 
 function detectCombo(patterns: PatternResult[]): ComboResult | null {

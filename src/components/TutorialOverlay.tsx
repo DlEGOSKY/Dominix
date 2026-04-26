@@ -1,5 +1,6 @@
 import { motion, AnimatePresence } from "framer-motion";
 import type { TutorialStep } from "@/engine/tutorial";
+import { GiSwordSpin } from "react-icons/gi";
 
 interface TutorialOverlayProps {
   step: TutorialStep;
@@ -27,12 +28,21 @@ export default function TutorialOverlay({
         {/* Overlay oscuro */}
         <div className="absolute inset-0 bg-surface-900/80 pointer-events-auto" />
 
-        {/* Highlight area */}
+        {/* Highlight area with synced pulse + animated arrow pointing into it */}
         {step.highlight && (
-          <div
-            className={`absolute ${getHighlightPosition(step.highlight)} border-2 border-accent-gold rounded-xl animate-pulse pointer-events-none`}
-            style={{ boxShadow: "0 0 0 9999px rgba(15, 15, 20, 0.85)" }}
-          />
+          <>
+            <motion.div
+              key={`hi-${step.highlight}`}
+              animate={{ boxShadow: [
+                "0 0 0 9999px rgba(15,15,20,0.85), 0 0 0 0px rgba(212,168,83,0.6)",
+                "0 0 0 9999px rgba(15,15,20,0.85), 0 0 0 8px rgba(212,168,83,0.0)",
+                "0 0 0 9999px rgba(15,15,20,0.85), 0 0 0 0px rgba(212,168,83,0.6)",
+              ] }}
+              transition={{ duration: 1.6, repeat: Infinity, ease: "easeInOut" }}
+              className={`absolute ${getHighlightPosition(step.highlight)} border-2 border-accent-gold rounded-xl pointer-events-none`}
+            />
+            <ArrowPointer highlight={step.highlight} />
+          </>
         )}
 
         {/* Tutorial card */}
@@ -42,20 +52,22 @@ export default function TutorialOverlay({
           transition={{ delay: 0.2, type: "spring", stiffness: 300, damping: 25 }}
           className="absolute bottom-8 left-1/2 -translate-x-1/2 w-full max-w-md px-4 pointer-events-auto"
         >
-          <div className="bg-surface-800 border border-surface-600 rounded-2xl p-6 shadow-2xl">
+          <div className="relative bg-gradient-to-b from-surface-800 to-surface-900 border border-accent-gold/30 rounded-2xl p-6 shadow-2xl shadow-accent-gold/10 overflow-hidden">
+            {/* Top accent line */}
+            <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-accent-gold/60 to-transparent" />
             <div className="flex items-center justify-between mb-4">
-              <span className="text-xs text-accent-silver/50 uppercase tracking-wider">
+              <span className="text-xs text-accent-gold/70 uppercase tracking-[0.3em] font-bold">
                 Tutorial {currentIndex + 1}/{totalSteps}
               </span>
               <button
                 onClick={onSkip}
-                className="text-xs text-accent-silver/40 hover:text-accent-silver transition"
+                className="text-[10px] uppercase tracking-widest text-accent-silver/40 hover:text-accent-silver transition"
               >
-                Saltar tutorial
+                Saltar
               </button>
             </div>
 
-            <h3 className="font-display font-bold text-xl text-white mb-2">
+            <h3 className="font-display font-black text-2xl text-white mb-2 leading-tight">
               {step.title}
             </h3>
             <p className="text-accent-silver/70 text-sm leading-relaxed mb-6">
@@ -79,9 +91,9 @@ export default function TutorialOverlay({
 
               <button
                 onClick={onNext}
-                className="px-5 py-2.5 rounded-lg bg-accent-gold text-surface-900 font-semibold text-sm hover:brightness-110 transition"
+                className="px-5 py-2.5 rounded-lg bg-gradient-to-r from-accent-gold to-yellow-500 text-surface-900 font-bold text-sm hover:brightness-110 transition shadow-md shadow-accent-gold/30"
               >
-                {currentIndex === totalSteps - 1 ? "Empezar" : "Siguiente"}
+                {currentIndex === totalSteps - 1 ? "Empezar" : "Siguiente →"}
               </button>
             </div>
           </div>
@@ -107,5 +119,63 @@ function getHighlightPosition(highlight: string): string {
       return "top-16 left-1/4 right-1/4 h-12";
     default:
       return "";
+  }
+}
+
+/**
+ * Pulsing arrow pointing toward the highlighted region. Position + rotation
+ * are computed from the same `highlight` keys used by getHighlightPosition.
+ */
+function ArrowPointer({ highlight }: { highlight: string }) {
+  const config = arrowConfig(highlight);
+  if (!config) return null;
+  return (
+    <motion.div
+      initial={{ opacity: 0, scale: 0.6 }}
+      animate={{
+        opacity: 1,
+        scale: 1,
+        x: config.bounceAxis === "x" ? [0, config.bounceAmount, 0] : 0,
+        y: config.bounceAxis === "y" ? [0, config.bounceAmount, 0] : 0,
+      }}
+      transition={{
+        x: { duration: 1.2, repeat: Infinity, ease: "easeInOut" },
+        y: { duration: 1.2, repeat: Infinity, ease: "easeInOut" },
+        opacity: { duration: 0.4 },
+        scale: { duration: 0.4 },
+      }}
+      className={`absolute ${config.position} pointer-events-none text-accent-gold drop-shadow-[0_0_8px_rgba(212,168,83,0.7)]`}
+      style={{ transform: `rotate(${config.rotate}deg)` }}
+    >
+      <GiSwordSpin size={32} />
+    </motion.div>
+  );
+}
+
+interface ArrowConfig {
+  position: string;
+  rotate: number;
+  bounceAxis: "x" | "y";
+  bounceAmount: number;
+}
+
+function arrowConfig(highlight: string): ArrowConfig | null {
+  switch (highlight) {
+    case "hand":
+      // Arrow above the hand pointing down
+      return { position: "bottom-[14rem] left-1/2 -translate-x-1/2", rotate: 90, bounceAxis: "y", bounceAmount: 8 };
+    case "chain":
+      // Arrow above the chain pointing down
+      return { position: "top-[26%] left-1/2 -translate-x-1/2", rotate: 90, bounceAxis: "y", bounceAmount: 6 };
+    case "score":
+      return { position: "top-44 left-1/2 -translate-x-1/2", rotate: -90, bounceAxis: "y", bounceAmount: -6 };
+    case "patterns":
+      return { position: "top-56 left-1/2 -translate-x-1/2", rotate: -90, bounceAxis: "y", bounceAmount: -6 };
+    case "target":
+      return { position: "top-44 right-12", rotate: 0, bounceAxis: "x", bounceAmount: -8 };
+    case "relics":
+      return { position: "top-32 left-1/2 -translate-x-1/2", rotate: -90, bounceAxis: "y", bounceAmount: -6 };
+    default:
+      return null;
   }
 }

@@ -1,9 +1,11 @@
 import { motion } from "framer-motion";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useSettings } from "@/hooks/useSettings";
 import { resetSettings, type GameSettings } from "@/engine/settings";
 import { audio } from "@/engine/audio";
 import { ambient } from "@/engine/ambient";
+import { useTranslation, type Language } from "@/engine/i18n";
+import { exportSave, importSave, resetAllSaveData } from "@/engine/saveSync";
 
 interface SettingsScreenProps {
   onBack: () => void;
@@ -135,11 +137,149 @@ export default function SettingsScreen({ onBack }: SettingsScreenProps) {
           />
         </Section>
 
+        {/* Language */}
+        <LanguageSection />
+
+        {/* Data export/import */}
+        <DataSection />
+
         <div className="text-[10px] text-accent-silver/30 text-center pt-2">
           Los cambios se guardan automaticamente
         </div>
       </div>
     </div>
+  );
+}
+
+function LanguageSection() {
+  const { t, lang, setLang } = useTranslation();
+  return (
+    <Section title={t("settings.language")}>
+      <Row label={t("settings.language")} hint={"Español / English"}>
+        <select
+          value={lang}
+          onChange={(e) => setLang(e.target.value as Language)}
+          className="bg-surface-700 text-white text-sm px-3 py-1.5 rounded-lg border border-surface-600 focus:border-accent-gold focus:outline-none"
+        >
+          <option value="es">Español</option>
+          <option value="en">English</option>
+        </select>
+      </Row>
+    </Section>
+  );
+}
+
+function DataSection() {
+  const [status, setStatus] = useState<{ kind: "ok" | "err"; text: string } | null>(null);
+  const [importValue, setImportValue] = useState("");
+  const [showImport, setShowImport] = useState(false);
+  const [confirmReset, setConfirmReset] = useState(false);
+  const statusTimer = useRef<number | null>(null);
+
+  const flash = (kind: "ok" | "err", text: string) => {
+    setStatus({ kind, text });
+    if (statusTimer.current) window.clearTimeout(statusTimer.current);
+    statusTimer.current = window.setTimeout(() => setStatus(null), 2400);
+  };
+
+  const handleExport = async () => {
+    const blob = exportSave();
+    try {
+      await navigator.clipboard.writeText(blob);
+      flash("ok", "Copiado al portapapeles");
+      audio.play("button_click");
+    } catch {
+      // Fallback: open a textarea so the user can copy manually
+      window.prompt("Codigo de partida (copia manualmente):", blob);
+    }
+  };
+
+  const handleImport = () => {
+    const result = importSave(importValue);
+    if (result.ok) {
+      flash("ok", `Importado (${result.keysImported} claves). Recarga la pagina.`);
+      setImportValue("");
+      setShowImport(false);
+      audio.play("button_click");
+    } else {
+      flash("err", result.error || "No se pudo importar");
+    }
+  };
+
+  const handleReset = () => {
+    if (!confirmReset) {
+      setConfirmReset(true);
+      window.setTimeout(() => setConfirmReset(false), 4000);
+      return;
+    }
+    const removed = resetAllSaveData();
+    flash("ok", `Borradas ${removed} claves. Recarga la pagina.`);
+    setConfirmReset(false);
+    audio.play("button_click");
+  };
+
+  return (
+    <Section title="Datos">
+      <Row label="Exportar partida" hint="Copia tu progreso al portapapeles">
+        <button
+          onClick={handleExport}
+          className="px-3 py-1.5 rounded-lg text-[11px] font-bold uppercase tracking-widest bg-accent-gold/15 text-accent-gold border border-accent-gold/40 hover:bg-accent-gold/25 transition-colors"
+        >
+          Exportar
+        </button>
+      </Row>
+      <Row label="Importar partida" hint="Pega un codigo de partida">
+        <button
+          onClick={() => setShowImport((v) => !v)}
+          className="px-3 py-1.5 rounded-lg text-[11px] font-bold uppercase tracking-widest bg-surface-700 text-accent-silver/80 border border-surface-600 hover:bg-surface-600 transition-colors"
+        >
+          {showImport ? "Cerrar" : "Importar"}
+        </button>
+      </Row>
+      {showImport && (
+        <div className="flex flex-col gap-2 mt-1">
+          <textarea
+            value={importValue}
+            onChange={(e) => setImportValue(e.target.value)}
+            placeholder="Pega aqui el codigo exportado..."
+            rows={3}
+            className="bg-surface-900/50 text-white text-[11px] font-mono px-3 py-2 rounded-lg border border-surface-600 focus:border-accent-gold focus:outline-none resize-none"
+          />
+          <button
+            onClick={handleImport}
+            disabled={!importValue.trim()}
+            className="self-end px-4 py-1.5 rounded-lg text-[11px] font-bold uppercase tracking-widest bg-accent-gold/20 text-accent-gold border border-accent-gold/40 hover:bg-accent-gold/30 transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
+          >
+            Aplicar
+          </button>
+        </div>
+      )}
+      <Row label="Borrar partida" hint="Esto borra TODO el progreso. Sin vuelta atras.">
+        <button
+          onClick={handleReset}
+          className={[
+            "px-3 py-1.5 rounded-lg text-[11px] font-bold uppercase tracking-widest border transition-colors",
+            confirmReset
+              ? "bg-red-500/30 text-red-200 border-red-400/60 animate-pulse"
+              : "bg-surface-700 text-red-300/70 border-red-600/30 hover:bg-red-500/20",
+          ].join(" ")}
+        >
+          {confirmReset ? "Confirmar?" : "Borrar"}
+        </button>
+      </Row>
+      {status && (
+        <div
+          className={[
+            "text-[11px] font-medium px-3 py-2 rounded-lg border",
+            status.kind === "ok"
+              ? "bg-emerald-500/15 text-emerald-300 border-emerald-500/30"
+              : "bg-red-500/15 text-red-300 border-red-500/30",
+          ].join(" ")}
+        >
+          {status.text}
+        </div>
+      )}
+    </Section>
   );
 }
 

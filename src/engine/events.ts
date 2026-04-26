@@ -348,6 +348,108 @@ export const ALL_EVENTS: GameEvent[] = [
     effect: { type: "bonus_actions", actions: 2, discards: 1, draws: 0 },
     minRound: 4,
   },
+  // ---- S8: nuevos eventos narrativos ----
+  {
+    id: "mercader_errante",
+    name: "Mercader Errante",
+    description: "Un mercader te ofrece intercambios. Elige sabiamente.",
+    type: "choice",
+    effect: {
+      type: "choice",
+      options: [
+        {
+          label: "Comprar fichas",
+          description: "Pierde la mitad de los puntos esta ronda, gana 3 fichas extra",
+          effect: { type: "add_tiles", count: 3 },
+        },
+        {
+          label: "Vender suerte",
+          description: "Pierde 1 ficha del pool, gana +60 puntos de bonus",
+          effect: { type: "remove_random_tile", count: 1 },
+        },
+      ],
+    },
+    minRound: 4,
+  },
+  {
+    id: "pacto_crepusculo",
+    name: "Pacto del Crepusculo",
+    description: "El crepusculo te ofrece poder a un costo. Aceptar o rechazar?",
+    type: "choice",
+    effect: {
+      type: "choice",
+      options: [
+        {
+          label: "Aceptar pacto",
+          description: "Meta +30%, recibes +80 puntos al iniciar la ronda",
+          effect: { type: "bonus_score", value: 80 },
+        },
+        {
+          label: "Rechazar",
+          description: "Meta -10%, sin bonus",
+          effect: { type: "reduce_target", percent: 10 },
+        },
+      ],
+    },
+    minRound: 5,
+  },
+  {
+    id: "cosecha_tardia",
+    name: "Cosecha Tardia",
+    description: "Has acumulado pacto con la tierra. Recoges los frutos.",
+    type: "blessing",
+    effect: { type: "bonus_actions", actions: 1, discards: 2, draws: 1 },
+    minRound: 5,
+  },
+  {
+    id: "llave_caos",
+    name: "Llave del Caos",
+    description: "Una llave que abre todo y nada. Elige tu apertura.",
+    type: "choice",
+    effect: {
+      type: "choice",
+      options: [
+        {
+          label: "Camino de las fichas",
+          description: "+2 fichas en mano y +1 robo extra",
+          effect: { type: "heal_hand", count: 2 },
+        },
+        {
+          label: "Camino del score",
+          description: "Empiezas con +50 puntos esta ronda",
+          effect: { type: "bonus_score", value: 50 },
+        },
+        {
+          label: "Camino del orden",
+          description: "Meta -20%, sin otra ventaja",
+          effect: { type: "reduce_target", percent: 20 },
+        },
+      ],
+    },
+    minRound: 6,
+  },
+  {
+    id: "voz_pasado",
+    name: "Voz del Pasado",
+    description: "Un eco te susurra fragmentos de runs anteriores.",
+    type: "choice",
+    effect: {
+      type: "choice",
+      options: [
+        {
+          label: "Escuchar",
+          description: "+45 puntos de bonus, +2 acciones esta ronda",
+          effect: { type: "bonus_actions", actions: 2, discards: 0, draws: 0 },
+        },
+        {
+          label: "Ignorar",
+          description: "Pierdes 1 ficha pero ganas +90 puntos de bonus",
+          effect: { type: "remove_random_tile", count: 1 },
+        },
+      ],
+    },
+    minRound: 7,
+  },
 ];
 
 export function getRandomEvent(round: number): GameEvent | null {

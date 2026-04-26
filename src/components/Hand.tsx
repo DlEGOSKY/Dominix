@@ -5,6 +5,7 @@ import { getValidPlacements } from "@/engine/chain";
 import TileView from "./TileView";
 import type { TileSkin } from "./TileView";
 import { useSettings } from "@/hooks/useSettings";
+import Tooltip from "./Tooltip";
 
 interface HandProps {
   tiles: Tile[];
@@ -79,7 +80,16 @@ export default function Hand({ tiles, chain, onPlay, disabled, skin, onDiscard, 
                   </motion.div>
                 )}
                 {settings.showHints && (
-                  <TileTooltip tile={tile} playable={playable} sides={sides} preview={settings.showPreview ? preview : null} />
+                  <div className="absolute inset-0 pointer-events-none">
+                    <Tooltip
+                      content={<TileTooltipContent tile={tile} playable={playable} sides={sides} preview={settings.showPreview ? preview : null} />}
+                      placement="top"
+                      delay={180}
+                      className="absolute inset-0 w-full h-full"
+                    >
+                      <div className="w-full h-full pointer-events-auto" />
+                    </Tooltip>
+                  </div>
                 )}
                 {onDiscard && discardAvailable && !disabled && (
                   <button
@@ -122,7 +132,7 @@ function TypeLabel(tile: Tile): { label: string; color: string; desc: string } {
   }
 }
 
-function TileTooltip({ tile, playable, sides, preview }: { tile: Tile; playable: boolean; sides: PlacementSide[]; preview: number | null }) {
+function TileTooltipContent({ tile, playable, sides, preview }: { tile: Tile; playable: boolean; sides: PlacementSide[]; preview: number | null }) {
   const sum = tile.top + tile.bottom;
   const typeInfo = TypeLabel(tile);
   const edInfo = tile.edition ? EDITION_DESC[tile.edition] : null;
@@ -133,36 +143,34 @@ function TileTooltip({ tile, playable, sides, preview }: { tile: Tile; playable:
     : "Encaja por la derecha";
 
   return (
-    <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 w-48 rounded-lg bg-surface-900/95 border border-surface-600/60 px-2.5 py-2 shadow-xl backdrop-blur-sm opacity-0 group-hover:opacity-100 transition-opacity duration-150 pointer-events-none z-20">
-      <div className="flex items-center justify-between gap-2 mb-1">
+    <div className="flex flex-col gap-1">
+      <div className="flex items-center justify-between gap-2">
         <span className={`text-[10px] font-bold uppercase tracking-wider ${typeInfo.color}`}>
           {typeInfo.label}
         </span>
-        <span className="text-[10px] font-mono text-accent-silver/50">
-          {tile.top}|{tile.bottom} · suma {sum}
+        <span className="text-[9px] font-mono text-accent-silver/50">
+          {tile.top}|{tile.bottom} · {sum}
         </span>
       </div>
-      <div className="text-[9px] text-accent-silver/50 leading-tight">{typeInfo.desc}</div>
+      <p className="text-[9px] text-accent-silver/50 leading-tight">{typeInfo.desc}</p>
       {tile.pact && (
-        <div className="mt-1.5 pt-1.5 border-t border-surface-600/40 text-[9px] font-bold uppercase tracking-wider text-amber-300">
-          Pacto Sagrado
-          <span className="block font-normal normal-case tracking-normal text-accent-silver/50 mt-0.5">+100 al jugarla · +100 extra dentro de patron · +100 si tiene edition</span>
+        <div className="mt-0.5 pt-1 border-t border-surface-600/40">
+          <span className="text-[9px] font-bold uppercase tracking-wider text-amber-300">Pacto Sagrado</span>
+          <p className="text-[9px] text-accent-silver/50 mt-0.5 leading-tight">+100 al jugarla · +100 dentro de patron · +100 con edition</p>
         </div>
       )}
       {edInfo && (
-        <div className={`mt-1.5 pt-1.5 border-t border-surface-600/40 text-[9px] font-bold uppercase tracking-wider ${edInfo.color}`}>
-          {edInfo.label}
-          <span className="block font-normal normal-case tracking-normal text-accent-silver/50 mt-0.5">{edInfo.desc}</span>
+        <div className="mt-0.5 pt-1 border-t border-surface-600/40">
+          <span className={`text-[9px] font-bold uppercase tracking-wider ${edInfo.color}`}>{edInfo.label}</span>
+          <p className="text-[9px] text-accent-silver/50 mt-0.5 leading-tight">{edInfo.desc}</p>
         </div>
       )}
-      <div className={`mt-1.5 pt-1.5 border-t border-surface-600/40 text-[9px] ${playable ? "text-green-400/80" : "text-red-400/70"}`}>
+      <div className={`mt-0.5 pt-1 border-t border-surface-600/40 text-[9px] ${playable ? "text-green-400/80" : "text-red-400/70"}`}>
         {placement}
         {preview !== null && preview > 0 && (
           <span className="text-accent-gold font-mono font-bold ml-1">+{preview}</span>
         )}
       </div>
-      {/* Arrow */}
-      <div className="absolute top-full left-1/2 -translate-x-1/2 -translate-y-px w-2 h-2 bg-surface-900/95 border-r border-b border-surface-600/60 rotate-45" />
     </div>
   );
 }

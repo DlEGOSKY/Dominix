@@ -1,30 +1,22 @@
+import { useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import type { Achievement } from "@/engine/achievements";
+import { getAchievementIcon } from "@/engine/achievementIcons";
+import { celebrateAchievement } from "@/engine/celebrate";
 
 interface AchievementToastProps {
   achievement: Achievement | null;
   onDismiss: () => void;
 }
 
-const ICONS: Record<string, string> = {
-  star: "★",
-  shield: "◆",
-  medal: "●",
-  crown: "♔",
-  trophy: "🏆",
-  zap: "⚡",
-  flame: "🔥",
-  bolt: "⚡",
-  repeat: "↻",
-  heart: "♥",
-  infinity: "∞",
-  eye: "◉",
-  gem: "◈",
-  layers: "▦",
-  "check-circle": "✓",
-};
-
 export default function AchievementToast({ achievement, onDismiss }: AchievementToastProps) {
+  // Fire confetti once per achievement appearance
+  useEffect(() => {
+    if (achievement) celebrateAchievement();
+  }, [achievement?.id]);
+
+  const Icon = achievement ? getAchievementIcon(achievement.icon) : null;
+
   return (
     <AnimatePresence>
       {achievement && (
@@ -37,9 +29,11 @@ export default function AchievementToast({ achievement, onDismiss }: Achievement
           className="fixed top-6 left-1/2 -translate-x-1/2 z-50 cursor-pointer"
         >
           <div className="flex items-center gap-4 px-6 py-4 rounded-xl bg-gradient-to-r from-accent-gold/20 to-yellow-600/20 border border-accent-gold/40 shadow-lg shadow-accent-gold/10 backdrop-blur-sm">
-            <span className="text-3xl">
-              {ICONS[achievement.icon] ?? "★"}
-            </span>
+            {Icon && (
+              <span className="text-accent-gold flex items-center justify-center">
+                <Icon size={36} />
+              </span>
+            )}
             <div className="flex flex-col gap-0.5">
               <span className="text-xs text-accent-gold/70 uppercase tracking-wider font-medium">
                 Logro desbloqueado

@@ -222,6 +222,52 @@ body {
   animation: holo-shift 4s ease-in-out infinite;
 }
 
+/* Mirror — flowing cyan reflection */
+@keyframes mirror-flow {
+  0% { background-position: -100% 0%; opacity: 0.35; }
+  50% { opacity: 0.6; }
+  100% { background-position: 200% 0%; opacity: 0.35; }
+}
+
+.tile-mirror-flow::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    115deg,
+    transparent 30%,
+    rgba(207,250,254,0.35) 45%,
+    rgba(34,211,238,0.45) 50%,
+    rgba(207,250,254,0.35) 55%,
+    transparent 70%
+  );
+  background-size: 250% 100%;
+  border-radius: inherit;
+  pointer-events: none;
+  mix-blend-mode: screen;
+  animation: mirror-flow 3.2s ease-in-out infinite;
+}
+
+/* Bomb — danger pulse */
+@keyframes bomb-pulse {
+  0%, 100% { box-shadow: inset 0 0 0 1px rgba(220,38,38,0.55), 0 0 8px rgba(248,113,113,0.35); }
+  50% { box-shadow: inset 0 0 0 2px rgba(248,113,113,0.85), 0 0 18px rgba(248,113,113,0.7); }
+}
+
+.tile-bomb-pulse {
+  animation: bomb-pulse 1.4s ease-in-out infinite;
+}
+
+/* Pact — golden ritual aura */
+@keyframes pact-aura {
+  0%, 100% { box-shadow: inset 0 0 0 1px rgba(251,191,36,0.7), 0 0 14px rgba(251,191,36,0.45); }
+  50% { box-shadow: inset 0 0 0 2px rgba(252,211,77,0.95), 0 0 22px rgba(251,191,36,0.85); }
+}
+
+.tile-pact-aura {
+  animation: pact-aura 2.4s ease-in-out infinite;
+}
+
 /* Mobile safe area & touch */
 html {
   -webkit-tap-highlight-color: transparent;
@@ -247,6 +293,84 @@ body {
       0 1px 4px rgba(0,0,0,0.5),
       0 2px 8px rgba(0,0,0,0.3),
       inset 0 1px 0 rgba(255,255,255,0.06);
+  }
+}
+
+/* Tap-target reinforcement: any explicit button-like element gets a comfy min size on touch screens */
+@media (hover: none) and (pointer: coarse) {
+  button, [role="button"] {
+    min-height: 36px;
+  }
+}
+
+/* A11y — visible focus ring for keyboard users only (not on click) */
+:focus-visible {
+  outline: 2px solid #d4a847;
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+button:focus-visible,
+[role="button"]:focus-visible,
+a:focus-visible,
+input:focus-visible,
+select:focus-visible,
+textarea:focus-visible {
+  outline: 2px solid #d4a847;
+  outline-offset: 2px;
+}
+
+/* A11y — screen-reader-only text (visually hidden, accessible to AT) */
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+/* A11y — skip-to-content link, hidden until focused */
+.skip-to-content {
+  position: absolute;
+  top: -100px;
+  left: 8px;
+  z-index: 100;
+  background: #d4a847;
+  color: #1a1a1a;
+  padding: 8px 16px;
+  border-radius: 6px;
+  font-weight: bold;
+  text-decoration: none;
+  transition: top 0.15s ease;
+}
+.skip-to-content:focus {
+  top: 8px;
+}
+
+/* Respect users who prefer reduced motion: kill big keyframe animations */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+  .edition-foil,
+  .edition-holo,
+  .edition-polychrome,
+  .edition-negative,
+  .wild-holo,
+  .golden-shimmer,
+  .tile-mirror-flow,
+  .tile-bomb-pulse,
+  .tile-pact-aura,
+  .chromatic-aberration {
+    animation: none !important;
   }
 }
 

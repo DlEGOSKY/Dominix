@@ -1,5 +1,8 @@
 import { motion } from "framer-motion";
 import type { ScoreBreakdown } from "@/engine/score";
+import { ALL_PATTERNS } from "@/engine/patterns";
+import { getPatternIcon } from "@/engine/patternIcons";
+import Tooltip, { PatternTooltipContent } from "./Tooltip";
 
 export interface ScoreRevealExtras {
   editionFlat?: number;
@@ -17,6 +20,7 @@ interface RevealLine {
   color: string;
   isMult?: boolean;
   indent?: boolean;
+  patternId?: string;
 }
 
 interface ScoreRevealProps {
@@ -41,10 +45,10 @@ export default function ScoreReveal({ breakdown, finalScore, target, won, extras
   if (breakdown.patternAnalysis.patterns.length > 0) {
     for (const p of breakdown.patternAnalysis.patterns) {
       if (p.bonus > 0) {
-        lines.push({ label: p.name, value: `+${p.bonus}`, color: "text-cyan-300", indent: true });
+        lines.push({ label: p.name, value: `+${p.bonus}`, color: "text-cyan-300", indent: true, patternId: p.id });
       }
       if (p.multiplier > 1) {
-        lines.push({ label: `${p.name} ×`, value: `x${p.multiplier.toFixed(2)}`, color: "text-cyan-400", indent: true, isMult: true });
+        lines.push({ label: `${p.name} ×`, value: `x${p.multiplier.toFixed(2)}`, color: "text-cyan-400", indent: true, isMult: true, patternId: p.id });
       }
     }
     if (breakdown.patternAnalysis.combo) {
@@ -92,29 +96,54 @@ export default function ScoreReveal({ breakdown, finalScore, target, won, extras
 
   return (
     <div className="flex flex-col gap-1.5 w-full max-w-sm px-4 py-3 rounded-xl bg-surface-800/60 border border-surface-600/30 backdrop-blur-sm">
-      {lines.map((line, i) => (
-        <motion.div
-          key={`${line.label}-${i}`}
-          initial={{ opacity: 0, x: -12 }}
-          animate={{ opacity: 1, x: 0 }}
-          transition={{ delay: 0.15 + i * STEP, duration: 0.25, ease: [0.22, 1, 0.36, 1] }}
-          className={["flex items-center justify-between", line.indent ? "pl-4 border-l border-surface-600/30" : ""].join(" ")}
-        >
-          <span className="text-[11px] text-accent-silver/50 truncate max-w-[60%]">{line.label}</span>
-          <motion.span
-            initial={{ opacity: 0, scale: 0.75 }}
-            animate={{ opacity: 1, scale: 1 }}
-            transition={{ delay: 0.2 + i * STEP, duration: 0.2, type: "spring", stiffness: 500 }}
-            className={[
-              "font-mono font-bold text-sm shrink-0",
-              line.isMult ? "text-base" : "",
-              line.color,
-            ].join(" ")}
+      {lines.map((line, i) => {
+        const patternDef = line.patternId ? ALL_PATTERNS.find((p) => p.id === line.patternId) : null;
+        const Icon = line.patternId ? getPatternIcon(line.patternId) : null;
+        const labelEl = (
+          <span className="flex items-center gap-1.5 text-[11px] text-accent-silver/50 truncate max-w-[60%]">
+            {Icon && <Icon className="text-cyan-400/80 flex-shrink-0" size={12} />}
+            <span className="truncate">{line.label}</span>
+          </span>
+        );
+        return (
+          <motion.div
+            key={`${line.label}-${i}`}
+            initial={{ opacity: 0, x: -12 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ delay: 0.15 + i * STEP, duration: 0.25, ease: [0.22, 1, 0.36, 1] }}
+            className={["flex items-center justify-between", line.indent ? "pl-4 border-l border-surface-600/30" : ""].join(" ")}
           >
-            {line.value}
-          </motion.span>
-        </motion.div>
-      ))}
+            {patternDef ? (
+              <Tooltip
+                content={
+                  <PatternTooltipContent
+                    name={patternDef.name}
+                    description={patternDef.description}
+                    bonus={patternDef.bonus}
+                    multiplier={patternDef.multiplier}
+                  />
+                }
+                placement="left"
+                delay={150}
+              >
+                {labelEl}
+              </Tooltip>
+            ) : labelEl}
+            <motion.span
+              initial={{ opacity: 0, scale: 0.75 }}
+              animate={{ opacity: 1, scale: 1 }}
+              transition={{ delay: 0.2 + i * STEP, duration: 0.2, type: "spring", stiffness: 500 }}
+              className={[
+                "font-mono font-bold text-sm shrink-0",
+                line.isMult ? "text-base" : "",
+                line.color,
+              ].join(" ")}
+            >
+              {line.value}
+            </motion.span>
+          </motion.div>
+        );
+      })}
 
       {/* Divider */}
       <motion.div

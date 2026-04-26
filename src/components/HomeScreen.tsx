@@ -258,8 +258,18 @@ export default function HomeScreen({ savedData, onStartRun, onStartDaily, onShow
                   obsidian: "bg-[#1a1a2e] border-slate-500",
                   emerald: "bg-emerald-900 border-emerald-500",
                   ruby: "bg-rose-900 border-rose-500",
+                  ivory: "bg-stone-200 border-stone-400",
                   void: "bg-[#0a0a14] border-violet-500",
+                  neon: "bg-[#020816] border-cyan-400",
                   gold: "bg-amber-900 border-amber-400",
+                  pacto: "bg-[#1f0407] border-red-500",
+                  reliquia: "bg-[#241a0f] border-amber-700",
+                  cosmos: "bg-[#070a1d] border-indigo-400",
+                  bestiario: "bg-[#10081c] border-purple-400",
+                  tarot: "bg-[#1c1308] border-amber-500",
+                  astral: "bg-[#030612] border-blue-400",
+                  naturaleza: "bg-[#071510] border-emerald-400",
+                  mecanico: "bg-[#120a04] border-orange-400",
                 };
                 return (
                   <button

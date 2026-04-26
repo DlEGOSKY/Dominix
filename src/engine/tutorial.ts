@@ -61,6 +61,12 @@ export const TUTORIAL_STEPS: TutorialStep[] = [
     action: "any",
   },
   {
+    id: "progression",
+    title: "Progresion y Coleccion",
+    content: "Cada run te da XP, incluso si caes. Al subir de nivel desbloqueas oro inicial, reliquias de partida, fichas doradas y skins con identidad propia (Pacto, Reliquia, Cosmos y mas). Revisa todo lo desbloqueado en Coleccion desde el menu principal y elige tu skin activa.",
+    action: "any",
+  },
+  {
     id: "end",
     title: "Que comience el ritual",
     content: "Supera rondas, elige con intencion, construye tu build. La ceremonia empieza ahora.",

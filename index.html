@@ -6,9 +6,59 @@
     <meta name="theme-color" content="#d4a853" />
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
-    <meta name="description" content="Roguelike de domino - Construye cadenas, activa patrones, rompe la run" />
-    <link rel="manifest" href="/manifest.json" />
-    <title>Dominix</title>
+
+    <!-- SEO -->
+    <title>Dominix — Roguelike de domino con reliquias y patrones</title>
+    <meta name="description" content="Roguelike de domino con reliquias, patrones, jefes y skins ilustradas. Construye cadenas, activa combos y rompe tu mejor run." />
+    <meta name="keywords" content="dominix,domino,roguelike,reliquias,patrones,balatro,juego,navegador,pwa" />
+    <meta name="author" content="Dominix" />
+    <meta name="robots" content="index, follow" />
+    <link rel="canonical" href="https://dlegosky.github.io/Dominix/" />
+
+    <!-- Open Graph (Facebook / LinkedIn / Discord previews) -->
+    <meta property="og:type" content="website" />
+    <meta property="og:site_name" content="Dominix" />
+    <meta property="og:title" content="Dominix — Roguelike de domino" />
+    <meta property="og:description" content="Roguelike de domino con reliquias, patrones, jefes y skins ilustradas. Construye cadenas, activa combos y rompe tu mejor run." />
+    <meta property="og:url" content="https://dlegosky.github.io/Dominix/" />
+    <meta property="og:image" content="https://dlegosky.github.io/Dominix/og-image.jpg" />
+    <meta property="og:image:type" content="image/jpeg" />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta property="og:image:alt" content="Dominix — fichas de domino con reliquias activadas" />
+    <meta property="og:locale" content="es_ES" />
+
+    <!-- Twitter Card -->
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="Dominix — Roguelike de domino" />
+    <meta name="twitter:description" content="Construye cadenas, activa patrones y rompe tu run. Roguelike de domino jugable en el navegador." />
+    <meta name="twitter:image" content="https://dlegosky.github.io/Dominix/og-image.jpg" />
+
+    <!-- PWA / icons -->
+    <link rel="manifest" href="./manifest.json" />
+    <link rel="apple-touch-icon" href="./icon-192.png" />
+    <link rel="icon" type="image/png" href="./icon-192.png" />
+
+    <!-- JSON-LD VideoGame schema for richer search results -->
+    <script type="application/ld+json">
+      {
+        "@context": "https://schema.org",
+        "@type": "VideoGame",
+        "name": "Dominix",
+        "description": "Roguelike de domino con reliquias, patrones, jefes y skins ilustradas.",
+        "genre": ["Roguelike", "Card game", "Puzzle"],
+        "applicationCategory": "Game",
+        "operatingSystem": "Web Browser",
+        "url": "https://dlegosky.github.io/Dominix/",
+        "image": "https://dlegosky.github.io/Dominix/og-image.jpg",
+        "offers": {
+          "@type": "Offer",
+          "price": "0",
+          "priceCurrency": "USD"
+        }
+      }
+    </script>
+
     <link
       href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@400;600;700&display=swap"
       rel="stylesheet"

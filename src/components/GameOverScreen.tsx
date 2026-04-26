@@ -2,12 +2,17 @@ import { motion, AnimatePresence } from "framer-motion";
 import { useMemo, useState } from "react";
 import type { RunStats } from "@/types/domino";
 import { ALL_RELICS } from "@/engine/relics";
+import { ALL_PATTERNS } from "@/engine/patterns";
 import { calculateRunXP, loadProgression, getXPForNextLevel } from "@/engine/progression";
 import { getActForRound } from "@/engine/acts";
 import { getLevelRewardText, getMasteryProgress, MAX_MASTERY_LEVEL } from "@/engine/characterMastery";
 import type { CharacterChallenge } from "@/engine/characterChallenges";
 import { getCharacter, type CharacterId } from "@/engine/characters";
+import { ALL_TILE_SKINS } from "@/engine/tileSkins";
+import TileView, { type TileSkin } from "./TileView";
 import RecapHighlights from "./RecapHighlights";
+import SkinUnlockedOverlay from "./SkinUnlockedOverlay";
+import VictoryOverlay from "./VictoryOverlay";
 
 /**
  * Short poetic epilogue depending on how far the run went — gives the run
@@ -30,6 +35,8 @@ interface GameOverScreenProps {
   onRestart: () => void;
   onHome: () => void;
   isNewBest: boolean;
+  /** Skin ids that were freshly unlocked by the level-ups this run produced. */
+  unlockedSkins?: string[];
   mastery?: {
     characterId: CharacterId;
     xpGained: number;
@@ -108,6 +115,96 @@ function RoundScoreChart({ scores }: { scores: number[] }) {
   );
 }
 
+/**
+ * Highlight card listing every skin freshly unlocked by this run's level-ups.
+ * Shows a small TileView preview + name. Hidden if nothing was unlocked.
+ */
+function UnlockedSkinsCard({ skinIds }: { skinIds: string[] }) {
+  if (!skinIds || skinIds.length === 0) return null;
+  const skins = skinIds
+    .map((id) => ALL_TILE_SKINS.find((s) => s.id === id))
+    .filter((s): s is NonNullable<typeof s> => Boolean(s));
+  if (skins.length === 0) return null;
+
+  const previewTile = { id: "unlock-preview", top: 3, bottom: 5 };
+
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 12, scale: 0.96 }}
+      animate={{ opacity: 1, y: 0, scale: 1 }}
+      transition={{ delay: 0.6, type: "spring", stiffness: 280, damping: 22 }}
+      className="w-full max-w-lg px-4 py-4 rounded-xl bg-gradient-to-b from-accent-gold/10 to-accent-gold/5 border border-accent-gold/30"
+    >
+      <p className="text-[10px] font-bold text-accent-gold/70 uppercase tracking-widest mb-3">
+        {skins.length === 1 ? "Skin desbloqueada" : "Skins desbloqueadas"}
+      </p>
+      <div className="flex flex-wrap items-center gap-4">
+        {skins.map((skin) => (
+          <div key={skin.id} className="flex items-center gap-2.5">
+            <TileView tile={previewTile} disabled skin={skin.id as TileSkin} size="sm" animate={false} />
+            <div className="flex flex-col">
+              <span className="text-sm font-bold text-white leading-tight">{skin.name}</span>
+              <span className="text-[10px] italic text-accent-silver/55 leading-tight max-w-[180px]">{skin.flavor}</span>
+            </div>
+          </div>
+        ))}
+      </div>
+    </motion.div>
+  );
+}
+
+/**
+ * Compact horizontal list of every pattern that triggered during the run,
+ * with how many times each one fired. Hidden if the player triggered none.
+ * Caps at 8 chips, rolling everything else into a single "Otros" tile so
+ * the GameOverScreen does not become a wall of chips on long runs.
+ */
+function PatternBreakdown({ breakdown }: { breakdown: Record<string, number> }) {
+  const entries = Object.entries(breakdown ?? {})
+    .filter(([, n]) => n > 0)
+    .sort((a, b) => b[1] - a[1]);
+
+  if (entries.length === 0) return null;
+
+  const VISIBLE = 8;
+  const top = entries.slice(0, VISIBLE);
+  const rest = entries.slice(VISIBLE);
+  const restSum = rest.reduce((s, [, n]) => s + n, 0);
+
+  const nameOf = (id: string) =>
+    ALL_PATTERNS.find((p) => p.id === id)?.name ?? id;
+
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 12 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ delay: 0.52 }}
+      className="w-full max-w-lg px-4 py-4 rounded-xl bg-surface-800/60 border border-surface-600/30"
+    >
+      <p className="text-[10px] font-bold text-accent-silver/35 uppercase tracking-widest mb-3">
+        Patrones activados
+      </p>
+      <div className="flex flex-wrap gap-1.5">
+        {top.map(([id, count]) => (
+          <span
+            key={id}
+            className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-surface-700/60 border border-surface-600/40 text-[11px] text-accent-silver/80"
+          >
+            <span className="font-medium">{nameOf(id)}</span>
+            <span className="font-mono font-bold text-accent-gold">x{count}</span>
+          </span>
+        ))}
+        {rest.length > 0 && (
+          <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-surface-700/40 border border-surface-600/30 text-[11px] text-accent-silver/55">
+            <span className="font-medium">Otros</span>
+            <span className="font-mono font-bold">x{restSum}</span>
+          </span>
+        )}
+      </div>
+    </motion.div>
+  );
+}
+
 export default function GameOverScreen({
   stats,
   relicIds,
@@ -115,10 +212,18 @@ export default function GameOverScreen({
   onRestart,
   onHome,
   isNewBest,
+  unlockedSkins,
   mastery,
 }: GameOverScreenProps) {
   const relics = ALL_RELICS.filter((r) => relicIds.includes(r.id));
+  // Victory cinematic plays first if the player crossed into El Eco (round 16+)
+  // — it is the symbolic completion of Dominix's three-act structure.
+  const isVictoryRun = finalRound >= 16;
+  const [victoryDone, setVictoryDone] = useState(!isVictoryRun);
   const [recapDone, setRecapDone] = useState(false);
+  // Skin overlay shows after recap, before the main stats screen
+  const hasUnlockedSkins = (unlockedSkins?.length ?? 0) > 0;
+  const [skinOverlayDone, setSkinOverlayDone] = useState(!hasUnlockedSkins);
 
   const xpData = useMemo(() => {
     const earned = calculateRunXP(finalRound, stats.totalScore, stats.bossesDefeated, stats.patternsActivated);
@@ -130,7 +235,17 @@ export default function GameOverScreen({
   return (
     <>
       <AnimatePresence>
-        {!recapDone && (
+        {!victoryDone && (
+          <VictoryOverlay
+            finalRound={finalRound}
+            totalScore={stats.totalScore}
+            onContinue={() => setVictoryDone(true)}
+          />
+        )}
+      </AnimatePresence>
+
+      <AnimatePresence>
+        {victoryDone && !recapDone && (
           <RecapHighlights
             stats={stats}
             finalRound={finalRound}
@@ -140,10 +255,19 @@ export default function GameOverScreen({
         )}
       </AnimatePresence>
 
+      <AnimatePresence>
+        {recapDone && !skinOverlayDone && hasUnlockedSkins && (
+          <SkinUnlockedOverlay
+            skinIds={unlockedSkins ?? []}
+            onComplete={() => setSkinOverlayDone(true)}
+          />
+        )}
+      </AnimatePresence>
+
     <motion.div
       initial={{ opacity: 0 }}
-      animate={{ opacity: recapDone ? 1 : 0 }}
-      transition={{ delay: recapDone ? 0.1 : 0, duration: 0.4 }}
+      animate={{ opacity: recapDone && skinOverlayDone ? 1 : 0 }}
+      transition={{ delay: recapDone && skinOverlayDone ? 0.1 : 0, duration: 0.4 }}
       className="min-h-screen flex flex-col items-center justify-center gap-8 px-6"
     >
       <motion.div
@@ -238,6 +362,12 @@ export default function GameOverScreen({
           <RoundScoreChart scores={stats.roundScores} />
         </motion.div>
       )}
+
+      {/* Pattern breakdown — what triggered, in context */}
+      <PatternBreakdown breakdown={stats.patternBreakdown} />
+
+      {/* Skins newly unlocked by this run — only shows if at least one fired */}
+      <UnlockedSkinsCard skinIds={unlockedSkins ?? []} />
 
       {/* XP Progress */}
       <motion.div

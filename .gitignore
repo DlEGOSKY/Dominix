@@ -1,0 +1,52 @@
+# Dependencies
+node_modules/
+.pnp
+.pnp.js
+
+# Build artifacts
+dist/
+dist-ssr/
+build/
+*.tsbuildinfo
+
+# Testing & coverage
+coverage/
+.nyc_output/
+
+# Vitest
+.vitest-cache/
+
+# Editor / OS
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/*
+!.vscode/extensions.json
+!.vscode/settings.json
+*.swp
+*.swo
+
+# Env & secrets
+.env
+.env.local
+.env.*.local
+*.pem
+
+# Logs
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
+
+# Cache
+.cache/
+.parcel-cache/
+.turbo/
+
+# Deploy
+.vercel/
+.netlify/
+
+# Lottie templates (legacy, removed)
+src/assets/lottie/

@@ -1,4 +1,4 @@
-import { useState, useCallback, useEffect } from "react";
+import { useState, useCallback, useEffect, lazy, Suspense } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import type { RunStats, SavedData } from "./types/domino";
 import type { Achievement } from "./engine/achievements";
@@ -6,25 +6,30 @@ import type { ModifierConfig } from "./engine/modifiers";
 import { loadSavedData, saveBestData } from "./engine/storage";
 import { saveDailyProgress } from "./engine/daily";
 import { getWeeklyPreset, saveWeeklyResult } from "./engine/weekly";
-import WeeklyChallengeScreen from "./components/WeeklyChallengeScreen";
+const WeeklyChallengeScreen = lazy(() => import("./components/WeeklyChallengeScreen"));
 import { checkNewAchievements } from "./engine/achievements";
 import { applyModifiers, getDefaultConfig, ALL_MODIFIERS } from "./engine/modifiers";
+// Eager: critical first-paint screens
 import HomeScreen from "./components/HomeScreen";
 import GameBoard from "./components/GameBoard";
-import GameOverScreen from "./components/GameOverScreen";
-import AchievementsScreen from "./components/AchievementsScreen";
-import LeaderboardScreen from "./components/LeaderboardScreen";
-import HowToPlayScreen from "./components/HowToPlayScreen";
-import StatsScreen from "./components/StatsScreen";
-import CollectionScreen from "./components/CollectionScreen";
 import AchievementToast from "./components/AchievementToast";
+import PWAInstallPrompt from "./components/PWAInstallPrompt";
+import UpdatePrompt from "./components/UpdatePrompt";
 import CharacterSelectScreen from "./components/CharacterSelectScreen";
-import TalentTreeScreen from "./components/TalentTreeScreen";
-import SettingsScreen from "./components/SettingsScreen";
-import CodexScreen from "./components/CodexScreen";
+// Lazy: non-critical screens loaded on demand
+const GameOverScreen = lazy(() => import("./components/GameOverScreen"));
+const AchievementsScreen = lazy(() => import("./components/AchievementsScreen"));
+const LeaderboardScreen = lazy(() => import("./components/LeaderboardScreen"));
+const HowToPlayScreen = lazy(() => import("./components/HowToPlayScreen"));
+const StatsScreen = lazy(() => import("./components/StatsScreen"));
+const CollectionScreen = lazy(() => import("./components/CollectionScreen"));
+const TalentTreeScreen = lazy(() => import("./components/TalentTreeScreen"));
+const SettingsScreen = lazy(() => import("./components/SettingsScreen"));
+const CodexScreen = lazy(() => import("./components/CodexScreen"));
 import { addRunRecord } from "./engine/runHistory";
 import { addLeaderboardEntry } from "./engine/leaderboard";
-import { addXP, calculateRunXP } from "./engine/progression";
+import { addXP, calculateRunXP, loadProgression, getProgressionBonuses } from "./engine/progression";
+import { audio } from "./engine/audio";
 import { addCharacterXP, calculateRunMasteryXP } from "./engine/characterMastery";
 import { resolveRunChallenges, type CharacterChallenge } from "./engine/characterChallenges";
 import {
@@ -57,6 +62,8 @@ interface GameOverData {
   isDaily: boolean;
   isEndless: boolean;
   isWeekly: boolean;
+  /** Skin ids freshly unlocked by the level-ups this run produced. */
+  unlockedSkins: string[];
   mastery: {
     characterId: CharacterId;
     xpGained: number;
@@ -91,6 +98,27 @@ export default function App() {
       return () => clearTimeout(timer);
     }
   }, [currentToast]);
+
+  // Unlock the AudioContext on the first user gesture (mobile autoplay policy)
+  useEffect(() => {
+    let unlocked = false;
+    const handler = () => {
+      if (unlocked) return;
+      unlocked = true;
+      audio.unlock();
+      window.removeEventListener("touchstart", handler);
+      window.removeEventListener("pointerdown", handler);
+      window.removeEventListener("keydown", handler);
+    };
+    window.addEventListener("touchstart", handler, { once: true, passive: true });
+    window.addEventListener("pointerdown", handler, { once: true });
+    window.addEventListener("keydown", handler, { once: true });
+    return () => {
+      window.removeEventListener("touchstart", handler);
+      window.removeEventListener("pointerdown", handler);
+      window.removeEventListener("keydown", handler);
+    };
+  }, []);
 
   const handleStartRun = useCallback((modifierIds: string[]) => {
     setPendingModifiers(modifierIds);
@@ -214,9 +242,13 @@ export default function App() {
 
       addRunRecord(stats, relicIds, finalRound, isDaily, modName || undefined);
 
-      // Progression XP
+      // Progression XP — capture the skins owned before/after the XP gain so
+      // the GameOverScreen can highlight any that were unlocked by this run.
+      const skinsBefore = new Set(getProgressionBonuses(loadProgression()).unlockedSkins);
       const runXP = calculateRunXP(finalRound, stats.totalScore, stats.bossesDefeated, stats.patternsActivated);
       addXP(runXP);
+      const skinsAfterList = getProgressionBonuses(loadProgression()).unlockedSkins;
+      const newlyUnlockedSkins = skinsAfterList.filter((id) => !skinsBefore.has(id));
 
       // Character Mastery XP — favors the character actively played.
       // Resolve one-shot character challenges first so their XP gets rolled
@@ -259,6 +291,7 @@ export default function App() {
         isDaily,
         isEndless,
         isWeekly,
+        unlockedSkins: newlyUnlockedSkins,
         mastery: {
           characterId: selectedCharacter,
           xpGained: masteryXP,
@@ -391,6 +424,7 @@ export default function App() {
               relicIds={gameOverData.relicIds}
               finalRound={gameOverData.finalRound}
               isNewBest={gameOverData.isNewBest}
+              unlockedSkins={gameOverData.unlockedSkins}
               mastery={gameOverData.mastery}
               onRestart={handleRestart}
               onHome={handleHome}
@@ -415,10 +449,40 @@ export default function App() {
 
   return (
     <>
+      <a href="#main-content" className="skip-to-content">
+        Saltar al contenido principal
+      </a>
       <AchievementToast achievement={currentToast} onDismiss={dismissToast} />
-      <AnimatePresence mode="wait">
-        {renderScreen()}
-      </AnimatePresence>
+      <PWAInstallPrompt />
+      <UpdatePrompt />
+      <main id="main-content">
+        <Suspense fallback={<ScreenLoader />}>
+          <AnimatePresence mode="wait">
+            {renderScreen()}
+          </AnimatePresence>
+        </Suspense>
+      </main>
     </>
+  );
+}
+
+/** Minimal loader shown while a lazy screen chunk is being fetched. */
+function ScreenLoader() {
+  return (
+    <div className="min-h-screen flex items-center justify-center">
+      <motion.div
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        transition={{ delay: 0.15, duration: 0.3 }}
+        className="flex flex-col items-center gap-3 text-accent-silver/40"
+      >
+        <motion.div
+          className="w-8 h-8 rounded-full border-2 border-accent-gold/30 border-t-accent-gold"
+          animate={{ rotate: 360 }}
+          transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
+        />
+        <span className="text-[10px] uppercase tracking-[0.3em] font-bold">Cargando</span>
+      </motion.div>
+    </div>
   );
 }

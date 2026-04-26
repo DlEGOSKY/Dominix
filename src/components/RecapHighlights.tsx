@@ -145,6 +145,37 @@ export default function RecapHighlights({ stats, finalRound, relicIds, onFinishe
 function buildSlides(stats: RunStats, finalRound: number, relicIds: string[]): Slide[] {
   const slides: Slide[] = [];
 
+  // ---- Cinematic milestone opener (only on great runs) ----
+  // Tier 1: Truly legendary
+  if (finalRound >= 20 || stats.totalScore >= 8000) {
+    slides.push({
+      label: "Hito",
+      value: "Eternidad",
+      subtext: "Tocaste lo que pocos rituales alcanzan.",
+      color: "bg-amber-400/20",
+      icon: <IconLegend />,
+      tone: "narrative",
+    });
+  } else if (finalRound >= 15 || stats.totalScore >= 5000) {
+    slides.push({
+      label: "Hito",
+      value: "Ritual Consumado",
+      subtext: "El dominio te reconocio.",
+      color: "bg-purple-400/15",
+      icon: <IconLegend />,
+      tone: "narrative",
+    });
+  } else if (finalRound >= 10 || stats.bossesDefeated >= 3) {
+    slides.push({
+      label: "Hito",
+      value: "Travesia Cumplida",
+      subtext: "La cadena te llevo lejos.",
+      color: "bg-blue-400/15",
+      icon: <IconLegend />,
+      tone: "narrative",
+    });
+  }
+
   // Narrative opener: the act the run reached
   const act = getActForRound(Math.max(1, finalRound));
   slides.push({
@@ -264,6 +295,27 @@ function IconGem() {
     <svg width="36" height="36" viewBox="0 0 24 24" fill="none">
       <path d="M12 3l6 5-6 13-6-13 6-5z" stroke="currentColor" strokeWidth="1.5" fill="currentColor" fillOpacity="0.25" strokeLinejoin="round" className="text-purple-300" />
       <path d="M6 8h12M9 8l3 13M15 8l-3 13" stroke="currentColor" strokeWidth="0.8" className="text-purple-300/60" />
+    </svg>
+  );
+}
+
+function IconLegend() {
+  return (
+    <svg width="40" height="40" viewBox="0 0 24 24" fill="none">
+      {/* Sun-burst rays */}
+      <g className="text-accent-gold">
+        <line x1="12" y1="2" x2="12" y2="5" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" />
+        <line x1="12" y1="19" x2="12" y2="22" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" />
+        <line x1="2" y1="12" x2="5" y2="12" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" />
+        <line x1="19" y1="12" x2="22" y2="12" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" />
+        <line x1="5" y1="5" x2="7" y2="7" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" />
+        <line x1="17" y1="17" x2="19" y2="19" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" />
+        <line x1="19" y1="5" x2="17" y2="7" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" />
+        <line x1="7" y1="17" x2="5" y2="19" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" />
+      </g>
+      {/* Inner laurel-like wreath */}
+      <circle cx="12" cy="12" r="5" stroke="currentColor" strokeWidth="1.5" fill="currentColor" fillOpacity="0.25" className="text-accent-gold" />
+      <path d="M9 12l2 2 4-4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className="text-white" />
     </svg>
   );
 }

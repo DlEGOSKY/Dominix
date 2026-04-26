@@ -16,7 +16,10 @@ import { generateRewardOptions } from "@/engine/rewards";
 import { getRandomEvent, applyEventEffect } from "@/engine/events";
 import type { GameEvent, EventEffect } from "@/engine/events"; // EventEffect used in handleEventContinue param type
 import { TUTORIAL_STEPS, isTutorialComplete, markTutorialComplete } from "@/engine/tutorial";
-import { getRandomRelics, ALL_RELICS, computeFamilySetBonuses } from "@/engine/relics";
+import { getRandomRelics, ALL_RELICS, computeFamilySetBonuses, FAMILY_META } from "@/engine/relics";
+import { celebrateSetBonus, celebrateAchievement, celebrateLegendaryPattern, celebrateBigEvent } from "@/engine/celebrate";
+import BossDefeatedOverlay from "./BossDefeatedOverlay";
+import type { RelicFamily } from "@/types/relic";
 import { generateShopItems, calculateGoldEarned, getRerollCost } from "@/engine/shop";
 import type { ShopItem } from "@/engine/shop";
 import { getBossForRound, ALL_BOSSES } from "@/engine/boss";
@@ -35,7 +38,7 @@ import { pickRoundQuest, checkQuestCompletion } from "@/engine/quests";
 import type { QuestDefinition } from "@/engine/quests";
 import { loadAscension, getAccumulatedAscension } from "@/engine/ascension";
 import { summarizeChainEditions, discoverEdition, rollRandomEdition } from "@/engine/editions";
-import { getConsumable, MAX_CONSUMABLE_SLOTS, type Consumable } from "@/engine/consumables";
+import { getConsumable, MAX_CONSUMABLE_SLOTS, rollRandomConsumable, type Consumable } from "@/engine/consumables";
 import { getCelestial, celestialTotalBonus, computeCelestialSetBonus, FIRMAMENT_META, rollRandomCelestial, type CelestialCard, type Firmament } from "@/engine/celestial";
 import { rollChaosTwist, chaosMods, type ChaosTwist } from "@/engine/chaos";
 import { discoverPattern, discoverBoss, discoverCelestial, discoverChaos } from "@/engine/codex";
@@ -86,6 +89,7 @@ const INITIAL_STATS: RunStats = {
   roundsCompleted: 0,
   totalScore: 0,
   patternsActivated: 0,
+  patternBreakdown: {},
   relicsCollected: 0,
   tilesPlayed: 0,
   highestRoundScore: 0,
@@ -97,6 +101,16 @@ const INITIAL_STATS: RunStats = {
   tilesDrawn: 0,
   roundScores: [],
 };
+
+/** Pure helper that returns a NEW breakdown record with the given ids added. */
+function mergeBreakdown(prev: Record<string, number>, ids: string[]): Record<string, number> {
+  if (ids.length === 0) return prev;
+  const next: Record<string, number> = { ...prev };
+  for (const id of ids) {
+    next[id] = (next[id] ?? 0) + 1;
+  }
+  return next;
+}
 
 interface ProgressionStartBonuses {
   startingGold: number;
@@ -169,7 +183,8 @@ function startNextRound(
   targetMultiplier: number = 1,
   handSize: number = HAND_SIZE,
   actionBonus: number = 0,
-  preserveCount: number = 0
+  preserveCount: number = 0,
+  patternIds: string[] = []
 ): GameState {
   const newRound = prev.round + 1;
   const basePool = shuffle(generateFullSet());
@@ -204,6 +219,7 @@ function startNextRound(
       roundsCompleted: prev.stats.roundsCompleted + 1,
       totalScore: prev.stats.totalScore + roundScore,
       patternsActivated: prev.stats.patternsActivated + patternsCount,
+      patternBreakdown: mergeBreakdown(prev.stats.patternBreakdown, patternIds),
       highestRoundScore: Math.max(prev.stats.highestRoundScore, roundScore),
       roundScores: [...prev.stats.roundScores, roundScore],
     },
@@ -305,6 +321,7 @@ export default function GameBoard({ onGameOver, isDaily = false, isEndless = fal
   const [currentBoss, setCurrentBoss] = useState<Boss | null>(null);
   const [bossPhase, setBossPhase] = useState(0);
   const [bossRewardData, setBossRewardData] = useState<{ boss: Boss; bonusRelicId?: string } | null>(null);
+  const [bossDefeatedOverlay, setBossDefeatedOverlay] = useState<Boss | null>(null);
   const [activeSkin] = useState<TileSkin>(() => loadActiveSkin() as TileSkin);
   const [prevScore, setPrevScore] = useState(0);
   const [particleTrigger, setParticleTrigger] = useState(0);
@@ -317,7 +334,19 @@ export default function GameBoard({ onGameOver, isDaily = false, isEndless = fal
   const [shakeIntensity, setShakeIntensity] = useState<"small" | "medium" | "large">("medium");
   const [aberrationKey, setAberrationKey] = useState(0);
   const [patternFlash, setPatternFlash] = useState(0);
+  const [relicPulseKey, setRelicPulseKey] = useState(0);
+  const [relicPulseHighlights, setRelicPulseHighlights] = useState<string[]>([]);
   const [roundPatternLog, setRoundPatternLog] = useState<Array<{ id: string; name: string; bonus: number }>>([]);
+
+  /** Pulse the relic bar, highlighting only the relics that match the filter. */
+  const triggerRelicPulse = useCallback(
+    (filter: (r: typeof ALL_RELICS[number]) => boolean) => {
+      const ids = ALL_RELICS.filter((r) => game.relics.includes(r.id) && filter(r)).map((r) => r.id);
+      setRelicPulseHighlights(ids);
+      setRelicPulseKey((k) => k + 1);
+    },
+    [game.relics]
+  );
 
   // Narrative interlude between acts (boss cleared -> map_select)
   const [pendingInterlude, setPendingInterlude] = useState<Interlude | null>(null);
@@ -423,14 +452,29 @@ export default function GameBoard({ onGameOver, isDaily = false, isEndless = fal
     const currentPatterns = analysis.patterns.length;
     if (currentPatterns > prevPatternCount.current && currentPatterns > 0) {
       // Tier sound by number of patterns and rare pattern ids
-      const legendaryIds = new Set(["cadena_maxima", "todo_dobles", "fractal", "armonia", "hexagrama", "constelacion"]);
+      const legendaryIds = new Set(["cadena_maxima", "todo_dobles", "fractal", "armonia", "hexagrama", "constelacion", "ouroboros"]);
+      const newlyActivatedSlice = analysis.patterns.slice(prevPatternCount.current);
+      const newlyHasLegendary = newlyActivatedSlice.some((p) => legendaryIds.has(p.id));
       const forceMega = analysis.patterns.some((p) => legendaryIds.has(p.id));
       audio.playPatternByTier(currentPatterns, forceMega);
       setParticleTrigger((t) => t + 1);
       setPatternFlash((f) => f + 1);
+      // Confetti for legendary pattern OR mega combo (4+ patterns)
+      if (newlyHasLegendary || currentPatterns >= 4) {
+        celebrateLegendaryPattern();
+      }
       triggerShake(currentPatterns >= 3 || forceMega ? "medium" : "small");
       // Add newly activated pattern(s) to round log + register in Codex
       const newlyActivated = analysis.patterns.slice(prevPatternCount.current);
+      // Pulse relics tied to these new patterns
+      const newPatternIds = new Set(newlyActivated.map((p) => p.id));
+      triggerRelicPulse((r) => {
+        if (r.trigger === "on_pattern") return true;
+        if (r.effect.type === "bonus_if_pattern" && newPatternIds.has(r.effect.patternId)) return true;
+        if (r.effect.type === "multiplier_if_pattern" && newPatternIds.has(r.effect.patternId)) return true;
+        if (r.effect.type === "multiplier_per_pattern") return true;
+        return false;
+      });
       for (const p of newlyActivated) {
         discoverPattern(p.id);
         if (p.id === "hexagrama") maybeCelebrateMilestone("first_hexagrama");
@@ -452,7 +496,7 @@ export default function GameBoard({ onGameOver, isDaily = false, isEndless = fal
       }
     }
     prevPatternCount.current = currentPatterns;
-  }, [game.chain, game.relics, pushReaction, character, triggerShake, maybeCelebrateMilestone]);
+  }, [game.chain, game.relics, pushReaction, character, triggerShake, maybeCelebrateMilestone, triggerRelicPulse]);
 
   const scoreRef = useRef(0);
   useEffect(() => {
@@ -547,12 +591,10 @@ export default function GameBoard({ onGameOver, isDaily = false, isEndless = fal
       if (twist.tone === "bad") audio.play("round_lose");
       // Free reward: add a random consumable
       if (mods.freeReward) {
-        import("@/engine/consumables").then(({ rollRandomConsumable }) => {
-          const c = rollRandomConsumable();
-          setOwnedConsumables((prev) => {
-            const next = prev.length >= MAX_CONSUMABLE_SLOTS ? prev.slice(1) : prev;
-            return [...next, c];
-          });
+        const c = rollRandomConsumable();
+        setOwnedConsumables((prev) => {
+          const next = prev.length >= MAX_CONSUMABLE_SLOTS ? prev.slice(1) : prev;
+          return [...next, c];
         });
       }
     } else {
@@ -649,6 +691,22 @@ export default function GameBoard({ onGameOver, isDaily = false, isEndless = fal
     modRef.current.actionBonus = effectiveActionBonus + familyBonuses.accionExtraActions;
   }, [familyBonuses.accionExtraActions, effectiveActionBonus]);
 
+  // Celebrate when a relic family set newly activates (crosses to 3+ relics)
+  const prevActiveFamiliesRef = useRef<Set<RelicFamily>>(new Set());
+  useEffect(() => {
+    const current = new Set(familyBonuses.activeFamilies);
+    for (const fam of current) {
+      if (!prevActiveFamiliesRef.current.has(fam)) {
+        // Newly activated: confetti + audio + reaction toast
+        celebrateSetBonus(fam);
+        audio.play("pattern_mega");
+        triggerShake("medium");
+        pushReaction("big_score", `Set ${FAMILY_META[fam].name} activado`);
+      }
+    }
+    prevActiveFamiliesRef.current = current;
+  }, [familyBonuses.activeFamilies, pushReaction, triggerShake]);
+
   const getModifiedScore = useCallback(
     (
       rawTotal: number,
@@ -691,8 +749,8 @@ export default function GameBoard({ onGameOver, isDaily = false, isEndless = fal
   );
 
   const advanceRound = useCallback(
-    (prev: GameState, roundScore: number, patternsCount: number) => {
-      const next = startNextRound(prev, roundScore, patternsCount, modRef.current.targetMultiplier, modRef.current.handSize, modRef.current.actionBonus, talentBonuses.tilePreserve);
+    (prev: GameState, roundScore: number, patternsCount: number, patternIds: string[] = []) => {
+      const next = startNextRound(prev, roundScore, patternsCount, modRef.current.targetMultiplier, modRef.current.handSize, modRef.current.actionBonus, talentBonuses.tilePreserve, patternIds);
       // Reset active mutation uses for new round
       setMutationStates((ms) => resetMutationUses(ms));
       setWildNextActive(false);
@@ -763,6 +821,15 @@ export default function GameBoard({ onGameOver, isDaily = false, isEndless = fal
 
       // Discovery: unlock edition in collection
       if (playTile.edition) discoverEdition(playTile.edition);
+
+      // Pulse score-related relics on every tile play (passive, on_score, doubles)
+      const isDouble = playTile.top === playTile.bottom;
+      triggerRelicPulse((r) => {
+        if (r.trigger === "on_score") return true;
+        if (r.trigger === "on_double" && isDouble) return true;
+        if (r.trigger === "passive" && (r.effect.type === "bonus_per_tile" || r.effect.type === "bonus_flat" || r.effect.type === "multiplier")) return true;
+        return false;
+      });
 
       setGame((prev) => {
         // Action limit check
@@ -1148,6 +1215,10 @@ export default function GameBoard({ onGameOver, isDaily = false, isEndless = fal
       // Final phase or single-phase boss: give rewards
       let bonusRelicId: string | undefined;
       setGold((g) => g + currentBoss.reward.gold);
+      // Boss defeated celebration
+      celebrateBigEvent();
+      // Cinematic overlay shown on top of the BossRewardScreen
+      setBossDefeatedOverlay(currentBoss);
       // Milestone: first boss defeated
       maybeCelebrateMilestone("first_boss_defeated");
       setGame((prev) => {
@@ -1355,6 +1426,7 @@ export default function GameBoard({ onGameOver, isDaily = false, isEndless = fal
     setCurrentQuest(pickRoundQuest(prev.round + 1));
 
     setGold((g) => g + earnedGold);
+    const patternIdsThisRound = breakdown.patternAnalysis.patterns.map((p) => p.id);
     prev = {
       ...prev,
       stats: {
@@ -1363,6 +1435,7 @@ export default function GameBoard({ onGameOver, isDaily = false, isEndless = fal
         roundsCompleted: prev.stats.roundsCompleted + 1,
         totalScore: prev.stats.totalScore + modTotal,
         patternsActivated: prev.stats.patternsActivated + bdInfo.patterns,
+        patternBreakdown: mergeBreakdown(prev.stats.patternBreakdown, patternIdsThisRound),
         highestRoundScore: Math.max(prev.stats.highestRoundScore, modTotal),
         roundScores: [...prev.stats.roundScores, modTotal],
       },
@@ -1382,13 +1455,19 @@ export default function GameBoard({ onGameOver, isDaily = false, isEndless = fal
       return { ...prev, result: "shop" as const };
     }
 
-    return advanceRound(prev, modTotal, bdInfo.patterns);
+    // Stats already updated above (incl. patternBreakdown), so we pass empty
+    // ids and a 0 round-score to advanceRound to avoid double counting.
+    return advanceRound(prev, 0, 0);
   }, [advanceRound, getModifiedScore, mapMode, character, currentQuest, talentBonuses.goldMultiplier]);
 
   const handleSelectReward = useCallback((option: RewardOption) => {
     const reward = option.reward;
 
     if (reward.type === "relic") {
+      // Celebrate new relic acquisition
+      celebrateAchievement();
+      audio.play("pattern_combo");
+      pushReaction("big_score", `Nueva reliquia: ${reward.relic.name}`);
       setGame((prev) => {
         const newPrev = { ...prev, relics: [...prev.relics, reward.relic.id], stats: { ...prev.stats, relicsCollected: prev.stats.relicsCollected + 1 } };
         setRewardOptions([]);
@@ -1654,7 +1733,7 @@ export default function GameBoard({ onGameOver, isDaily = false, isEndless = fal
       const hasDoubles = prev.chain.placed.some((p) => p.tile.top === p.tile.bottom);
       const ed = summarizeChainEditions(prev.chain);
       const bdInfo = { patterns: breakdown.patternAnalysis.patterns.length, hasDoubles, tilesPlayed: prev.chain.placed.length, patternBonusTotal: breakdown.patternAnalysis.totalBonus, editionFlat: ed.flatBonus, editionMultiplier: ed.multiplier };
-      return advanceRound(prev, getModifiedScore(breakdown.total, bdInfo), bdInfo.patterns);
+      return advanceRound(prev, getModifiedScore(breakdown.total, bdInfo), bdInfo.patterns, breakdown.patternAnalysis.patterns.map((p) => p.id));
     });
   }, [advanceRound, getModifiedScore, mapMode]);
 
@@ -1773,12 +1852,10 @@ export default function GameBoard({ onGameOver, isDaily = false, isEndless = fal
       });
     }
     if (eff.randomConsumable) {
-      import("@/engine/consumables").then(({ rollRandomConsumable }) => {
-        const c = rollRandomConsumable();
-        setOwnedConsumables((prev) => {
-          const next = prev.length >= MAX_CONSUMABLE_SLOTS ? prev.slice(1) : prev;
-          return [...next, c];
-        });
+      const c = rollRandomConsumable();
+      setOwnedConsumables((prev) => {
+        const next = prev.length >= MAX_CONSUMABLE_SLOTS ? prev.slice(1) : prev;
+        return [...next, c];
       });
     }
     if (eff.randomCelestial) {
@@ -1918,11 +1995,18 @@ export default function GameBoard({ onGameOver, isDaily = false, isEndless = fal
 
   if (game.result === "boss_reward" && bossRewardData) {
     return (
-      <BossRewardScreen
-        boss={bossRewardData.boss}
-        bonusRelicId={bossRewardData.bonusRelicId}
-        onContinue={handleBossRewardContinue}
-      />
+      <>
+        <BossRewardScreen
+          boss={bossRewardData.boss}
+          bonusRelicId={bossRewardData.bonusRelicId}
+          onContinue={handleBossRewardContinue}
+        />
+        <BossDefeatedOverlay
+          boss={bossDefeatedOverlay}
+          visible={!!bossDefeatedOverlay}
+          onContinue={() => setBossDefeatedOverlay(null)}
+        />
+      </>
     );
   }
 
@@ -2201,13 +2285,8 @@ export default function GameBoard({ onGameOver, isDaily = false, isEndless = fal
       <div className="hidden sm:contents">
         <RelicBar
           relicIds={game.relics}
-          pulseKey={patternFlash}
-          highlightIds={ALL_RELICS.filter((r) =>
-            game.relics.includes(r.id) &&
-            (r.trigger === "on_pattern" ||
-              r.effect.type === "bonus_if_pattern" ||
-              r.effect.type === "multiplier_if_pattern")
-          ).map((r) => r.id)}
+          pulseKey={relicPulseKey}
+          highlightIds={relicPulseHighlights}
         />
       </div>
 
@@ -2555,6 +2634,10 @@ export default function GameBoard({ onGameOver, isDaily = false, isEndless = fal
                     ...game.stats,
                     totalScore: game.stats.totalScore + modifiedTotal,
                     patternsActivated: game.stats.patternsActivated + scoreBreakdown.patternAnalysis.patterns.length,
+                    patternBreakdown: mergeBreakdown(
+                      game.stats.patternBreakdown,
+                      scoreBreakdown.patternAnalysis.patterns.map((p) => p.id)
+                    ),
                     highestRoundScore: Math.max(game.stats.highestRoundScore, modifiedTotal),
                   };
                   saveLegacy({ celestials: ownedCelestials, consumables: ownedConsumables, finalRound: game.stats.roundsCompleted, totalScore: finalStats.totalScore });
@@ -2599,6 +2682,10 @@ export default function GameBoard({ onGameOver, isDaily = false, isEndless = fal
                 ...game.stats,
                 totalScore: game.stats.totalScore + modifiedTotal,
                 patternsActivated: game.stats.patternsActivated + scoreBreakdown.patternAnalysis.patterns.length,
+                patternBreakdown: mergeBreakdown(
+                  game.stats.patternBreakdown,
+                  scoreBreakdown.patternAnalysis.patterns.map((p) => p.id)
+                ),
                 highestRoundScore: Math.max(game.stats.highestRoundScore, modifiedTotal),
               };
               saveLegacy({ celestials: ownedCelestials, consumables: ownedConsumables, finalRound: game.stats.roundsCompleted, totalScore: finalStats.totalScore });

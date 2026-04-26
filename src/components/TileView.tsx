@@ -2,8 +2,25 @@ import React from "react";
 import { motion } from "framer-motion";
 import type { Tile } from "@/types/domino";
 import { audio } from "@/engine/audio";
+import { getTileSkin } from "@/engine/tileSkins";
 
-export type TileSkin = "default" | "obsidian" | "emerald" | "ruby" | "void" | "gold" | "ivory" | "neon";
+export type TileSkin =
+  | "default"
+  | "obsidian"
+  | "emerald"
+  | "ruby"
+  | "void"
+  | "gold"
+  | "ivory"
+  | "neon"
+  | "pacto"
+  | "reliquia"
+  | "cosmos"
+  | "tarot"
+  | "astral"
+  | "bestiario"
+  | "naturaleza"
+  | "mecanico";
 
 interface TileViewProps {
   tile: Tile;
@@ -50,6 +67,31 @@ const dots: Record<number, number[][]> = {
   ],
 };
 
+function ValueArtHalf({ value, iconFn, cellSize, accent }: {
+  value: number;
+  iconFn: (v: number) => React.ReactNode;
+  cellSize: number;
+  accent: string;
+}) {
+  const iconSize = Math.round(cellSize * 0.62);
+  return (
+    <div
+      className="flex flex-col items-center justify-center"
+      style={{ width: cellSize, height: cellSize, gap: 2 }}
+    >
+      <div style={{ width: iconSize, height: iconSize, flexShrink: 0 }}>
+        {iconFn(value)}
+      </div>
+      <span
+        className="font-mono font-bold tabular-nums leading-none"
+        style={{ fontSize: 7, color: accent, opacity: 0.55 }}
+      >
+        {value}
+      </span>
+    </div>
+  );
+}
+
 function DotGrid({ value, cellSize, dotClass, dotShape = "round" }: { value: number; cellSize: number; dotClass: string; dotShape?: "round" | "square" | "diamond" }) {
   const positions = dots[value] ?? [];
   const gap = cellSize / 3;
@@ -86,58 +128,9 @@ function DotGrid({ value, cellSize, dotClass, dotShape = "round" }: { value: num
   );
 }
 
-const SKIN_STYLES: Record<TileSkin, { bg: string; border: string; dot: string; separator?: string; dotShape?: "round" | "square" | "diamond" }> = {
-  default: { bg: "", border: "", dot: "" },
-  obsidian: {
-    bg: "bg-gradient-to-b from-[#1c1c28] to-[#0e0e18]",
-    border: "border-slate-400/40",
-    dot: "bg-slate-300",
-    separator: "via-slate-500/40",
-    dotShape: "square",
-  },
-  emerald: {
-    bg: "bg-gradient-to-b from-[#0d2b1f] to-[#071a12]",
-    border: "border-emerald-500/50",
-    dot: "bg-emerald-300",
-    separator: "via-emerald-500/40",
-    dotShape: "round",
-  },
-  ruby: {
-    bg: "bg-gradient-to-b from-[#2a0d10] to-[#180608]",
-    border: "border-rose-500/50",
-    dot: "bg-rose-300",
-    separator: "via-rose-500/40",
-    dotShape: "round",
-  },
-  void: {
-    bg: "bg-gradient-to-b from-[#07070f] to-[#030306]",
-    border: "border-violet-400/50",
-    dot: "bg-violet-400",
-    separator: "via-violet-500/40",
-    dotShape: "diamond",
-  },
-  gold: {
-    bg: "bg-gradient-to-b from-[#2a1d06] to-[#190f02]",
-    border: "border-amber-400/60",
-    dot: "bg-amber-300",
-    separator: "via-amber-400/50",
-    dotShape: "round",
-  },
-  ivory: {
-    bg: "bg-gradient-to-b from-[#f5f0e8] to-[#e8dcc8]",
-    border: "border-stone-400/60",
-    dot: "bg-stone-700",
-    separator: "via-stone-400/50",
-    dotShape: "round",
-  },
-  neon: {
-    bg: "bg-gradient-to-b from-[#040812] to-[#010408]",
-    border: "border-cyan-400/70",
-    dot: "bg-cyan-400",
-    separator: "via-cyan-400/50",
-    dotShape: "diamond",
-  },
-};
+// Skin palettes are kept in `@/engine/tileSkins.tsx`. The view fetches the
+// active definition through `getTileSkin(id)` and only applies it when the
+// special tile types (wild / golden / mirror / bomb / locked) are not in play.
 
 export default function TileView({
   tile,
@@ -170,7 +163,9 @@ export default function TileView({
     }
   };
 
-  const skinStyle = (!isWild && !isGolden && !isLocked && !isMirror && !isBomb && skin !== "default") ? SKIN_STYLES[skin] : null;
+  const skinDef = getTileSkin(skin);
+  const skinActive = !isWild && !isGolden && !isLocked && !isMirror && !isBomb && skin !== "default";
+  const skinStyle = skinActive ? skinDef : null;
   const skinDotShape = skinStyle?.dotShape ?? "round";
 
   const getBgClass = () => {
@@ -207,6 +202,8 @@ export default function TileView({
   const getEffectClass = () => {
     if (isWild) return "wild-holo";
     if (isGolden) return "golden-shimmer";
+    if (isMirror) return "tile-mirror-flow";
+    if (isBomb) return "tile-bomb-pulse";
     if (!disabled && !isLocked) return "tile-shine";
     return "";
   };
@@ -224,11 +221,21 @@ export default function TileView({
     }
   })();
 
+  // Build a screen-reader description: type + values + edition + pact
+  const describeType = isWild ? "Comodin" : isGolden ? "Dorada" : isMirror ? "Espejo" : isBomb ? "Bomba" : isLocked ? "Bloqueada" : isDouble ? "Doble" : "";
+  const ariaLabel = [
+    describeType,
+    `Ficha ${tile.top} ${tile.bottom}`,
+    tile.pact ? "con Pacto Sagrado" : "",
+    tile.edition ? `edicion ${tile.edition}` : "",
+  ].filter(Boolean).join(", ");
+
   return (
     <motion.button
       onClick={handleClick}
       onHoverStart={handleHover}
       disabled={disabled || isLocked}
+      aria-label={ariaLabel}
       initial={animate ? { scale: 0.8, opacity: 0 } : false}
       animate={{ scale: 1, opacity: 1 }}
       exit={{ scale: 0.8, opacity: 0 }}
@@ -249,9 +256,13 @@ export default function TileView({
       ].join(" ")}
       style={{ padding: size === "md" ? 8 : 5 }}
     >
+      {/* Skin texture rendered behind everything else (cosmetic only) */}
+      {skinStyle?.pattern}
+      {/* Skin corner glyph — suppressed if the pact already owns that slot */}
+      {skinStyle?.glyph && !tile.pact && skinStyle.glyph}
       {tile.pact && (
         <>
-          <div className="absolute inset-0 rounded-xl pointer-events-none" style={{ boxShadow: "inset 0 0 0 1px rgba(251,191,36,0.7), 0 0 14px rgba(251,191,36,0.5)" }} />
+          <div className="absolute inset-0 rounded-xl pointer-events-none tile-pact-aura" />
           <div className="absolute -top-0.5 -left-0.5 w-4 h-4 rounded-full bg-gradient-to-br from-amber-300 to-amber-600 border border-amber-200/80 flex items-center justify-center shadow-[0_0_6px_rgba(251,191,36,0.7)] pointer-events-none">
             <svg width="8" height="8" viewBox="0 0 24 24" fill="none" className="text-amber-950">
               <path d="M12 3l2.5 6.5L21 11l-5 4.5 1.5 6.5L12 18.5 6.5 22 8 15.5 3 11l6.5-1.5z" stroke="currentColor" strokeWidth="1.8" strokeLinejoin="round" fill="currentColor" />
@@ -276,14 +287,22 @@ export default function TileView({
           </div>
         </div>
       )}
-      <DotGrid value={tile.top} cellSize={cellSize} dotClass={dotClass} dotShape={isWild || isGolden || isMirror || isBomb ? "round" : skinDotShape} />
+      {skinActive && skinDef.valueIcon ? (
+        <ValueArtHalf value={tile.top} iconFn={skinDef.valueIcon} cellSize={cellSize} accent={skinDef.accent} />
+      ) : (
+        <DotGrid value={tile.top} cellSize={cellSize} dotClass={dotClass} dotShape={isWild || isGolden || isMirror || isBomb ? "round" : skinDotShape} />
+      )}
       <div className="w-4/5 my-1.5 relative">
         <div className={["h-px bg-gradient-to-r from-transparent to-transparent", skinStyle?.separator ?? "via-tile-border/40"].join(" ")} />
         {highlight && (
           <div className="absolute inset-0 h-px bg-gradient-to-r from-transparent via-accent-gold/40 to-transparent" />
         )}
       </div>
-      <DotGrid value={tile.bottom} cellSize={cellSize} dotClass={dotClass} dotShape={isWild || isGolden || isMirror || isBomb ? "round" : skinDotShape} />
+      {skinActive && skinDef.valueIcon ? (
+        <ValueArtHalf value={tile.bottom} iconFn={skinDef.valueIcon} cellSize={cellSize} accent={skinDef.accent} />
+      ) : (
+        <DotGrid value={tile.bottom} cellSize={cellSize} dotClass={dotClass} dotShape={isWild || isGolden || isMirror || isBomb ? "round" : skinDotShape} />
+      )}
       {tile.edition && (
         <div
           className={[

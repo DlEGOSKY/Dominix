@@ -1,47 +1,12 @@
 import { motion } from "framer-motion";
 import { ALL_ACHIEVEMENTS, getUnlockedAchievements, getAchievementProgress } from "@/engine/achievements";
+import { getAchievementIcon } from "@/engine/achievementIcons";
 import type { SavedData } from "@/types/domino";
 
 interface AchievementsScreenProps {
   savedData: SavedData;
   onBack: () => void;
 }
-
-const ICONS: Record<string, string> = {
-  star: "★",
-  shield: "◆",
-  medal: "●",
-  crown: "♔",
-  trophy: "🏆",
-  zap: "⚡",
-  flame: "🔥",
-  bolt: "⚡",
-  repeat: "↻",
-  heart: "♥",
-  infinity: "∞",
-  eye: "◉",
-  gem: "◈",
-  layers: "▦",
-  "check-circle": "✓",
-  book: "📖",
-  stars: "✦",
-  sparkles: "✧",
-  skull: "☠",
-  swords: "⚔",
-  sword: "⚔",
-  coins: "◉",
-  "shopping-bag": "◫",
-  "shopping-cart": "◫",
-  archive: "▤",
-  target: "◎",
-  boxes: "▦",
-  sun: "☀",
-  search: "◎",
-  compass: "◯",
-  grid: "▦",
-  trash: "▭",
-  eraser: "▭",
-};
 
 export default function AchievementsScreen({ savedData, onBack }: AchievementsScreenProps) {
   const unlockedIds = getUnlockedAchievements();
@@ -75,6 +40,7 @@ export default function AchievementsScreen({ savedData, onBack }: AchievementsSc
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 max-w-4xl w-full mb-8">
         {ALL_ACHIEVEMENTS.map((achievement, i) => {
           const isUnlocked = unlockedIds.includes(achievement.id);
+          const Icon = getAchievementIcon(achievement.icon);
           return (
             <motion.div
               key={achievement.id}
@@ -90,11 +56,11 @@ export default function AchievementsScreen({ savedData, onBack }: AchievementsSc
             >
               <span
                 className={[
-                  "text-2xl w-10 h-10 flex items-center justify-center rounded-lg",
+                  "w-10 h-10 flex items-center justify-center rounded-lg",
                   isUnlocked ? "bg-accent-gold/20 text-accent-gold" : "bg-surface-700 text-surface-500",
                 ].join(" ")}
               >
-                {isUnlocked ? ICONS[achievement.icon] ?? "★" : "?"}
+                {isUnlocked ? <Icon size={22} /> : <span className="text-xl">?</span>}
               </span>
               <div className="flex flex-col gap-1 flex-1">
                 <span
