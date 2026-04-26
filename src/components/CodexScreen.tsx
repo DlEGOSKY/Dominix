@@ -6,20 +6,13 @@ import { ALL_BOSSES } from "@/engine/boss";
 import { ALL_CELESTIAL, FIRMAMENT_META } from "@/engine/celestial";
 import { ALL_CHAOS_TWISTS } from "@/engine/chaos";
 import { localizePattern, localizeBoss } from "@/engine/i18nContent";
-import { useTranslation } from "@/engine/i18n";
+import { useTranslation, t as translate } from "@/engine/i18n";
 
 interface CodexScreenProps {
   onBack: () => void;
 }
 
 type Tab = "patterns" | "bosses" | "celestial" | "chaos";
-
-const TABS: { id: Tab; label: string; description: string }[] = [
-  { id: "patterns", label: "Patrones", description: "Combos descubiertos" },
-  { id: "bosses", label: "Jefes", description: "Enemigos enfrentados" },
-  { id: "celestial", label: "Celestes", description: "Cartas del firmamento" },
-  { id: "chaos", label: "Caos", description: "Giros imprevistos" },
-];
 
 /**
  * Codex — progressive discovery log for content encountered across all runs.
@@ -28,9 +21,18 @@ const TABS: { id: Tab; label: string; description: string }[] = [
  */
 export default function CodexScreen({ onBack }: CodexScreenProps) {
   // Subscribe to lang changes so codex pattern names refresh on switch.
-  useTranslation();
+  const { t } = useTranslation();
   const [tab, setTab] = useState<Tab>("patterns");
   const codex = useMemo(() => loadCodex(), []);
+
+  // Tab list is recomputed on every render so labels stay live with the
+  // active language instead of binding once at module load.
+  const TABS: { id: Tab; label: string; description: string }[] = [
+    { id: "patterns",  label: t("codex.tab.patterns"),  description: t("codex.desc.patterns") },
+    { id: "bosses",    label: t("codex.tab.bosses"),    description: t("codex.desc.bosses") },
+    { id: "celestial", label: t("codex.tab.celestial"), description: t("codex.desc.celestial") },
+    { id: "chaos",     label: t("codex.tab.chaos"),     description: t("codex.desc.chaos") },
+  ];
 
   const totalDiscovered =
     codex.patterns.discovered +
@@ -48,12 +50,12 @@ export default function CodexScreen({ onBack }: CodexScreenProps) {
           onClick={onBack}
           className="text-[11px] uppercase tracking-widest text-accent-silver/50 hover:text-accent-silver/90 transition"
         >
-          ← Volver
+          ← {t("btn.back")}
         </button>
         <div className="text-right">
-          <h1 className="text-3xl font-display font-black tracking-tight">Codex</h1>
+          <h1 className="text-3xl font-display font-black tracking-tight">{t("codex.title")}</h1>
           <p className="text-[10px] uppercase tracking-widest text-accent-silver/40 mt-1">
-            {totalDiscovered} / {totalEntries} descubiertos
+            {t("codex.discovered", { n: totalDiscovered, total: totalEntries })}
           </p>
         </div>
       </div>
@@ -70,13 +72,13 @@ export default function CodexScreen({ onBack }: CodexScreenProps) {
 
       {/* Tabs */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 mb-6">
-        {TABS.map((t) => {
-          const summary = codex[t.id];
-          const active = tab === t.id;
+        {TABS.map((tabDef) => {
+          const summary = codex[tabDef.id];
+          const active = tab === tabDef.id;
           return (
             <button
-              key={t.id}
-              onClick={() => setTab(t.id)}
+              key={tabDef.id}
+              onClick={() => setTab(tabDef.id)}
               className={[
                 "p-3 rounded-xl border-2 text-left transition-all",
                 active
@@ -84,8 +86,8 @@ export default function CodexScreen({ onBack }: CodexScreenProps) {
                   : "border-surface-600/40 bg-surface-800/30 text-accent-silver/60 hover:border-surface-600/60",
               ].join(" ")}
             >
-              <div className="text-xs font-bold uppercase tracking-wider">{t.label}</div>
-              <div className="text-[9px] opacity-60 mt-0.5 leading-tight">{t.description}</div>
+              <div className="text-xs font-bold uppercase tracking-wider">{tabDef.label}</div>
+              <div className="text-[9px] opacity-60 mt-0.5 leading-tight">{tabDef.description}</div>
               <div className="text-[10px] font-mono mt-1.5 opacity-80">
                 {summary.discovered}/{summary.total}
               </div>
@@ -118,7 +120,7 @@ export default function CodexScreen({ onBack }: CodexScreenProps) {
                   )}
                 </div>
                 <p className={`text-[11px] leading-snug mt-1 ${known ? "text-accent-silver/60" : "text-accent-silver/20 italic"}`}>
-                  {known ? loc.description : "Aun no descubierto"}
+                  {known ? loc.description : t("codex.empty.patterns")}
                 </p>
               </motion.div>
             );
@@ -149,7 +151,7 @@ export default function CodexScreen({ onBack }: CodexScreenProps) {
                   )}
                 </div>
                 <p className={`text-[11px] leading-snug mt-1 ${known ? "text-accent-silver/60" : "text-accent-silver/20 italic"}`}>
-                  {known ? loc.description : "Aun no enfrentado"}
+                  {known ? loc.description : t("codex.empty.bosses")}
                 </p>
               </motion.div>
             );
@@ -180,7 +182,7 @@ export default function CodexScreen({ onBack }: CodexScreenProps) {
                   )}
                 </div>
                 <p className={`text-[11px] leading-snug mt-1 ${known ? "text-accent-silver/60" : "text-accent-silver/20 italic"}`}>
-                  {known ? c.description : "Aun no otorgada"}
+                  {known ? c.description : t("codex.empty.celestial")}
                 </p>
                 {known && (
                   <span className={`inline-block mt-1 text-[8px] font-bold uppercase tracking-widest opacity-70 ${meta.text}`}>
@@ -195,32 +197,32 @@ export default function CodexScreen({ onBack }: CodexScreenProps) {
 
       {tab === "chaos" && (
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
-          {ALL_CHAOS_TWISTS.map((t) => {
-            const known = codex.chaosIds.has(t.id);
-            const toneColor = t.tone === "good"
+          {ALL_CHAOS_TWISTS.map((twist) => {
+            const known = codex.chaosIds.has(twist.id);
+            const toneColor = twist.tone === "good"
               ? "border-green-400/40 bg-green-500/5 text-green-200"
-              : t.tone === "bad"
+              : twist.tone === "bad"
                 ? "border-red-400/40 bg-red-500/5 text-red-200"
                 : "border-violet-400/40 bg-violet-500/5 text-violet-200";
             return (
               <motion.div
-                key={t.id}
+                key={twist.id}
                 initial={{ opacity: 0, y: 6 }}
                 animate={{ opacity: 1, y: 0 }}
                 className={`p-3 rounded-xl border ${known ? toneColor : "border-surface-600/30 bg-surface-800/20"}`}
               >
                 <div className="flex items-baseline justify-between gap-2">
                   <span className={`text-sm font-bold ${known ? "" : "text-accent-silver/30"}`}>
-                    {known ? t.name : "???"}
+                    {known ? twist.name : "???"}
                   </span>
                   {known && (
                     <span className="text-[8px] uppercase font-bold tracking-widest opacity-70">
-                      {t.tone === "good" ? "Buff" : t.tone === "bad" ? "Nerf" : "Raro"}
+                      {twist.tone === "good" ? translate("codex.tone.good") : twist.tone === "bad" ? translate("codex.tone.bad") : translate("codex.tone.weird")}
                     </span>
                   )}
                 </div>
                 <p className={`text-[11px] leading-snug mt-1 ${known ? "opacity-75" : "text-accent-silver/20 italic"}`}>
-                  {known ? t.description : "Aun no vivido"}
+                  {known ? twist.description : t("codex.empty.chaos")}
                 </p>
               </motion.div>
             );

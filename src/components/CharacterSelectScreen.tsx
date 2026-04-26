@@ -24,6 +24,7 @@ import {
   loadCompletedChallenges,
   getChallengeProgress,
 } from "@/engine/characterChallenges";
+import { useTranslation, t as translate } from "@/engine/i18n";
 
 interface CharacterSelectScreenProps {
   onConfirm: (id: CharacterId, ascension: number) => void;
@@ -31,6 +32,7 @@ interface CharacterSelectScreenProps {
 }
 
 export default function CharacterSelectScreen({ onConfirm, onBack }: CharacterSelectScreenProps) {
+  const { t } = useTranslation();
   const unlocked = loadUnlockedCharacters();
   const [selected, setSelected] = useState<CharacterId>(() => {
     const saved = loadSelectedCharacter();
@@ -81,9 +83,9 @@ export default function CharacterSelectScreen({ onConfirm, onBack }: CharacterSe
           onClick={onBack}
           className="text-accent-silver/60 hover:text-white transition-colors text-sm"
         >
-          ← Volver
+          ← {t("btn.back")}
         </button>
-        <h1 className="text-2xl font-bold text-white">Elige tu personaje</h1>
+        <h1 className="text-2xl font-bold text-white">{t("character.choose")}</h1>
         <div className="w-16" />
       </div>
 
@@ -124,9 +126,9 @@ export default function CharacterSelectScreen({ onConfirm, onBack }: CharacterSe
         </div>
         <p className="text-sm text-accent-silver/70 leading-relaxed mb-4">{character.description}</p>
         <div className="grid grid-cols-3 gap-3 mb-4">
-          <Stat label="Mano" value={character.startingHandSize.toString()} />
-          <Stat label="Oro" value={character.startingGold.toString()} />
-          <Stat label="Reliquias" value={character.startingRelicIds.length.toString()} />
+          <Stat label={t("character.stat.hand")} value={character.startingHandSize.toString()} />
+          <Stat label={t("character.stat.gold")} value={character.startingGold.toString()} />
+          <Stat label={t("character.stat.relics")} value={character.startingRelicIds.length.toString()} />
         </div>
         <MasteryPanel characterId={character.id} />
         <div className="mt-3">
@@ -137,8 +139,8 @@ export default function CharacterSelectScreen({ onConfirm, onBack }: CharacterSe
       {/* Ascension selector */}
       <div className="w-full max-w-3xl flex flex-col items-center gap-2 mb-6">
         <div className="flex items-center gap-2 mb-1">
-          <span className="text-[10px] uppercase tracking-widest text-accent-silver/40 font-bold">Ascension</span>
-          <span className="text-xs text-accent-silver/60">Max desbloqueada: {maxAsc}</span>
+          <span className="text-[10px] uppercase tracking-widest text-accent-silver/40 font-bold">{t("character.ascension")}</span>
+          <span className="text-xs text-accent-silver/60">{t("character.maxAscension", { n: maxAsc })}</span>
         </div>
         <div className="flex flex-wrap gap-1.5 justify-center">
           <button
@@ -192,7 +194,7 @@ export default function CharacterSelectScreen({ onConfirm, onBack }: CharacterSe
         onClick={handleConfirm}
         className="px-12 py-3 rounded-xl bg-accent-gold hover:bg-accent-gold/90 text-surface-900 font-bold transition-colors"
       >
-        Iniciar run con {character.name}{ascLevel > 0 ? ` · A${ascLevel}` : ""}
+        {t("character.startWith", { name: character.name })}{ascLevel > 0 ? ` · A${ascLevel}` : ""}
       </motion.button>
     </div>
   );
@@ -241,7 +243,7 @@ function CharacterCard({ character, unlocked, selected, isMain, onClick }: CardP
       {isMain && unlocked && (
         <div className="px-2 py-0.5 rounded-full bg-accent-gold/15 border border-accent-gold/40">
           <span className="text-[9px] font-bold uppercase tracking-[0.25em] text-accent-gold">
-            Main
+            {translate("character.main")}
           </span>
         </div>
       )}
@@ -399,10 +401,11 @@ function textColor(color: Character["color"]): string {
 }
 
 function unlockDescription(cond: NonNullable<Character["unlockCondition"]>): string {
-  if (cond.type === "reach_round") return `Alcanza ronda ${cond.value}`;
-  if (cond.type === "defeat_boss") return `Derrota al jefe ${cond.value}`;
-  if (cond.type === "achievement") return `Logro: ${cond.value}`;
-  return "Bloqueado";
+  const v = cond.value ?? "?";
+  if (cond.type === "reach_round") return translate("character.unlock.reachRound", { n: typeof v === "number" ? v : 0 });
+  if (cond.type === "defeat_boss") return translate("character.unlock.defeatBoss", { value: String(v) });
+  if (cond.type === "achievement") return translate("character.unlock.achievement", { value: String(v) });
+  return translate("character.unlock.locked");
 }
 
 /**
@@ -411,10 +414,11 @@ function unlockDescription(cond: NonNullable<Character["unlockCondition"]>): str
  * the player to rotate between characters.
  */
 function MasteryPanel({ characterId }: { characterId: CharacterId }) {
+  const { t } = useTranslation();
   const progress = getMasteryProgress(characterId);
   const bonus = getMasteryBonus(progress.level);
   const nextLevelText = progress.maxed
-    ? "Mastery maxima alcanzada"
+    ? t("character.masteryMaxed")
     : getLevelRewardText(progress.level + 1);
   const xpToNext = progress.maxed ? 0 : progress.nextLevelXP - progress.xp;
 
@@ -423,7 +427,7 @@ function MasteryPanel({ characterId }: { characterId: CharacterId }) {
       <div className="flex items-center justify-between mb-2">
         <div className="flex items-center gap-2">
           <span className="text-[9px] font-bold uppercase tracking-widest text-accent-silver/40">
-            Mastery
+            {t("character.mastery")}
           </span>
           <span className="px-1.5 py-0.5 rounded-md bg-accent-gold/15 border border-accent-gold/30 text-accent-gold text-[10px] font-bold tabular-nums">
             Lv {progress.level}/{MAX_MASTERY_LEVEL}
@@ -451,7 +455,7 @@ function MasteryPanel({ characterId }: { characterId: CharacterId }) {
         <span className="text-accent-silver/50 italic">{nextLevelText}</span>
         {!progress.maxed && (
           <span className="text-accent-silver/40 tabular-nums">
-            {xpToNext.toLocaleString()} XP restantes
+            {t("character.xpRemaining", { n: xpToNext.toLocaleString() })}
           </span>
         )}
       </div>
@@ -465,6 +469,7 @@ function MasteryPanel({ characterId }: { characterId: CharacterId }) {
  * without leaking the difficulty curve of the harder tiers.
  */
 function ChallengesPanel({ characterId }: { characterId: CharacterId }) {
+  const { t } = useTranslation();
   const challenges = getChallengesFor(characterId);
   const completed = loadCompletedChallenges();
   const done = challenges.filter((c) => completed.has(c.id)).length;
@@ -473,7 +478,7 @@ function ChallengesPanel({ characterId }: { characterId: CharacterId }) {
     <div className="rounded-xl bg-surface-900/50 border border-surface-600/30 p-3">
       <div className="flex items-center justify-between mb-2">
         <span className="text-[9px] font-bold uppercase tracking-widest text-accent-silver/40">
-          Desafios
+          {t("character.challenges")}
         </span>
         <span className="text-[10px] font-mono text-accent-silver/50 tabular-nums">
           {done}/{challenges.length}

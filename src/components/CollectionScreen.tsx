@@ -42,7 +42,7 @@ const DEMO_CHAIN_TILES = [
 
 export default function CollectionScreen({ savedData, onBack }: CollectionScreenProps) {
   // Subscribe to lang changes so localized relic copy updates on switch.
-  useTranslation();
+  const { t } = useTranslation();
   const [tab, setTab] = useState<Tab>("relics");
   const [activeSkin, setActiveSkin] = useState<TileSkin>(() => loadActiveSkin() as TileSkin);
 
@@ -67,10 +67,10 @@ export default function CollectionScreen({ savedData, onBack }: CollectionScreen
   const discoveredEditions = loadDiscoveredEditions();
 
   const tabs: { id: Tab; label: string; count: string }[] = [
-    { id: "relics", label: "Reliquias", count: `${unlockedIds.size}/${ALL_RELICS.length}` },
-    { id: "patterns", label: "Patrones", count: `${ALL_PATTERNS.length}` },
-    { id: "editions", label: "Ediciones", count: `${discoveredEditions.size}/${ALL_EDITIONS.length}` },
-    { id: "skins", label: "Skins", count: `${unlockedSkins.size}/${SKIN_INFO.length}` },
+    { id: "relics",   label: t("collection.tab.relics"),   count: `${unlockedIds.size}/${ALL_RELICS.length}` },
+    { id: "patterns", label: t("collection.tab.patterns"), count: `${ALL_PATTERNS.length}` },
+    { id: "editions", label: t("collection.tab.editions"), count: `${discoveredEditions.size}/${ALL_EDITIONS.length}` },
+    { id: "skins",    label: t("collection.tab.skins"),    count: `${unlockedSkins.size}/${SKIN_INFO.length}` },
   ];
 
   return (
@@ -80,28 +80,28 @@ export default function CollectionScreen({ savedData, onBack }: CollectionScreen
           onClick={onBack}
           className="px-3 py-2 rounded-lg bg-surface-800 border border-surface-600 text-accent-silver/60 text-sm hover:border-accent-silver/40 transition"
         >
-          Volver
+          {t("btn.back")}
         </button>
         <h1 className="font-display font-black text-2xl bg-gradient-to-b from-white to-white/70 bg-clip-text text-transparent">
-          Coleccion
+          {t("collection.title")}
         </h1>
       </div>
 
       {/* Tabs */}
       <div className="flex gap-2 w-full">
-        {tabs.map((t) => (
+        {tabs.map((tabDef) => (
           <button
-            key={t.id}
-            onClick={() => setTab(t.id)}
+            key={tabDef.id}
+            onClick={() => setTab(tabDef.id)}
             className={[
               "flex-1 py-2.5 rounded-xl text-sm font-bold tracking-wide transition-all",
-              tab === t.id
+              tab === tabDef.id
                 ? "bg-accent-gold/15 border border-accent-gold/30 text-accent-gold"
                 : "bg-surface-800 border border-surface-600 text-accent-silver/50 hover:border-accent-silver/30",
             ].join(" ")}
           >
-            {t.label}
-            <span className="ml-1.5 text-[10px] opacity-60">{t.count}</span>
+            {tabDef.label}
+            <span className="ml-1.5 text-[10px] opacity-60">{tabDef.count}</span>
           </button>
         ))}
       </div>
@@ -137,7 +137,7 @@ export default function CollectionScreen({ savedData, onBack }: CollectionScreen
                     {isUnlocked ? loc.name : "???"}
                   </span>
                   <span className="text-xs text-accent-silver/50">
-                    {isUnlocked ? loc.description : (lockInfo?.description ?? "Bloqueada")}
+                    {isUnlocked ? loc.description : (lockInfo?.description ?? t("collection.relicLocked"))}
                   </span>
                 </div>
                 {isUnlocked && (
@@ -237,7 +237,7 @@ export default function CollectionScreen({ savedData, onBack }: CollectionScreen
                     {owned ? edition.name : "???"}
                   </span>
                   <span className="text-xs text-accent-silver/50">
-                    {owned ? edition.description : "Encuentrala durante una run para descubrirla"}
+                    {owned ? edition.description : t("collection.editionLockHint")}
                   </span>
                 </div>
               </motion.div>
@@ -249,7 +249,10 @@ export default function CollectionScreen({ savedData, onBack }: CollectionScreen
       {tab === "skins" && (
         <div className="flex flex-col gap-4 w-full">
           <p className="text-xs text-accent-silver/40 text-center">
-            Skin activa: <span className="text-accent-gold font-bold">{SKIN_INFO.find(s => s.id === activeSkin)?.name ?? "Clasica"}</span>
+            {t("collection.activeSkin")} <span className="text-accent-gold font-bold">{(() => {
+              const active = SKIN_INFO.find(s => s.id === activeSkin);
+              return active ? localizeSkinById(active.id, active.name, active.flavor).name : t("collection.activeSkinDefault");
+            })()}</span>
           </p>
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 w-full">
             {SKIN_INFO.map((skin, i) => {
@@ -374,10 +377,10 @@ export default function CollectionScreen({ savedData, onBack }: CollectionScreen
                       "text-[10px] italic leading-tight px-1",
                       owned ? "text-accent-silver/55" : "text-accent-silver/25",
                     ].join(" ")}>
-                      {owned ? localizeSkinById(skin.id, skin.name, skin.flavor).flavor : `Se desbloquea al nivel ${skin.unlockLevel}`}
+                      {owned ? localizeSkinById(skin.id, skin.name, skin.flavor).flavor : t("collection.skinLockHint", { n: skin.unlockLevel })}
                     </span>
                     {isActive && (
-                      <span className="mt-1 text-[9px] text-accent-gold/70 uppercase tracking-widest font-bold">Activa</span>
+                      <span className="mt-1 text-[9px] text-accent-gold/70 uppercase tracking-widest font-bold">{t("collection.skinActive")}</span>
                     )}
                   </div>
                 </motion.button>
