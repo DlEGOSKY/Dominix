@@ -290,6 +290,16 @@ const STRINGS: Record<string, Record<Language, string>> = {
   // Achievement toast
   "achievement.unlocked": { es: "Logro desbloqueado", en: "Achievement unlocked" },
 
+  // Skin unlocked overlay CTA
+  "skinUnlock.next": { es: "Siguiente", en: "Next" },
+  "skinUnlock.continue": { es: "Continuar", en: "Continue" },
+
+  // AnimatedDemo (tutorial demo player)
+  "demo.clickPause": { es: "click para pausar", en: "click to pause" },
+  "demo.clickResume": { es: "click para continuar", en: "click to resume" },
+  "demo.aria.pause": { es: "Pausar demostracion", en: "Pause demonstration" },
+  "demo.aria.resume": { es: "Reanudar demostracion", en: "Resume demonstration" },
+
   // Achievements screen
   "achievements.title": { es: "LOGROS", en: "ACHIEVEMENTS" },
 

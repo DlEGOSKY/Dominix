@@ -2,6 +2,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { useState, useEffect, useCallback } from "react";
 import TileView from "./TileView";
 import type { Tile } from "@/types/domino";
+import { useTranslation } from "@/engine/i18n";
 
 interface DemoStep {
   hand: Tile[];
@@ -17,6 +18,7 @@ interface AnimatedDemoProps {
 }
 
 export default function AnimatedDemo({ steps, intervalMs = 2000 }: AnimatedDemoProps) {
+  const { t } = useTranslation();
   const [stepIdx, setStepIdx] = useState(0);
   const [paused, setPaused] = useState(false);
 
@@ -36,7 +38,7 @@ export default function AnimatedDemo({ steps, intervalMs = 2000 }: AnimatedDemoP
     <button
       type="button"
       aria-pressed={paused}
-      aria-label={paused ? "Reanudar demostracion" : "Pausar demostracion"}
+      aria-label={paused ? t("demo.aria.resume") : t("demo.aria.pause")}
       className="relative w-full text-left rounded-2xl bg-surface-800/60 border border-surface-600/30 overflow-hidden cursor-pointer"
       onClick={() => setPaused((p) => !p)}
     >
@@ -141,7 +143,7 @@ export default function AnimatedDemo({ steps, intervalMs = 2000 }: AnimatedDemoP
 
       {/* Click hint */}
       <div className="absolute bottom-1.5 right-2.5">
-        <span className="text-[7px] text-accent-silver/12">click para {paused ? "continuar" : "pausar"}</span>
+        <span className="text-[7px] text-accent-silver/12">{paused ? t("demo.clickResume") : t("demo.clickPause")}</span>
       </div>
     </button>
   );

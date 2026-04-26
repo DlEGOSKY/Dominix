@@ -8,6 +8,7 @@ import { audio } from "@/engine/audio";
 import Sparkles from "./cinematic/Sparkles";
 import RadialFlash from "./cinematic/RadialFlash";
 import { useLocalizedSkin } from "@/engine/i18nContent";
+import { useTranslation } from "@/engine/i18n";
 
 interface SkinUnlockedOverlayProps {
   /** Ids of skins to celebrate, in order. */
@@ -57,6 +58,7 @@ export default function SkinUnlockedOverlay({ skinIds, onComplete }: SkinUnlocke
 
   // Hook order requires unconditional invocation.
   const loc = useLocalizedSkin(def ?? { id: current ?? "", name: "", flavor: "" });
+  const { t } = useTranslation();
   if (!def || !current) return null;
 
   const isLast = index === skinIds.length - 1;
@@ -191,7 +193,7 @@ export default function SkinUnlockedOverlay({ skinIds, onComplete }: SkinUnlocke
             }}
             className="mt-2 px-6 py-2 rounded-lg border border-white/20 text-xs uppercase tracking-[0.3em] font-bold text-white/70 hover:text-white hover:border-white/50 hover:bg-white/5 transition-all"
           >
-            {isLast ? "Continuar" : "Siguiente"}
+            {isLast ? t("skinUnlock.continue") : t("skinUnlock.next")}
           </motion.button>
         </div>
       </motion.div>
