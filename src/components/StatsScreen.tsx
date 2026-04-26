@@ -4,6 +4,8 @@ import { getAggregateStats, getRecentRuns, type RunRecord } from "@/engine/runHi
 import { ALL_RELICS } from "@/engine/relics";
 import { getRelicIcon } from "@/engine/relicIcons";
 import Tooltip from "./Tooltip";
+import { localizeRelic } from "@/engine/i18nContent";
+import { useTranslation } from "@/engine/i18n";
 
 interface StatsScreenProps {
   onBack: () => void;
@@ -26,6 +28,8 @@ function StatCard({ label, value, color = "text-white", delay = 0 }: { label: st
 }
 
 function OverviewTab() {
+  // Subscribe to lang changes so favorite relic names update on switch.
+  useTranslation();
   const stats = getAggregateStats();
 
   if (stats.totalRuns === 0) {
@@ -91,6 +95,7 @@ function OverviewTab() {
             {stats.favoriteRelics.map((fav, i) => {
               const relic = ALL_RELICS.find((r) => r.id === fav.id);
               if (!relic) return null;
+              const loc = localizeRelic(relic);
               return (
                 <motion.div
                   key={fav.id}
@@ -99,7 +104,7 @@ function OverviewTab() {
                   transition={{ delay: 0.85 + i * 0.05 }}
                   className="flex items-center gap-2 px-3 py-2 rounded-lg bg-accent-gold/10 border border-accent-gold/15"
                 >
-                  <span className="text-sm font-medium text-accent-gold">{relic.name}</span>
+                  <span className="text-sm font-medium text-accent-gold">{loc.name}</span>
                   <span className="text-xs text-accent-silver/40 font-mono">{fav.count}x</span>
                 </motion.div>
               );
@@ -112,6 +117,8 @@ function OverviewTab() {
 }
 
 function HistoryTab() {
+  // Subscribe to lang changes so per-run relic chip names refresh.
+  useTranslation();
   const runs = getRecentRuns(30);
   // Identify the best run by total score so we can highlight it
   const bestRunId = useMemo(() => {
@@ -246,13 +253,14 @@ function RunRow({ run, index, isBest }: { run: RunRecord; index: number; isBest:
                   const relic = ALL_RELICS.find((r) => r.id === id);
                   if (!relic) return null;
                   const Icon = getRelicIcon(id);
+                  const loc = localizeRelic(relic);
                   return (
                     <Tooltip
                       key={id}
                       content={
                         <div className="flex flex-col gap-0.5">
-                          <span className="font-bold text-white text-xs">{relic.name}</span>
-                          <span className="text-[10px] text-accent-silver/70">{relic.description}</span>
+                          <span className="font-bold text-white text-xs">{loc.name}</span>
+                          <span className="text-[10px] text-accent-silver/70">{loc.description}</span>
                         </div>
                       }
                       placement="top"
@@ -260,7 +268,7 @@ function RunRow({ run, index, isBest }: { run: RunRecord; index: number; isBest:
                     >
                       <span className="flex items-center gap-1 px-2 py-1 rounded-md bg-surface-700/60 text-[10px] text-accent-silver/65 font-medium hover:bg-surface-700 transition-colors">
                         {Icon && <Icon size={11} className="text-accent-gold/80" />}
-                        {relic.name}
+                        {loc.name}
                       </span>
                     </Tooltip>
                   );

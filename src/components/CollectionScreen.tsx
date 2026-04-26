@@ -11,6 +11,8 @@ import { loadProgression, getProgressionBonuses, saveActiveSkin, loadActiveSkin 
 import { ALL_TILE_SKINS } from "@/engine/tileSkins";
 import { ALL_EDITIONS, loadDiscoveredEditions } from "@/engine/editions";
 import { audio } from "@/engine/audio";
+import { localizeRelic } from "@/engine/i18nContent";
+import { useTranslation } from "@/engine/i18n";
 import type { SavedData } from "@/types/domino";
 
 type Tab = "relics" | "patterns" | "skins" | "editions";
@@ -39,6 +41,8 @@ const DEMO_CHAIN_TILES = [
 ] as const;
 
 export default function CollectionScreen({ savedData, onBack }: CollectionScreenProps) {
+  // Subscribe to lang changes so localized relic copy updates on switch.
+  useTranslation();
   const [tab, setTab] = useState<Tab>("relics");
   const [activeSkin, setActiveSkin] = useState<TileSkin>(() => loadActiveSkin() as TileSkin);
 
@@ -108,6 +112,7 @@ export default function CollectionScreen({ savedData, onBack }: CollectionScreen
           {ALL_RELICS.map((relic, i) => {
             const isUnlocked = unlockedIds.has(relic.id);
             const lockInfo = locked.find((l) => l.relicId === relic.id);
+            const loc = localizeRelic(relic);
             return (
               <motion.div
                 key={relic.id}
@@ -129,10 +134,10 @@ export default function CollectionScreen({ savedData, onBack }: CollectionScreen
                     "font-bold text-sm",
                     isUnlocked ? "text-white" : "text-accent-silver/40",
                   ].join(" ")}>
-                    {isUnlocked ? relic.name : "???"}
+                    {isUnlocked ? loc.name : "???"}
                   </span>
                   <span className="text-xs text-accent-silver/50">
-                    {isUnlocked ? relic.description : (lockInfo?.description ?? "Bloqueada")}
+                    {isUnlocked ? loc.description : (lockInfo?.description ?? "Bloqueada")}
                   </span>
                 </div>
                 {isUnlocked && (

@@ -17,6 +17,7 @@ import { getRandomEvent, applyEventEffect } from "@/engine/events";
 import type { GameEvent, EventEffect } from "@/engine/events"; // EventEffect used in handleEventContinue param type
 import { TUTORIAL_STEPS, isTutorialComplete, markTutorialComplete } from "@/engine/tutorial";
 import { getRandomRelics, ALL_RELICS, computeFamilySetBonuses, FAMILY_META } from "@/engine/relics";
+import { localizeRelic } from "@/engine/i18nContent";
 import { celebrateSetBonus, celebrateAchievement, celebrateLegendaryPattern, celebrateBigEvent } from "@/engine/celebrate";
 import BossDefeatedOverlay from "./BossDefeatedOverlay";
 import type { RelicFamily } from "@/types/relic";
@@ -1467,7 +1468,7 @@ export default function GameBoard({ onGameOver, isDaily = false, isEndless = fal
       // Celebrate new relic acquisition
       celebrateAchievement();
       audio.play("pattern_combo");
-      pushReaction("big_score", `Nueva reliquia: ${reward.relic.name}`);
+      pushReaction("big_score", `Nueva reliquia: ${localizeRelic(reward.relic).name}`);
       setGame((prev) => {
         const newPrev = { ...prev, relics: [...prev.relics, reward.relic.id], stats: { ...prev.stats, relicsCollected: prev.stats.relicsCollected + 1 } };
         setRewardOptions([]);

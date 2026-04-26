@@ -9,6 +9,8 @@ import {
 import type { RelicFamily } from "@/types/relic";
 import RelicCard from "./RelicCard";
 import Tooltip, { RelicTooltipContent } from "./Tooltip";
+import { localizeRelic } from "@/engine/i18nContent";
+import { useTranslation } from "@/engine/i18n";
 
 interface RelicBarProps {
   relicIds: string[];
@@ -41,6 +43,9 @@ function familyText(family: RelicFamily | null): string {
 }
 
 export default function RelicBar({ relicIds, pulseKey = 0, highlightIds }: RelicBarProps) {
+  // Subscribe to language changes so localizeRelic() inside the loop
+  // re-evaluates when the user switches language at runtime.
+  useTranslation();
   if (relicIds.length === 0) return null;
 
   const relics = ALL_RELICS.filter((r) => relicIds.includes(r.id));
@@ -84,10 +89,11 @@ export default function RelicBar({ relicIds, pulseKey = 0, highlightIds }: Relic
             const isHighlight = highlightIds?.includes(relic.id);
             const fam = getRelicFamily(relic);
             const rarity = getRelicRarity(relic);
+            const localized = localizeRelic(relic);
             const tooltipContent = (
               <RelicTooltipContent
-                name={relic.name}
-                description={relic.description}
+                name={localized.name}
+                description={localized.description}
                 family={fam ? FAMILY_META[fam].name : null}
                 FamilyIcon={fam ? FAMILY_META[fam].icon : undefined}
                 familyColor={fam ? familyText(fam) : undefined}

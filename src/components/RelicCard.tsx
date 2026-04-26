@@ -1,6 +1,7 @@
 import { motion } from "framer-motion";
 import { ALL_RELICS, getRelicFamily, getRelicRarity } from "@/engine/relics";
 import { getRelicIcon } from "@/engine/relicIcons";
+import { useLocalizedRelic } from "@/engine/i18nContent";
 import type { RelicFamily, RelicRarity } from "@/types/relic";
 
 interface RelicCardProps {
@@ -107,6 +108,9 @@ export default function RelicCard({
   locked = false,
 }: RelicCardProps) {
   const relic = ALL_RELICS.find((r) => r.id === relicId);
+  // Hook order requires us to call useLocalizedRelic unconditionally; we pass
+  // a placeholder relic when the id is unknown and bail out below.
+  const localized = useLocalizedRelic(relic ?? { id: relicId, name: "", description: "", trigger: "passive", effect: { type: "bonus_flat", value: 0 } } as never);
   if (!relic) return null;
 
   const family = getRelicFamily(relic) ?? "fuerza";
@@ -148,14 +152,14 @@ export default function RelicCard({
       {/* Name */}
       {showName && (
         <div className={["text-center px-1 w-full font-bold text-white/90 leading-tight truncate", cfg.name].join(" ")}>
-          {locked ? "???" : relic.name}
+          {locked ? "???" : localized.name}
         </div>
       )}
 
       {/* Description */}
       {showDescription && !locked && (
         <div className={["text-center px-1.5 pb-2 w-full text-accent-silver/70 leading-tight mt-0.5", cfg.desc].join(" ")}>
-          {relic.description}
+          {localized.description}
         </div>
       )}
 

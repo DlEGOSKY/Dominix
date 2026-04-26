@@ -13,6 +13,8 @@ import TileView, { type TileSkin } from "./TileView";
 import RecapHighlights from "./RecapHighlights";
 import SkinUnlockedOverlay from "./SkinUnlockedOverlay";
 import VictoryOverlay from "./VictoryOverlay";
+import { localizeRelic } from "@/engine/i18nContent";
+import { useTranslation } from "@/engine/i18n";
 
 /**
  * Short poetic epilogue depending on how far the run went — gives the run
@@ -215,6 +217,8 @@ export default function GameOverScreen({
   unlockedSkins,
   mastery,
 }: GameOverScreenProps) {
+  // Subscribe to lang changes so localized relic names update on switch.
+  useTranslation();
   const relics = ALL_RELICS.filter((r) => relicIds.includes(r.id));
   // Victory cinematic plays first if the player crossed into El Eco (round 16+)
   // — it is the symbolic completion of Dominix's three-act structure.
@@ -406,15 +410,18 @@ export default function GameOverScreen({
             Reliquias obtenidas
           </span>
           <div className="flex flex-wrap justify-center gap-2">
-            {relics.map((relic) => (
-              <div
-                key={relic.id}
-                className="px-3 py-1.5 rounded-lg bg-surface-700/60 border border-accent-gold/15 text-xs text-accent-silver/70 font-medium"
-                title={relic.description}
-              >
-                {relic.name}
-              </div>
-            ))}
+            {relics.map((relic) => {
+              const loc = localizeRelic(relic);
+              return (
+                <div
+                  key={relic.id}
+                  className="px-3 py-1.5 rounded-lg bg-surface-700/60 border border-accent-gold/15 text-xs text-accent-silver/70 font-medium"
+                  title={loc.description}
+                >
+                  {loc.name}
+                </div>
+              );
+            })}
           </div>
         </motion.div>
       )}

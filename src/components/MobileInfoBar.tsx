@@ -7,6 +7,8 @@ import { ALL_RELICS } from "@/engine/relics";
 import { ALL_ACTIVE_MUTATIONS } from "@/engine/activeMutations";
 import type { ActiveMutationState } from "@/engine/activeMutations";
 import type { GameState } from "@/types/domino";
+import { localizeRelic } from "@/engine/i18nContent";
+import { useTranslation } from "@/engine/i18n";
 
 interface MobileInfoBarProps {
   relicIds: string[];
@@ -128,6 +130,8 @@ export default function MobileInfoBar({
 }
 
 function RelicsContent({ relicIds }: { relicIds: string[] }) {
+  // Subscribe to lang changes so localized relic names refresh on switch.
+  useTranslation();
   if (relicIds.length === 0) {
     return <p className="text-xs text-accent-silver/40 text-center py-4">No hay reliquias aun</p>;
   }
@@ -136,10 +140,11 @@ function RelicsContent({ relicIds }: { relicIds: string[] }) {
       {relicIds.map((id) => {
         const r = ALL_RELICS.find((x) => x.id === id);
         if (!r) return null;
+        const loc = localizeRelic(r);
         return (
           <div key={id} className="p-3 rounded-xl bg-accent-gold/5 border border-accent-gold/20">
-            <div className="text-sm font-bold text-accent-gold">{r.name}</div>
-            <div className="text-[11px] text-accent-silver/60 mt-1 leading-snug">{r.description}</div>
+            <div className="text-sm font-bold text-accent-gold">{loc.name}</div>
+            <div className="text-[11px] text-accent-silver/60 mt-1 leading-snug">{loc.description}</div>
           </div>
         );
       })}
