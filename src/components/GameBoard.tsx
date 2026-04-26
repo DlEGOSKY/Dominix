@@ -17,7 +17,7 @@ import { getRandomEvent, applyEventEffect } from "@/engine/events";
 import type { GameEvent, EventEffect } from "@/engine/events"; // EventEffect used in handleEventContinue param type
 import { TUTORIAL_STEPS, isTutorialComplete, markTutorialComplete } from "@/engine/tutorial";
 import { getRandomRelics, ALL_RELICS, computeFamilySetBonuses, FAMILY_META } from "@/engine/relics";
-import { localizeRelic } from "@/engine/i18nContent";
+import { localizeRelic, localizePatternById } from "@/engine/i18nContent";
 import { celebrateSetBonus, celebrateAchievement, celebrateLegendaryPattern, celebrateBigEvent } from "@/engine/celebrate";
 import BossDefeatedOverlay from "./BossDefeatedOverlay";
 import type { RelicFamily } from "@/types/relic";
@@ -490,7 +490,7 @@ export default function GameBoard({ onGameOver, isDaily = false, isEndless = fal
         })),
       ]);
       const latestPattern = analysis.patterns[analysis.patterns.length - 1];
-      pushReaction("pattern", latestPattern?.name);
+      pushReaction("pattern", latestPattern ? localizePatternById(latestPattern.id, latestPattern.name).name : undefined);
       // Bomber passive: next play becomes wild
       if (character.passive.type === "wild_on_pattern") {
         setWildNextActive(true);

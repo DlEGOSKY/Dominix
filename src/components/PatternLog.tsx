@@ -2,6 +2,8 @@ import { AnimatePresence, motion } from "framer-motion";
 import { ALL_PATTERNS } from "@/engine/patterns";
 import { getPatternIcon } from "@/engine/patternIcons";
 import Tooltip, { PatternTooltipContent } from "./Tooltip";
+import { localizePattern, localizePatternById } from "@/engine/i18nContent";
+import { useTranslation } from "@/engine/i18n";
 
 export interface PatternLogEntry {
   id: string;
@@ -18,6 +20,8 @@ interface PatternLogProps {
  * Appears floating at the top-left. Hidden when empty.
  */
 export default function PatternLog({ entries }: PatternLogProps) {
+  // Subscribe to lang changes so chip names + tooltip refresh on switch.
+  useTranslation();
   if (entries.length === 0) return null;
 
   return (
@@ -29,6 +33,7 @@ export default function PatternLog({ entries }: PatternLogProps) {
         {entries.map((entry, i) => {
           const def = ALL_PATTERNS.find((d) => d.id === entry.id);
           const Icon = getPatternIcon(entry.id);
+          const locName = localizePatternById(entry.id, entry.name).name;
           const chip = (
             <motion.div
               key={entry.id}
@@ -45,19 +50,21 @@ export default function PatternLog({ entries }: PatternLogProps) {
                 <div className="w-1 h-4 rounded-full bg-accent-gold/80 flex-shrink-0" />
               )}
               <div className="flex-1 min-w-0">
-                <div className="text-[10px] font-bold text-white truncate">{entry.name}</div>
+                <div className="text-[10px] font-bold text-white truncate">{locName}</div>
                 <div className="text-[9px] font-mono text-accent-gold/80">+{entry.bonus}</div>
               </div>
               <div className="text-[8px] text-accent-silver/30 font-mono">#{i + 1}</div>
             </motion.div>
           );
-          return def ? (
+          if (!def) return chip;
+          const locDef = localizePattern(def);
+          return (
             <Tooltip
               key={entry.id}
               content={
                 <PatternTooltipContent
-                  name={def.name}
-                  description={def.description}
+                  name={locDef.name}
+                  description={locDef.description}
                   bonus={entry.bonus}
                 />
               }
@@ -66,7 +73,7 @@ export default function PatternLog({ entries }: PatternLogProps) {
             >
               {chip}
             </Tooltip>
-          ) : chip;
+          );
         })}
       </AnimatePresence>
     </div>

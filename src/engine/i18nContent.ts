@@ -140,27 +140,62 @@ export function localizeRelicById(id: string, fallbackName: string, fallbackDesc
 }
 
 // =============================================================================
-// PATTERNS (filled later — placeholder so localizePattern can already be wired)
+// PATTERNS
 // =============================================================================
 
-const PATTERN_EN: Record<string, { name: string; description?: string }> = {};
+const PATTERN_EN: Record<string, ContentEntry> = {
+  // ---- Chain length ----
+  cadena_simple:  { name: "Simple Chain",       description: "Place 3+ tiles in the chain" },
+  cadena_larga:   { name: "Long Chain",         description: "Place 5+ tiles in the chain" },
+  cadena_maxima:  { name: "Maximum Chain",      description: "Place 7+ tiles in the chain" },
 
-export function localizePattern(pattern: PatternInfo): { name: string; description?: string } {
-  if (getLanguage() === "es") return { name: pattern.name, description: pattern.description };
-  const t = PATTERN_EN[pattern.id];
-  return t ?? { name: pattern.name, description: pattern.description };
+  // ---- Doubles ----
+  doble_doble:    { name: "Double Double",      description: "Play 2 doubles in the chain" },
+  triple_doble:   { name: "Triple Double",      description: "Play 3 doubles in the chain" },
+  todo_dobles:    { name: "All Doubles",        description: "Every tile in the chain is a double (3+)" },
+
+  // ---- Number / structure ----
+  dominio:        { name: "Dominion",           description: "A number appears in 3+ connections" },
+  cierre_exacto:  { name: "Exact Closure",      description: "The endpoints of the chain match" },
+  trinidad:       { name: "Trinity",            description: "3+ consecutive tiles share a common number" },
+  simetria:       { name: "Symmetry",           description: "Symmetrical chain with matching endpoints" },
+  espejo:         { name: "Mirror",             description: "3+ consecutive tiles with inverted values" },
+  puente:         { name: "Bridge",             description: "5+ tiles where first and last share a value" },
+  cuna:           { name: "Cradle",             description: "First and last tile share the same total" },
+
+  // ---- Pairs / streaks ----
+  parejas:        { name: "Pairs",              description: "3+ pairs of consecutive tiles with the same sum" },
+  racha_alta:     { name: "High Streak",        description: "3+ consecutive tiles with sum >= 8" },
+  racha_baja:     { name: "Low Streak",         description: "4+ consecutive tiles with sum <= 4" },
+
+  // ---- Sequences ----
+  escalera:       { name: "Stairs",             description: "4+ connections form an ascending sequence" },
+  zigzag:         { name: "Zigzag",             description: "5+ connections alternating up/down" },
+  alternancia:    { name: "Alternation",        description: "4+ tiles alternating even/odd in sum" },
+  avalancha:      { name: "Avalanche",          description: "4+ tiles with growing sums" },
+  diminuendo:     { name: "Diminuendo",         description: "4+ tiles with strictly decreasing sums" },
+  crescendo:      { name: "Crescendo",          description: "4+ consecutive tiles with strictly increasing sums" },
+
+  // ---- Sums ----
+  suma_exacta:    { name: "Exact Sum",          description: "Total chain sum is a multiple of 10" },
+  suma_impar:     { name: "Odd Sum",            description: "4+ tiles where every sum is odd" },
+  armonia:        { name: "Harmony",            description: "Total chain sum is a prime number" },
+
+  // ---- Sacred / rare ----
+  fractal:        { name: "Fractal",            description: "Every sum is a power of 2 (1, 2, 4, 8)" },
+  constelacion:   { name: "Constellation",      description: "Chain of 5+ tiles with 6+ distinct numbers" },
+  corona:         { name: "Crown",              description: "3+ doubles with consecutive values (e.g. 3|3, 4|4, 5|5)" },
+  hexagrama:      { name: "Hexagram",           description: "Exactly 6 tiles with 6+ distinct numbers" },
+  triple_filo:    { name: "Triple Edge",        description: "Chain of 6+ with 3 even and 3 odd tiles (balance)" },
+  ouroboros:      { name: "Ouroboros",          description: "Exact closure + chain of 7+ tiles (rare)" },
+};
+
+export function localizePattern(pattern: PatternInfo): { name: string; description: string } {
+  return pickContent(PATTERN_EN, pattern.id, { name: pattern.name, description: pattern.description }, getLanguage());
 }
 
-export function localizePatternById(id: string, fallbackName: string, fallbackDescription?: string): { name: string; description?: string } {
-  if (getLanguage() === "es") return { name: fallbackName, description: fallbackDescription };
-  const t = PATTERN_EN[id];
-  return t ?? { name: fallbackName, description: fallbackDescription };
-}
-
-// Hook so the patterns block (next commit) can register translations without
-// re-exporting this whole module.
-export function _registerPatternTranslations(map: Record<string, { name: string; description?: string }>) {
-  Object.assign(PATTERN_EN, map);
+export function localizePatternById(id: string, fallbackName: string, fallbackDescription = ""): { name: string; description: string } {
+  return pickContent(PATTERN_EN, id, { name: fallbackName, description: fallbackDescription }, getLanguage());
 }
 
 // =============================================================================
@@ -185,13 +220,13 @@ export function useLocalizedRelicById(id: string, fallbackName: string, fallback
 }
 
 /** Reactive variant of `localizePattern`. */
-export function useLocalizedPattern(pattern: PatternInfo): { name: string; description?: string } {
+export function useLocalizedPattern(pattern: PatternInfo): { name: string; description: string } {
   useTranslation();
   return localizePattern(pattern);
 }
 
 /** Reactive variant of `localizePatternById`. */
-export function useLocalizedPatternById(id: string, fallbackName: string, fallbackDescription?: string): { name: string; description?: string } {
+export function useLocalizedPatternById(id: string, fallbackName: string, fallbackDescription = ""): { name: string; description: string } {
   useTranslation();
   return localizePatternById(id, fallbackName, fallbackDescription);
 }

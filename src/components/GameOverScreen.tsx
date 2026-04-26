@@ -13,7 +13,7 @@ import TileView, { type TileSkin } from "./TileView";
 import RecapHighlights from "./RecapHighlights";
 import SkinUnlockedOverlay from "./SkinUnlockedOverlay";
 import VictoryOverlay from "./VictoryOverlay";
-import { localizeRelic } from "@/engine/i18nContent";
+import { localizeRelic, localizePatternById } from "@/engine/i18nContent";
 import { useTranslation } from "@/engine/i18n";
 
 /**
@@ -162,6 +162,8 @@ function UnlockedSkinsCard({ skinIds }: { skinIds: string[] }) {
  * the GameOverScreen does not become a wall of chips on long runs.
  */
 function PatternBreakdown({ breakdown }: { breakdown: Record<string, number> }) {
+  // Subscribe to lang changes so chip names refresh when user toggles language.
+  useTranslation();
   const entries = Object.entries(breakdown ?? {})
     .filter(([, n]) => n > 0)
     .sort((a, b) => b[1] - a[1]);
@@ -173,8 +175,11 @@ function PatternBreakdown({ breakdown }: { breakdown: Record<string, number> }) 
   const rest = entries.slice(VISIBLE);
   const restSum = rest.reduce((s, [, n]) => s + n, 0);
 
-  const nameOf = (id: string) =>
-    ALL_PATTERNS.find((p) => p.id === id)?.name ?? id;
+  const nameOf = (id: string) => {
+    const def = ALL_PATTERNS.find((p) => p.id === id);
+    if (!def) return id;
+    return localizePatternById(def.id, def.name).name;
+  };
 
   return (
     <motion.div

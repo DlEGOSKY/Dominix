@@ -5,6 +5,8 @@ import { ALL_PATTERNS } from "@/engine/patterns";
 import { ALL_BOSSES } from "@/engine/boss";
 import { ALL_CELESTIAL, FIRMAMENT_META } from "@/engine/celestial";
 import { ALL_CHAOS_TWISTS } from "@/engine/chaos";
+import { localizePattern } from "@/engine/i18nContent";
+import { useTranslation } from "@/engine/i18n";
 
 interface CodexScreenProps {
   onBack: () => void;
@@ -25,6 +27,8 @@ const TABS: { id: Tab; label: string; description: string }[] = [
  * how much depth is still waiting.
  */
 export default function CodexScreen({ onBack }: CodexScreenProps) {
+  // Subscribe to lang changes so codex pattern names refresh on switch.
+  useTranslation();
   const [tab, setTab] = useState<Tab>("patterns");
   const codex = useMemo(() => loadCodex(), []);
 
@@ -95,6 +99,7 @@ export default function CodexScreen({ onBack }: CodexScreenProps) {
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
           {ALL_PATTERNS.map((p) => {
             const known = codex.patternIds.has(p.id);
+            const loc = localizePattern(p);
             return (
               <motion.div
                 key={p.id}
@@ -104,7 +109,7 @@ export default function CodexScreen({ onBack }: CodexScreenProps) {
               >
                 <div className="flex items-baseline justify-between gap-2">
                   <span className={`text-sm font-bold ${known ? "text-white" : "text-accent-silver/30"}`}>
-                    {known ? p.name : "???"}
+                    {known ? loc.name : "???"}
                   </span>
                   {known && (
                     <span className="text-[10px] font-mono text-accent-gold/70 tabular-nums">
@@ -113,7 +118,7 @@ export default function CodexScreen({ onBack }: CodexScreenProps) {
                   )}
                 </div>
                 <p className={`text-[11px] leading-snug mt-1 ${known ? "text-accent-silver/60" : "text-accent-silver/20 italic"}`}>
-                  {known ? p.description : "Aun no descubierto"}
+                  {known ? loc.description : "Aun no descubierto"}
                 </p>
               </motion.div>
             );

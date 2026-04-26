@@ -11,7 +11,7 @@ import { loadProgression, getProgressionBonuses, saveActiveSkin, loadActiveSkin 
 import { ALL_TILE_SKINS } from "@/engine/tileSkins";
 import { ALL_EDITIONS, loadDiscoveredEditions } from "@/engine/editions";
 import { audio } from "@/engine/audio";
-import { localizeRelic } from "@/engine/i18nContent";
+import { localizeRelic, localizePattern } from "@/engine/i18nContent";
 import { useTranslation } from "@/engine/i18n";
 import type { SavedData } from "@/types/domino";
 
@@ -159,6 +159,7 @@ export default function CollectionScreen({ savedData, onBack }: CollectionScreen
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 w-full">
           {ALL_PATTERNS.map((pattern, i) => {
             const Icon = getPatternIcon(pattern.id);
+            const loc = localizePattern(pattern);
             return (
               <motion.div
                 key={pattern.id}
@@ -174,7 +175,7 @@ export default function CollectionScreen({ savedData, onBack }: CollectionScreen
                 )}
                 <div className="flex-1 min-w-0 flex flex-col gap-1">
                   <div className="flex items-center justify-between gap-2">
-                    <span className="font-bold text-sm text-white truncate">{pattern.name}</span>
+                    <span className="font-bold text-sm text-white truncate">{loc.name}</span>
                     <div className="flex items-center gap-2 flex-shrink-0">
                       {pattern.bonus > 0 && (
                         <span className="text-[10px] font-mono font-bold text-green-400/70">+{pattern.bonus}</span>
@@ -184,7 +185,7 @@ export default function CollectionScreen({ savedData, onBack }: CollectionScreen
                       )}
                     </div>
                   </div>
-                  <span className="text-xs text-accent-silver/50">{pattern.description}</span>
+                  <span className="text-xs text-accent-silver/50">{loc.description}</span>
                 </div>
               </motion.div>
             );

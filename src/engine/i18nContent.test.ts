@@ -1,7 +1,8 @@
 import { describe, it, expect, beforeEach } from "vitest";
 import { setLanguage } from "./i18n";
-import { localizeRelic, localizeRelicById } from "./i18nContent";
+import { localizeRelic, localizeRelicById, localizePattern, localizePatternById } from "./i18nContent";
 import { ALL_RELICS } from "./relics";
+import { ALL_PATTERNS } from "./patterns";
 
 describe("i18nContent — relics", () => {
   beforeEach(() => {
@@ -64,5 +65,46 @@ describe("i18nContent — relics", () => {
     expect(localizeRelic(precision).description).toBe("x1.15 multiplicador global");
     setLanguage("en");
     expect(localizeRelic(precision).description).toBe("x1.15 global multiplier");
+  });
+});
+
+describe("i18nContent — patterns", () => {
+  beforeEach(() => {
+    setLanguage("es");
+  });
+
+  it("returns Spanish pattern strings unchanged when language is es", () => {
+    const fractal = ALL_PATTERNS.find((p) => p.id === "fractal")!;
+    setLanguage("es");
+    const loc = localizePattern(fractal);
+    expect(loc.name).toBe(fractal.name);
+    expect(loc.description).toBe(fractal.description);
+  });
+
+  it("returns English translation when language is en", () => {
+    const fractal = ALL_PATTERNS.find((p) => p.id === "fractal")!;
+    setLanguage("en");
+    const loc = localizePattern(fractal);
+    expect(loc.name).toBe("Fractal");
+    expect(loc.description).toBe("Every sum is a power of 2 (1, 2, 4, 8)");
+  });
+
+  it("falls back to Spanish when a pattern id is unknown", () => {
+    setLanguage("en");
+    const loc = localizePatternById("not-a-pattern", "Original", "Original desc");
+    expect(loc.name).toBe("Original");
+    expect(loc.description).toBe("Original desc");
+  });
+
+  it("covers every pattern id with an English translation (no orphans)", () => {
+    setLanguage("en");
+    const orphans: string[] = [];
+    for (const pattern of ALL_PATTERNS) {
+      const loc = localizePattern(pattern);
+      if (loc.name === pattern.name && loc.description === pattern.description) {
+        orphans.push(pattern.id);
+      }
+    }
+    expect(orphans, `Missing EN translations for: ${orphans.join(", ")}`).toEqual([]);
   });
 });

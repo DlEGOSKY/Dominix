@@ -3,6 +3,8 @@ import type { ScoreBreakdown } from "@/engine/score";
 import { ALL_PATTERNS } from "@/engine/patterns";
 import { getPatternIcon } from "@/engine/patternIcons";
 import Tooltip, { PatternTooltipContent } from "./Tooltip";
+import { localizePatternById } from "@/engine/i18nContent";
+import { useTranslation } from "@/engine/i18n";
 
 export interface ScoreRevealExtras {
   editionFlat?: number;
@@ -32,6 +34,8 @@ interface ScoreRevealProps {
 }
 
 export default function ScoreReveal({ breakdown, finalScore, target, won, extras = {} }: ScoreRevealProps) {
+  // Subscribe to lang changes so per-pattern labels refresh on switch.
+  useTranslation();
   const lines: RevealLine[] = [];
 
   // --- Base ---
@@ -44,11 +48,12 @@ export default function ScoreReveal({ breakdown, finalScore, target, won, extras
   // --- Patrones individuales ---
   if (breakdown.patternAnalysis.patterns.length > 0) {
     for (const p of breakdown.patternAnalysis.patterns) {
+      const locName = localizePatternById(p.id, p.name).name;
       if (p.bonus > 0) {
-        lines.push({ label: p.name, value: `+${p.bonus}`, color: "text-cyan-300", indent: true, patternId: p.id });
+        lines.push({ label: locName, value: `+${p.bonus}`, color: "text-cyan-300", indent: true, patternId: p.id });
       }
       if (p.multiplier > 1) {
-        lines.push({ label: `${p.name} ×`, value: `x${p.multiplier.toFixed(2)}`, color: "text-cyan-400", indent: true, isMult: true, patternId: p.id });
+        lines.push({ label: `${locName} ×`, value: `x${p.multiplier.toFixed(2)}`, color: "text-cyan-400", indent: true, isMult: true, patternId: p.id });
       }
     }
     if (breakdown.patternAnalysis.combo) {
@@ -115,14 +120,17 @@ export default function ScoreReveal({ breakdown, finalScore, target, won, extras
           >
             {patternDef ? (
               <Tooltip
-                content={
-                  <PatternTooltipContent
-                    name={patternDef.name}
-                    description={patternDef.description}
-                    bonus={patternDef.bonus}
-                    multiplier={patternDef.multiplier}
-                  />
-                }
+                content={(() => {
+                  const loc = localizePatternById(patternDef.id, patternDef.name, patternDef.description);
+                  return (
+                    <PatternTooltipContent
+                      name={loc.name}
+                      description={loc.description}
+                      bonus={patternDef.bonus}
+                      multiplier={patternDef.multiplier}
+                    />
+                  );
+                })()}
                 placement="left"
                 delay={150}
               >

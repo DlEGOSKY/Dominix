@@ -3,6 +3,8 @@ import type { PatternResult, ComboResult } from "@/engine/patterns";
 import { ALL_PATTERNS } from "@/engine/patterns";
 import { getPatternIcon } from "@/engine/patternIcons";
 import Tooltip, { PatternTooltipContent } from "./Tooltip";
+import { localizePattern, localizePatternById } from "@/engine/i18nContent";
+import { useTranslation } from "@/engine/i18n";
 
 interface PatternDisplayProps {
   patterns: PatternResult[];
@@ -11,6 +13,8 @@ interface PatternDisplayProps {
 }
 
 export default function PatternDisplay({ patterns, multiplier, combo }: PatternDisplayProps) {
+  // Subscribe to lang changes so chip names + tooltip refresh on switch.
+  useTranslation();
   if (patterns.length === 0) {
     return (
       <div className="text-xs text-accent-silver/40 tracking-wide h-8 flex items-center">
@@ -26,6 +30,7 @@ export default function PatternDisplay({ patterns, multiplier, combo }: PatternD
           {patterns.map((p, i) => {
             const def = ALL_PATTERNS.find((d) => d.id === p.id);
             const Icon = getPatternIcon(p.id);
+            const locName = localizePatternById(p.id, p.name).name;
             const chip = (
               <motion.div
                 key={p.id}
@@ -36,7 +41,7 @@ export default function PatternDisplay({ patterns, multiplier, combo }: PatternD
                 className="px-3 py-1.5 rounded-md bg-surface-700 border border-accent-gold/30 text-sm flex items-center gap-1.5"
               >
                 {Icon && <Icon className="text-accent-gold" size={14} />}
-                <span className="font-medium text-accent-gold">{p.name}</span>
+                <span className="font-medium text-accent-gold">{locName}</span>
                 {p.bonus > 0 && (
                   <motion.span
                     initial={{ opacity: 0 }}
@@ -57,13 +62,15 @@ export default function PatternDisplay({ patterns, multiplier, combo }: PatternD
                 )}
               </motion.div>
             );
-            return def ? (
+            if (!def) return chip;
+            const locDef = localizePattern(def);
+            return (
               <Tooltip
                 key={p.id}
                 content={
                   <PatternTooltipContent
-                    name={def.name}
-                    description={def.description}
+                    name={locDef.name}
+                    description={locDef.description}
                     bonus={p.bonus}
                     multiplier={p.multiplier}
                   />
@@ -73,7 +80,7 @@ export default function PatternDisplay({ patterns, multiplier, combo }: PatternD
               >
                 {chip}
               </Tooltip>
-            ) : chip;
+            );
           })}
         </AnimatePresence>
       </div>
