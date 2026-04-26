@@ -80,6 +80,12 @@ export default function Hand({ tiles, chain, onPlay, disabled, skin, onDiscard, 
                   </motion.div>
                 )}
                 {settings.showHints && (
+                  // Tooltip overlay sits on top of the TileView to detect hover.
+                  // It must NOT swallow clicks: forward them to the same play
+                  // handler so the underlying tile is still played. Without this,
+                  // showHints (the default) silently broke tile interaction
+                  // because the inner div had pointer-events-auto for hover
+                  // capture but no onClick, so clicks landed on it and stopped.
                   <div className="absolute inset-0 pointer-events-none">
                     <Tooltip
                       content={<TileTooltipContent tile={tile} playable={playable} sides={sides} preview={settings.showPreview ? preview : null} />}
@@ -87,7 +93,11 @@ export default function Hand({ tiles, chain, onPlay, disabled, skin, onDiscard, 
                       delay={180}
                       className="absolute inset-0 w-full h-full"
                     >
-                      <div className="w-full h-full pointer-events-auto" />
+                      <div
+                        className={`w-full h-full pointer-events-auto ${playable ? "cursor-pointer" : ""}`}
+                        onClick={() => handleClick(tile)}
+                        aria-hidden
+                      />
                     </Tooltip>
                   </div>
                 )}
