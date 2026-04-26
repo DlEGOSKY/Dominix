@@ -18,6 +18,7 @@ import { getLanguage, useTranslation, type Language } from "./i18n";
 import type { Relic } from "@/types/relic";
 import type { PatternInfo } from "./patterns";
 import type { Boss } from "./boss";
+import type { GameEvent } from "./events";
 
 // =============================================================================
 // RELICS
@@ -295,6 +296,167 @@ export function localizeBossById(id: string, fallbackName: string, fallbackDescr
 }
 
 // =============================================================================
+// EVENTS (blessings, curses, choices)
+// =============================================================================
+
+interface EventOptionEntry {
+  label: string;
+  description: string;
+}
+
+interface EventEntry extends ContentEntry {
+  /** Per-option labels for choice events, in source order. */
+  options?: EventOptionEntry[];
+}
+
+const EVENT_EN: Record<string, EventEntry> = {
+  // ---- Blessings ----
+  lucky_draw:    { name: "Lucky Draw",       description: "Your next hand will have one extra tile" },
+  easy_round:    { name: "Calm Round",       description: "This round's target is reduced by 15%" },
+  bonus_points:  { name: "Unexpected Bonus", description: "Start the round with 25 extra points" },
+  tile_gift:     { name: "Gift of Fate",     description: "Two random tiles are added to your pool" },
+  momentum:      { name: "Momentum",         description: "Your streak continues with force" },
+  segundo_aire:  { name: "Second Wind",      description: "You recover energy for the next round" },
+  eco_dorado:    { name: "Golden Echo",      description: "One tile in your pool turns golden" },
+  lluvia_fichas: { name: "Rain of Tiles",    description: "The sky opens and new tiles fall" },
+  flujo_tactico: { name: "Tactical Flow",    description: "Your reflexes sharpen: +3 actions this round" },
+  manos_agiles:  { name: "Nimble Hands",     description: "You can discard and draw more freely" },
+  astro_errante: { name: "Wandering Star",   description: "A light crosses the sky and blesses your play with cosmic energy" },
+  ultimo_soplido:{ name: "Last Breath",      description: "A gust of wind stirs the tiles and gives you an edge" },
+  cosecha_tardia:{ name: "Late Harvest",     description: "You have built a pact with the earth. You reap the rewards." },
+
+  // ---- Curses ----
+  hard_round:       { name: "Hard Round",      description: "This round's target increases by 20%" },
+  lost_tile:        { name: "Lost Tile",       description: "A random tile vanishes from your pool" },
+  tormenta:         { name: "Storm",           description: "A storm approaches; things get complicated" },
+  terremoto:        { name: "Earthquake",      description: "The ground trembles and you lose 2 tiles from the pool" },
+  bloqueo_temporal: { name: "Temporal Lock",   description: "Your energy drains. You lose 3 actions this round" },
+  duelo_sombras:    { name: "Shadow Duel",     description: "An echo of yourself steals energy, but leaves a mark on its hands" },
+
+  // ---- Choices ----
+  gamblers_choice: {
+    name: "Gambler's Choice",
+    description: "Choose your fate",
+    options: [
+      { label: "Risk",   description: "Target +25%, but +40 bonus points if you win" },
+      { label: "Safety", description: "Target -10%, no extra bonus" },
+    ],
+  },
+  sacrifice: {
+    name: "Sacrifice",
+    description: "Sacrifice something to gain something else",
+    options: [
+      { label: "Lose a tile",  description: "Lose 1 tile, gain 30 points" },
+      { label: "Hard target",  description: "Target +15%, gain 2 extra tiles" },
+    ],
+  },
+  presion: {
+    name: "Under Pressure",
+    description: "Difficulty rises, but so does the reward",
+    options: [
+      { label: "Accept the pressure", description: "Target +30%, but +60 bonus points" },
+      { label: "Refuse",              description: "No changes" },
+    ],
+  },
+  vision_futura: {
+    name: "Future Vision",
+    description: "Choose between preparation or risk",
+    options: [
+      { label: "Preparation", description: "Target -15%, +1 extra tile in hand" },
+      { label: "Ambition",    description: "Target +20%, but +50 bonus points" },
+    ],
+  },
+  intercambio_tactico: {
+    name: "Tactical Trade",
+    description: "Change your playstyle",
+    options: [
+      { label: "More actions",     description: "+4 actions, but -1 discard" },
+      { label: "More flexibility", description: "+1 discard and +1 draw, but -2 actions" },
+    ],
+  },
+  pacto_oscuro: {
+    name: "Dark Pact",
+    description: "A dark power offers you a deal",
+    options: [
+      { label: "Accept the power", description: "Target +35%, but +75 bonus points" },
+      { label: "Refuse",           description: "Lose 1 tile but target -10%" },
+    ],
+  },
+  viajero_misterioso: {
+    name: "Mysterious Traveler",
+    description: "A stranger with a sealed box offers a trade",
+    options: [
+      { label: "Accept the box", description: "+3 new tiles in the pool, but target +10%" },
+      { label: "Give a tile",    description: "Lose 1 tile, start with +60 points" },
+    ],
+  },
+  apuesta_coleccionista: {
+    name: "Collector's Wager",
+    description: "A collector bets their fortune against yours",
+    options: [
+      { label: "Double down", description: "Target +50%, but +120 bonus points if you win" },
+      { label: "Withdraw",    description: "Target -5% and you lose nothing" },
+    ],
+  },
+  mercader_errante: {
+    name: "Wandering Merchant",
+    description: "A merchant offers trades. Choose wisely.",
+    options: [
+      { label: "Buy tiles",  description: "Lose half your points this round, gain 3 extra tiles" },
+      { label: "Sell luck",  description: "Lose 1 tile from the pool, gain +60 bonus points" },
+    ],
+  },
+  pacto_crepusculo: {
+    name: "Twilight Pact",
+    description: "Twilight offers power at a cost. Accept or refuse?",
+    options: [
+      { label: "Accept the pact", description: "Target +30%, gain +80 points at round start" },
+      { label: "Refuse",          description: "Target -10%, no bonus" },
+    ],
+  },
+  llave_caos: {
+    name: "Key of Chaos",
+    description: "A key that opens everything and nothing. Choose your opening.",
+    options: [
+      { label: "Path of tiles", description: "+2 tiles in hand and +1 extra draw" },
+      { label: "Path of score", description: "Start with +50 points this round" },
+      { label: "Path of order", description: "Target -20%, no other advantage" },
+    ],
+  },
+  voz_pasado: {
+    name: "Voice of the Past",
+    description: "An echo whispers fragments of previous runs.",
+    options: [
+      { label: "Listen", description: "+45 bonus points, +2 actions this round" },
+      { label: "Ignore", description: "Lose 1 tile but gain +90 bonus points" },
+    ],
+  },
+};
+
+/**
+ * Localized event — name, description, and (for choice events) translated
+ * option labels + descriptions in source order.
+ */
+export function localizeEvent(event: GameEvent): { name: string; description: string; options?: EventOptionEntry[] } {
+  const sourceOptions = event.effect.type === "choice"
+    ? event.effect.options.map((o) => ({ label: o.label, description: o.description }))
+    : undefined;
+
+  if (getLanguage() === "es") {
+    return { name: event.name, description: event.description, options: sourceOptions };
+  }
+  const entry = EVENT_EN[event.id];
+  if (!entry) {
+    return { name: event.name, description: event.description, options: sourceOptions };
+  }
+  return {
+    name: entry.name,
+    description: entry.description,
+    options: entry.options ?? sourceOptions,
+  };
+}
+
+// =============================================================================
 // REACTIVE HOOKS
 // =============================================================================
 // Components that render localized gameplay content should use these hooks
@@ -331,4 +493,10 @@ export function useLocalizedPatternById(id: string, fallbackName: string, fallba
 export function useLocalizedBoss(boss: Boss): { name: string; description: string; phases?: string[] } {
   useTranslation();
   return localizeBoss(boss);
+}
+
+/** Reactive variant of `localizeEvent` — name + description + choice options. */
+export function useLocalizedEvent(event: GameEvent): { name: string; description: string; options?: EventOptionEntry[] } {
+  useTranslation();
+  return localizeEvent(event);
 }

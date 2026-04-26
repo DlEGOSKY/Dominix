@@ -1,5 +1,6 @@
 import { motion } from "framer-motion";
 import type { GameEvent, ChoiceOption, EventEffect } from "@/engine/events";
+import { useLocalizedEvent } from "@/engine/i18nContent";
 
 interface EventScreenProps {
   event: GameEvent;
@@ -7,8 +8,16 @@ interface EventScreenProps {
 }
 
 export default function EventScreen({ event, onContinue }: EventScreenProps) {
+  const loc = useLocalizedEvent(event);
   const isChoice = event.effect.type === "choice";
-  const options = isChoice ? (event.effect as { type: "choice"; options: ChoiceOption[] }).options : [];
+  // Pair each source ChoiceOption (carries the actual effect we must run) with
+  // its translated label/description by index. localizeEvent keeps order stable.
+  const sourceOptions = isChoice ? (event.effect as { type: "choice"; options: ChoiceOption[] }).options : [];
+  const options = sourceOptions.map((src, i) => ({
+    effect: src.effect,
+    label: loc.options?.[i]?.label ?? src.label,
+    description: loc.options?.[i]?.description ?? src.description,
+  }));
 
   const typeColors = {
     blessing: "text-green-400",
@@ -42,10 +51,10 @@ export default function EventScreen({ event, onContinue }: EventScreenProps) {
             {event.type === "blessing" ? "Bendicion" : event.type === "curse" ? "Maldicion" : "Evento"}
           </span>
           <h2 className="font-display font-bold text-3xl text-white">
-            {event.name}
+            {loc.name}
           </h2>
           <p className="text-accent-silver/70">
-            {event.description}
+            {loc.description}
           </p>
         </div>
 

@@ -1,9 +1,10 @@
 import { describe, it, expect, beforeEach } from "vitest";
 import { setLanguage } from "./i18n";
-import { localizeRelic, localizeRelicById, localizePattern, localizePatternById, localizeBoss } from "./i18nContent";
+import { localizeRelic, localizeRelicById, localizePattern, localizePatternById, localizeBoss, localizeEvent } from "./i18nContent";
 import { ALL_RELICS } from "./relics";
 import { ALL_PATTERNS } from "./patterns";
 import { ALL_BOSSES } from "./boss";
+import { ALL_EVENTS } from "./events";
 
 describe("i18nContent — relics", () => {
   beforeEach(() => {
@@ -155,6 +156,57 @@ describe("i18nContent — bosses", () => {
       const loc = localizeBoss(boss);
       if (loc.name === boss.name && loc.description === boss.description) {
         orphans.push(boss.id);
+      }
+    }
+    expect(orphans, `Missing EN translations for: ${orphans.join(", ")}`).toEqual([]);
+  });
+});
+
+describe("i18nContent — events", () => {
+  beforeEach(() => {
+    setLanguage("es");
+  });
+
+  it("returns Spanish event strings unchanged when language is es", () => {
+    const e = ALL_EVENTS.find((x) => x.id === "lucky_draw")!;
+    setLanguage("es");
+    const loc = localizeEvent(e);
+    expect(loc.name).toBe(e.name);
+    expect(loc.description).toBe(e.description);
+  });
+
+  it("returns English translation for an event when language is en", () => {
+    const e = ALL_EVENTS.find((x) => x.id === "lucky_draw")!;
+    setLanguage("en");
+    const loc = localizeEvent(e);
+    expect(loc.name).toBe("Lucky Draw");
+    expect(loc.description).toBe("Your next hand will have one extra tile");
+  });
+
+  it("translates choice option labels and descriptions in source order", () => {
+    const e = ALL_EVENTS.find((x) => x.id === "gamblers_choice")!;
+    setLanguage("en");
+    const loc = localizeEvent(e);
+    expect(loc.options).toBeDefined();
+    expect(loc.options![0]!.label).toBe("Risk");
+    expect(loc.options![0]!.description).toBe("Target +25%, but +40 bonus points if you win");
+    expect(loc.options![1]!.label).toBe("Safety");
+  });
+
+  it("returns Spanish options when language is es (preserves source labels)", () => {
+    const e = ALL_EVENTS.find((x) => x.id === "gamblers_choice")!;
+    setLanguage("es");
+    const loc = localizeEvent(e);
+    expect(loc.options![0]!.label).toBe("Riesgo");
+  });
+
+  it("covers every event id with an English translation (no orphans)", () => {
+    setLanguage("en");
+    const orphans: string[] = [];
+    for (const event of ALL_EVENTS) {
+      const loc = localizeEvent(event);
+      if (loc.name === event.name && loc.description === event.description) {
+        orphans.push(event.id);
       }
     }
     expect(orphans, `Missing EN translations for: ${orphans.join(", ")}`).toEqual([]);
