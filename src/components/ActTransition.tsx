@@ -1,6 +1,7 @@
 import { motion, AnimatePresence } from "framer-motion";
 import { useEffect } from "react";
 import type { ActDefinition } from "@/engine/acts";
+import { useTranslation } from "@/engine/i18n";
 
 interface ActTransitionProps {
   act: ActDefinition | null;
@@ -12,10 +13,11 @@ interface ActTransitionProps {
  * Auto-dismisses after a short duration; also dismissible on tap.
  */
 export default function ActTransition({ act, onDismiss }: ActTransitionProps) {
+  const { t } = useTranslation();
   useEffect(() => {
     if (!act) return;
-    const t = setTimeout(onDismiss, 3400);
-    return () => clearTimeout(t);
+    const timer = setTimeout(onDismiss, 3400);
+    return () => clearTimeout(timer);
   }, [act, onDismiss]);
 
   return (
@@ -66,7 +68,7 @@ export default function ActTransition({ act, onDismiss }: ActTransitionProps) {
               transition={{ duration: 1.0, delay: 0.25 }}
               className="text-[11px] font-bold uppercase text-accent-silver/55"
             >
-              {act.numeral}
+              {t(`act.${act.id}.numeral`)}
             </motion.div>
 
             <motion.h1
@@ -75,7 +77,7 @@ export default function ActTransition({ act, onDismiss }: ActTransitionProps) {
               transition={{ duration: 0.9, delay: 0.4, ease: [0.16, 1, 0.3, 1] }}
               className="font-display font-black text-5xl sm:text-6xl tracking-tight text-transparent bg-clip-text bg-gradient-to-b from-white via-white to-white/50"
             >
-              {act.name}
+              {t(`act.${act.id}.name`)}
             </motion.h1>
 
             <motion.p
@@ -84,7 +86,7 @@ export default function ActTransition({ act, onDismiss }: ActTransitionProps) {
               transition={{ duration: 0.8, delay: 0.7 }}
               className="text-[13px] italic text-accent-silver/60 text-center max-w-md"
             >
-              "{act.tagline}"
+              "{t(`act.${act.id}.tagline`)}"
             </motion.p>
 
             <motion.span
@@ -104,7 +106,7 @@ export default function ActTransition({ act, onDismiss }: ActTransitionProps) {
             transition={{ duration: 0.6, delay: 2.0 }}
             className="absolute bottom-10 text-[9px] uppercase tracking-widest text-accent-silver/40"
           >
-            Toca para continuar
+            {t("act.dismiss")}
           </motion.div>
         </motion.div>
       )}

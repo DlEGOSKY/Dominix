@@ -1,5 +1,6 @@
 import { motion, AnimatePresence } from "framer-motion";
 import { useEffect, useState } from "react";
+import { useTranslation } from "@/engine/i18n";
 
 interface RoundTransitionProps {
   round: number;
@@ -8,6 +9,7 @@ interface RoundTransitionProps {
 }
 
 export default function RoundTransition({ round, isBoss, onComplete }: RoundTransitionProps) {
+  const { t } = useTranslation();
   const [visible, setVisible] = useState(true);
 
   useEffect(() => {
@@ -35,7 +37,7 @@ export default function RoundTransition({ round, isBoss, onComplete }: RoundTran
             className="flex flex-col items-center gap-3"
           >
             <span className="text-[10px] text-accent-silver/30 uppercase tracking-[0.4em] font-medium">
-              {isBoss ? "Jefe" : "Ronda"}
+              {isBoss ? t("boss.label") : t("round.label")}
             </span>
             <motion.span
               initial={{ scale: 0.6, opacity: 0 }}

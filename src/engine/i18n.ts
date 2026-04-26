@@ -212,6 +212,101 @@ const STRINGS: Record<string, Record<Language, string>> = {
   "gameover.ritual": { es: "Ritual Consumado", en: "Ritual Complete" },
   "gameover.travesia": { es: "Travesia Cumplida", en: "Journey Complete" },
   "gameover.newBest": { es: "Nuevo record", en: "New best" },
+  "gameover.title": { es: "Fin del ritual", en: "End of the ritual" },
+  "gameover.roundsComplete": { es: "Rondas completadas", en: "Rounds completed" },
+  "gameover.scorePerRound": { es: "Score por ronda", en: "Score per round" },
+  "gameover.patternsActivated": { es: "Patrones activados", en: "Patterns activated" },
+  "gameover.others": { es: "Otros", en: "Others" },
+  "gameover.skinUnlocked": { es: "Skin desbloqueada", en: "Skin unlocked" },
+  "gameover.skinsUnlocked": { es: "Skins desbloqueadas", en: "Skins unlocked" },
+  "gameover.relicsObtained": { es: "Reliquias obtenidas", en: "Relics obtained" },
+  "gameover.newRun": { es: "Nueva Run", en: "New Run" },
+  "gameover.home": { es: "Inicio", en: "Home" },
+  "gameover.stat.score": { es: "Score total", en: "Total score" },
+  "gameover.stat.tiles": { es: "Fichas jugadas", en: "Tiles played" },
+  "gameover.stat.patterns": { es: "Patrones", en: "Patterns" },
+  "gameover.stat.bestRound": { es: "Mejor ronda", en: "Best round" },
+  "gameover.stat.bosses": { es: "Jefes", en: "Bosses" },
+  "gameover.stat.gold": { es: "Oro ganado", en: "Gold earned" },
+  "gameover.stat.purchases": { es: "Compras", en: "Purchases" },
+  "gameover.stat.bestCombo": { es: "Mejor combo", en: "Best combo" },
+  "gameover.epilogue.early": { es: "La ceremonia apenas habia comenzado.", en: "The ceremony had barely begun." },
+  "gameover.epilogue.short": { es: "El umbral se cerro antes de tiempo.", en: "The threshold closed too soon." },
+  "gameover.epilogue.travesia": { es: "Caminaste la travesia. El dominio te probo.", en: "You walked the journey. Dominion tested you." },
+  "gameover.epilogue.weight": { es: "Sostuviste el ritual hasta que el peso te alcanzo.", en: "You held the ritual until its weight overtook you." },
+  "gameover.epilogue.culmination": { es: "Llegaste a la culminacion. El eco recuerda tu nombre.", en: "You reached the culmination. The echo remembers your name." },
+  "gameover.epilogue.echo": { es: "Atravesaste el eco. Ya no juegas, eres el juego.", en: "You crossed the echo. You no longer play; you are the game." },
+  "gameover.epilogue.beyond": { es: "Mas alla del dominio, solo queda lo que tu cadena dejo atras.", en: "Beyond dominion, only what your chain left behind remains." },
+
+  // Mastery block (post-run)
+  "mastery.unlocked": { es: "Mastery Lv {n} desbloqueado", en: "Mastery Lv {n} unlocked" },
+  "mastery.challenges": { es: "Desafios completados", en: "Challenges completed" },
+
+  // Round transition / common
+  "round.label": { es: "Ronda", en: "Round" },
+
+  // Act transition (cinematic)
+  "act.dismiss": { es: "Toca para continuar", en: "Tap to continue" },
+
+  // Interlude
+  "interlude.label": { es: "Interludio", en: "Interlude" },
+
+  // Sanctuary
+  "sanctuary.title": { es: "Santuario", en: "Sanctuary" },
+  "sanctuary.subtitle": { es: "Un momento de calma antes de continuar. Elige un beneficio.", en: "A moment of calm before moving on. Choose a benefit." },
+  "sanctuary.energy": { es: "Energia", en: "Energy" },
+  "sanctuary.energyDesc": { es: "+{n} acciones extra esta ronda", en: "+{n} extra actions this round" },
+  "sanctuary.purify": { es: "Purificar", en: "Purify" },
+  "sanctuary.purifyDesc": { es: "Remueve una ficha al azar del pool", en: "Removes a random tile from the pool" },
+  "sanctuary.offering": { es: "Ofrenda", en: "Offering" },
+  "sanctuary.offeringDesc": { es: "+{n} oro", en: "+{n} gold" },
+
+  // Recap highlights (post-run cinematic)
+  "recap.skip": { es: "Saltar \u2192", en: "Skip \u2192" },
+  "recap.milestone": { es: "Hito", en: "Milestone" },
+  "recap.eternity": { es: "Eternidad", en: "Eternity" },
+  "recap.eternitySub": { es: "Tocaste lo que pocos rituales alcanzan.", en: "You touched what few rituals reach." },
+  "recap.ritual": { es: "Ritual Consumado", en: "Ritual Complete" },
+  "recap.ritualSub": { es: "El dominio te reconocio.", en: "Dominion recognized you." },
+  "recap.travesia": { es: "Travesia Cumplida", en: "Journey Complete" },
+  "recap.travesiaSub": { es: "La cadena te llevo lejos.", en: "The chain carried you far." },
+  "recap.reachedRound": { es: "Alcanzaste la ronda", en: "You reached round" },
+  "recap.totalScore": { es: "Score total", en: "Total score" },
+  "recap.bestRound": { es: "Mejor ronda", en: "Best round" },
+  "recap.patternsActivated": { es: "Patrones activados", en: "Patterns activated" },
+  "recap.bossesDefeated": { es: "Jefes derrotados", en: "Bosses defeated" },
+  "recap.relics": { es: "Reliquias acumuladas", en: "Relics gathered" },
+
+  // Victory overlay
+  "victory.eyebrow": { es: "El Eco te recibe", en: "The Echo greets you" },
+  "victory.title": { es: "ETERNIDAD", en: "ETERNITY" },
+  "victory.round": { es: "Ronda", en: "Round" },
+  "victory.score": { es: "Score", en: "Score" },
+  "victory.subtitle.firmament": { es: "Tu nombre se inscribe en el firmamento.", en: "Your name is inscribed in the firmament." },
+  "victory.subtitle.threshold": { es: "Has cruzado el umbral del dominio.", en: "You have crossed the threshold of dominion." },
+  "victory.subtitle.echo": { es: "El Eco te reconoce.", en: "The Echo recognizes you." },
+  "victory.subtitle.beyond": { es: "Mas alla del ritual, solo queda lo que dejaste.", en: "Beyond the ritual, only what you left remains." },
+
+  // Achievement toast
+  "achievement.unlocked": { es: "Logro desbloqueado", en: "Achievement unlocked" },
+
+  // Tutorial overlay
+  "tutorial.step": { es: "Tutorial {current}/{total}", en: "Tutorial {current}/{total}" },
+  "tutorial.nextArrow": { es: "Siguiente \u2192", en: "Next \u2192" },
+
+  // Acts
+  "act.umbral.name": { es: "El Umbral", en: "The Threshold" },
+  "act.umbral.numeral": { es: "Acto I", en: "Act I" },
+  "act.umbral.tagline": { es: "Donde las fichas aun susurran.", en: "Where the tiles still whisper." },
+  "act.travesia.name": { es: "La Travesia", en: "The Journey" },
+  "act.travesia.numeral": { es: "Acto II", en: "Act II" },
+  "act.travesia.tagline": { es: "El dominio exige precio.", en: "Dominion demands a price." },
+  "act.culminacion.name": { es: "La Culminacion", en: "The Culmination" },
+  "act.culminacion.numeral": { es: "Acto III", en: "Act III" },
+  "act.culminacion.tagline": { es: "Toda cadena encuentra su ultimo eco.", en: "Every chain finds its final echo." },
+  "act.eco.name": { es: "Mas alla del dominio", en: "Beyond dominion" },
+  "act.eco.numeral": { es: "El Eco", en: "The Echo" },
+  "act.eco.tagline": { es: "Lo que sigue ya no tiene nombre.", en: "What follows has no name." },
 
   // Tutorial
   "tutorial.title": { es: "Tutorial", en: "Tutorial" },

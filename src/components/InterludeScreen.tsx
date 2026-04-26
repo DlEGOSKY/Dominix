@@ -1,6 +1,7 @@
 import { motion, AnimatePresence } from "framer-motion";
 import { useState } from "react";
 import type { Interlude, InterludeChoice } from "@/engine/interludes";
+import { useTranslation } from "@/engine/i18n";
 
 interface InterludeScreenProps {
   interlude: Interlude;
@@ -13,6 +14,7 @@ interface InterludeScreenProps {
  * the returned choice's outcome effects to run state.
  */
 export default function InterludeScreen({ interlude, onResolve }: InterludeScreenProps) {
+  const { t } = useTranslation();
   const [selected, setSelected] = useState<InterludeChoice | null>(null);
   const [confirmed, setConfirmed] = useState(false);
 
@@ -53,7 +55,7 @@ export default function InterludeScreen({ interlude, onResolve }: InterludeScree
           className="flex flex-col items-center gap-3 text-center"
         >
           <span className="text-[10px] font-bold uppercase tracking-[0.4em] text-accent-silver/35">
-            Interludio
+            {t("interlude.label")}
           </span>
           <h2 className="font-display font-black text-3xl md:text-4xl text-transparent bg-clip-text bg-gradient-to-b from-white via-white/80 to-accent-silver/40">
             {interlude.title}
@@ -143,7 +145,7 @@ export default function InterludeScreen({ interlude, onResolve }: InterludeScree
                     : "bg-surface-700 text-accent-silver/30 cursor-not-allowed",
                 ].join(" ")}
               >
-                Continuar
+                {t("btn.continue")}
               </motion.button>
             </motion.div>
           ) : (

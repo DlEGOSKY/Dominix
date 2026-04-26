@@ -3,6 +3,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import type { Achievement } from "@/engine/achievements";
 import { getAchievementIcon } from "@/engine/achievementIcons";
 import { celebrateAchievement } from "@/engine/celebrate";
+import { useTranslation } from "@/engine/i18n";
 
 interface AchievementToastProps {
   achievement: Achievement | null;
@@ -10,6 +11,7 @@ interface AchievementToastProps {
 }
 
 export default function AchievementToast({ achievement, onDismiss }: AchievementToastProps) {
+  const { t } = useTranslation();
   // Fire confetti once per achievement appearance
   useEffect(() => {
     if (achievement) celebrateAchievement();
@@ -36,7 +38,7 @@ export default function AchievementToast({ achievement, onDismiss }: Achievement
             )}
             <div className="flex flex-col gap-0.5">
               <span className="text-xs text-accent-gold/70 uppercase tracking-wider font-medium">
-                Logro desbloqueado
+                {t("achievement.unlocked")}
               </span>
               <span className="font-bold text-white text-lg">
                 {achievement.name}

@@ -2,6 +2,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { useEffect, useState } from "react";
 import type { RunStats } from "@/types/domino";
 import { getActForRound } from "@/engine/acts";
+import { useTranslation, t as translate } from "@/engine/i18n";
 
 interface RecapHighlightsProps {
   stats: RunStats;
@@ -21,16 +22,18 @@ interface Slide {
 }
 
 export default function RecapHighlights({ stats, finalRound, relicIds, onFinished, durationPerSlideMs = 1400 }: RecapHighlightsProps) {
+  // Subscribe to language changes so slide labels stay live.
+  const { t } = useTranslation();
   const slides: Slide[] = buildSlides(stats, finalRound, relicIds ?? []);
   const [idx, setIdx] = useState(0);
 
   useEffect(() => {
     if (idx >= slides.length) {
-      const t = setTimeout(onFinished, 350);
-      return () => clearTimeout(t);
+      const timer = setTimeout(onFinished, 350);
+      return () => clearTimeout(timer);
     }
-    const t = setTimeout(() => setIdx((i) => i + 1), durationPerSlideMs);
-    return () => clearTimeout(t);
+    const timer = setTimeout(() => setIdx((i) => i + 1), durationPerSlideMs);
+    return () => clearTimeout(timer);
   }, [idx, slides.length, durationPerSlideMs, onFinished]);
 
   if (idx >= slides.length) return null;
@@ -136,7 +139,7 @@ export default function RecapHighlights({ stats, finalRound, relicIds, onFinishe
         onClick={onFinished}
         className="absolute top-6 right-6 text-[10px] text-accent-silver/30 hover:text-accent-silver/60 uppercase tracking-widest transition-colors"
       >
-        Saltar →
+        {t("recap.skip")}
       </button>
     </motion.div>
   );
@@ -146,30 +149,29 @@ function buildSlides(stats: RunStats, finalRound: number, relicIds: string[]): S
   const slides: Slide[] = [];
 
   // ---- Cinematic milestone opener (only on great runs) ----
-  // Tier 1: Truly legendary
   if (finalRound >= 20 || stats.totalScore >= 8000) {
     slides.push({
-      label: "Hito",
-      value: "Eternidad",
-      subtext: "Tocaste lo que pocos rituales alcanzan.",
+      label: translate("recap.milestone"),
+      value: translate("recap.eternity"),
+      subtext: translate("recap.eternitySub"),
       color: "bg-amber-400/20",
       icon: <IconLegend />,
       tone: "narrative",
     });
   } else if (finalRound >= 15 || stats.totalScore >= 5000) {
     slides.push({
-      label: "Hito",
-      value: "Ritual Consumado",
-      subtext: "El dominio te reconocio.",
+      label: translate("recap.milestone"),
+      value: translate("recap.ritual"),
+      subtext: translate("recap.ritualSub"),
       color: "bg-purple-400/15",
       icon: <IconLegend />,
       tone: "narrative",
     });
   } else if (finalRound >= 10 || stats.bossesDefeated >= 3) {
     slides.push({
-      label: "Hito",
-      value: "Travesia Cumplida",
-      subtext: "La cadena te llevo lejos.",
+      label: translate("recap.milestone"),
+      value: translate("recap.travesia"),
+      subtext: translate("recap.travesiaSub"),
       color: "bg-blue-400/15",
       icon: <IconLegend />,
       tone: "narrative",
@@ -179,23 +181,23 @@ function buildSlides(stats: RunStats, finalRound: number, relicIds: string[]): S
   // Narrative opener: the act the run reached
   const act = getActForRound(Math.max(1, finalRound));
   slides.push({
-    label: act.numeral,
-    value: act.name,
-    subtext: `"${act.tagline}"`,
+    label: translate(`act.${act.id}.numeral`),
+    value: translate(`act.${act.id}.name`),
+    subtext: `"${translate(`act.${act.id}.tagline`)}"`,
     color: "bg-white/8",
     icon: <IconAct />,
     tone: "narrative",
   });
 
   slides.push({
-    label: "Alcanzaste la ronda",
+    label: translate("recap.reachedRound"),
     value: finalRound.toString(),
     color: "bg-white/10",
     icon: <IconFlag />,
   });
 
   slides.push({
-    label: "Score total",
+    label: translate("recap.totalScore"),
     value: stats.totalScore.toLocaleString(),
     color: "bg-accent-gold/15",
     icon: <IconStar />,
@@ -203,7 +205,7 @@ function buildSlides(stats: RunStats, finalRound: number, relicIds: string[]): S
 
   if (stats.highestRoundScore > 0) {
     slides.push({
-      label: "Mejor ronda",
+      label: translate("recap.bestRound"),
       value: stats.highestRoundScore.toLocaleString(),
       color: "bg-green-500/15",
       icon: <IconPeak />,
@@ -212,7 +214,7 @@ function buildSlides(stats: RunStats, finalRound: number, relicIds: string[]): S
 
   if (stats.patternsActivated > 0) {
     slides.push({
-      label: "Patrones activados",
+      label: translate("recap.patternsActivated"),
       value: stats.patternsActivated.toString(),
       color: "bg-blue-500/15",
       icon: <IconSparkle />,
@@ -221,7 +223,7 @@ function buildSlides(stats: RunStats, finalRound: number, relicIds: string[]): S
 
   if (stats.bossesDefeated > 0) {
     slides.push({
-      label: "Jefes derrotados",
+      label: translate("recap.bossesDefeated"),
       value: stats.bossesDefeated.toString(),
       color: "bg-red-500/15",
       icon: <IconCrown />,
@@ -230,7 +232,7 @@ function buildSlides(stats: RunStats, finalRound: number, relicIds: string[]): S
 
   if (relicIds.length >= 3) {
     slides.push({
-      label: "Reliquias acumuladas",
+      label: translate("recap.relics"),
       value: relicIds.length.toString(),
       color: "bg-purple-500/15",
       icon: <IconGem />,

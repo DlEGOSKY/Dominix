@@ -14,20 +14,22 @@ import RecapHighlights from "./RecapHighlights";
 import SkinUnlockedOverlay from "./SkinUnlockedOverlay";
 import VictoryOverlay from "./VictoryOverlay";
 import { localizeRelic, localizePatternById, localizeSkin } from "@/engine/i18nContent";
-import { useTranslation } from "@/engine/i18n";
+import { useTranslation, t as translate } from "@/engine/i18n";
 
 /**
  * Short poetic epilogue depending on how far the run went — gives the run
  * a feeling of having a "verdict" beyond raw numbers.
  */
-function epilogueFor(finalRound: number, totalScore: number): string {
-  if (finalRound <= 2) return "La ceremonia apenas habia comenzado.";
-  if (finalRound <= 5) return "El umbral se cerro antes de tiempo.";
-  if (finalRound <= 9) return "Caminaste la travesia. El dominio te probo.";
-  if (finalRound <= 10) return "Sostuviste el ritual hasta que el peso te alcanzo.";
-  if (finalRound <= 15) return "Llegaste a la culminacion. El eco recuerda tu nombre.";
-  if (totalScore >= 10000) return "Atravesaste el eco. Ya no juegas, eres el juego.";
-  return "Mas alla del dominio, solo queda lo que tu cadena dejo atras.";
+// Maps the run outcome to one of the localized epilogue keys. The actual
+// translation is resolved at the call site so it stays reactive.
+function epilogueKeyFor(finalRound: number, totalScore: number): string {
+  if (finalRound <= 2) return "gameover.epilogue.early";
+  if (finalRound <= 5) return "gameover.epilogue.short";
+  if (finalRound <= 9) return "gameover.epilogue.travesia";
+  if (finalRound <= 10) return "gameover.epilogue.weight";
+  if (finalRound <= 15) return "gameover.epilogue.culmination";
+  if (totalScore >= 10000) return "gameover.epilogue.echo";
+  return "gameover.epilogue.beyond";
 }
 
 interface GameOverScreenProps {
@@ -140,7 +142,7 @@ function UnlockedSkinsCard({ skinIds }: { skinIds: string[] }) {
       className="w-full max-w-lg px-4 py-4 rounded-xl bg-gradient-to-b from-accent-gold/10 to-accent-gold/5 border border-accent-gold/30"
     >
       <p className="text-[10px] font-bold text-accent-gold/70 uppercase tracking-widest mb-3">
-        {skins.length === 1 ? "Skin desbloqueada" : "Skins desbloqueadas"}
+        {skins.length === 1 ? translate("gameover.skinUnlocked") : translate("gameover.skinsUnlocked")}
       </p>
       <div className="flex flex-wrap items-center gap-4">
         {skins.map((skin) => {
@@ -168,7 +170,7 @@ function UnlockedSkinsCard({ skinIds }: { skinIds: string[] }) {
  */
 function PatternBreakdown({ breakdown }: { breakdown: Record<string, number> }) {
   // Subscribe to lang changes so chip names refresh when user toggles language.
-  useTranslation();
+  const { t } = useTranslation();
   const entries = Object.entries(breakdown ?? {})
     .filter(([, n]) => n > 0)
     .sort((a, b) => b[1] - a[1]);
@@ -194,7 +196,7 @@ function PatternBreakdown({ breakdown }: { breakdown: Record<string, number> }) 
       className="w-full max-w-lg px-4 py-4 rounded-xl bg-surface-800/60 border border-surface-600/30"
     >
       <p className="text-[10px] font-bold text-accent-silver/35 uppercase tracking-widest mb-3">
-        Patrones activados
+        {t("gameover.patternsActivated")}
       </p>
       <div className="flex flex-wrap gap-1.5">
         {top.map(([id, count]) => (
@@ -208,7 +210,7 @@ function PatternBreakdown({ breakdown }: { breakdown: Record<string, number> }) 
         ))}
         {rest.length > 0 && (
           <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-surface-700/40 border border-surface-600/30 text-[11px] text-accent-silver/55">
-            <span className="font-medium">Otros</span>
+            <span className="font-medium">{t("gameover.others")}</span>
             <span className="font-mono font-bold">x{restSum}</span>
           </span>
         )}
@@ -228,7 +230,7 @@ export default function GameOverScreen({
   mastery,
 }: GameOverScreenProps) {
   // Subscribe to lang changes so localized relic names update on switch.
-  useTranslation();
+  const { t } = useTranslation();
   const relics = ALL_RELICS.filter((r) => relicIds.includes(r.id));
   // Victory cinematic plays first if the player crossed into El Eco (round 16+)
   // — it is the symbolic completion of Dominix's three-act structure.
@@ -297,22 +299,22 @@ export default function GameOverScreen({
             transition={{ delay: 0.2, type: "spring", stiffness: 300, damping: 15 }}
             className="px-5 py-1.5 rounded-full bg-accent-gold/15 border border-accent-gold/30"
           >
-            <span className="text-accent-gold text-xs font-bold uppercase tracking-widest">Nuevo record</span>
+            <span className="text-accent-gold text-xs font-bold uppercase tracking-widest">{t("gameover.newBest")}</span>
           </motion.div>
         )}
         {(() => {
           const act = getActForRound(Math.max(1, finalRound));
           return (
             <span className="text-[10px] font-bold uppercase tracking-[0.4em] text-accent-silver/45">
-              {act.numeral} · {act.name}
+              {t(`act.${act.id}.numeral`)} · {t(`act.${act.id}.name`)}
             </span>
           );
         })()}
         <h2 className="font-display font-black text-4xl bg-gradient-to-b from-white via-white/80 to-accent-silver/40 bg-clip-text text-transparent">
-          Fin del ritual
+          {t("gameover.title")}
         </h2>
         <p className="italic text-center text-[13px] text-accent-silver/55 max-w-sm leading-relaxed">
-          "{epilogueFor(finalRound, stats.totalScore)}"
+          "{t(epilogueKeyFor(finalRound, stats.totalScore))}"
         </p>
       </motion.div>
 
@@ -329,7 +331,7 @@ export default function GameOverScreen({
           {finalRound}
         </span>
         <span className="text-[11px] font-bold text-accent-silver/40 uppercase tracking-widest">
-          Rondas completadas
+          {t("gameover.roundsComplete")}
         </span>
       </motion.div>
 
@@ -340,14 +342,14 @@ export default function GameOverScreen({
         className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-center mt-2 max-w-lg w-full"
       >
         {[
-          { value: stats.totalScore, label: "Score total", color: "text-accent-gold" },
-          { value: stats.tilesPlayed, label: "Fichas jugadas", color: "text-white" },
-          { value: stats.patternsActivated, label: "Patrones", color: "text-blue-400" },
-          { value: stats.highestRoundScore, label: "Mejor ronda", color: "text-green-400" },
-          { value: stats.bossesDefeated, label: "Jefes", color: "text-red-400" },
-          { value: stats.goldEarned, label: "Oro ganado", color: "text-yellow-400" },
-          { value: stats.shopPurchases, label: "Compras", color: "text-cyan-400" },
-          { value: stats.bestCombo, label: "Mejor combo", color: "text-purple-400" },
+          { value: stats.totalScore, label: t("gameover.stat.score"), color: "text-accent-gold" },
+          { value: stats.tilesPlayed, label: t("gameover.stat.tiles"), color: "text-white" },
+          { value: stats.patternsActivated, label: t("gameover.stat.patterns"), color: "text-blue-400" },
+          { value: stats.highestRoundScore, label: t("gameover.stat.bestRound"), color: "text-green-400" },
+          { value: stats.bossesDefeated, label: t("gameover.stat.bosses"), color: "text-red-400" },
+          { value: stats.goldEarned, label: t("gameover.stat.gold"), color: "text-yellow-400" },
+          { value: stats.shopPurchases, label: t("gameover.stat.purchases"), color: "text-cyan-400" },
+          { value: stats.bestCombo, label: t("gameover.stat.bestCombo"), color: "text-purple-400" },
         ].filter((s) => s.value > 0).map((stat, i) => (
           <motion.div
             key={stat.label}
@@ -372,7 +374,7 @@ export default function GameOverScreen({
           transition={{ delay: 0.5 }}
           className="w-full max-w-lg px-4 py-4 rounded-xl bg-surface-800/60 border border-surface-600/30"
         >
-          <p className="text-[10px] font-bold text-accent-silver/35 uppercase tracking-widest mb-3">Score por ronda</p>
+          <p className="text-[10px] font-bold text-accent-silver/35 uppercase tracking-widest mb-3">{t("gameover.scorePerRound")}</p>
           <RoundScoreChart scores={stats.roundScores} />
         </motion.div>
       )}
@@ -391,7 +393,7 @@ export default function GameOverScreen({
         className="flex flex-col items-center gap-3 w-full max-w-sm"
       >
         <div className="flex items-center justify-between w-full">
-          <span className="text-[10px] font-bold text-accent-silver/40 uppercase tracking-widest">Nivel {xpData.level}</span>
+          <span className="text-[10px] font-bold text-accent-silver/40 uppercase tracking-widest">{t("home.levelN", { n: xpData.level })}</span>
           <span className="text-sm font-mono font-bold text-accent-gold">+{xpData.earned} XP</span>
         </div>
         <div className="relative w-full h-2.5 rounded-full bg-surface-700 overflow-hidden">
@@ -417,7 +419,7 @@ export default function GameOverScreen({
           className="flex flex-col items-center gap-3 mt-2"
         >
           <span className="text-[10px] font-bold text-accent-silver/40 uppercase tracking-widest">
-            Reliquias obtenidas
+            {t("gameover.relicsObtained")}
           </span>
           <div className="flex flex-wrap justify-center gap-2">
             {relics.map((relic) => {
@@ -446,13 +448,13 @@ export default function GameOverScreen({
           onClick={onRestart}
           className="px-8 py-3 rounded-xl bg-gradient-to-b from-accent-gold to-amber-600 text-surface-900 font-bold text-sm tracking-wide hover:brightness-110 transition shadow-lg shadow-accent-gold/20"
         >
-          Nueva Run
+          {t("gameover.newRun")}
         </button>
         <button
           onClick={onHome}
           className="px-8 py-3 rounded-xl border border-surface-600/50 text-accent-silver/50 font-medium text-sm tracking-wide hover:text-accent-silver/80 hover:border-surface-600 transition-all"
         >
-          Inicio
+          {t("gameover.home")}
         </button>
       </motion.div>
     </motion.div>
@@ -500,7 +502,7 @@ function MasteryBlock({
           className="px-3 py-1 rounded-full bg-accent-gold/20 border border-accent-gold/50"
         >
           <span className="text-accent-gold text-[10px] font-bold uppercase tracking-widest">
-            Mastery Lv {info.newLevel} desbloqueado
+            {translate("mastery.unlocked", { n: info.newLevel })}
           </span>
         </motion.div>
       )}
@@ -535,7 +537,7 @@ function MasteryBlock({
       {info.challengesCompleted.length > 0 && (
         <div className="w-full flex flex-col gap-1.5 mt-1 pt-2 border-t border-accent-gold/20">
           <span className="text-[9px] font-bold uppercase tracking-widest text-accent-silver/40 text-center">
-            Desafios completados
+            {translate("mastery.challenges")}
           </span>
           {info.challengesCompleted.map((c, i) => (
             <motion.div

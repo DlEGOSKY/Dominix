@@ -1,6 +1,7 @@
 import { motion, AnimatePresence } from "framer-motion";
 import type { TutorialStep } from "@/engine/tutorial";
 import { GiSwordSpin } from "react-icons/gi";
+import { useTranslation } from "@/engine/i18n";
 
 interface TutorialOverlayProps {
   step: TutorialStep;
@@ -17,6 +18,7 @@ export default function TutorialOverlay({
   onNext,
   onSkip,
 }: TutorialOverlayProps) {
+  const { t } = useTranslation();
   return (
     <AnimatePresence>
       <motion.div
@@ -57,13 +59,13 @@ export default function TutorialOverlay({
             <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-accent-gold/60 to-transparent" />
             <div className="flex items-center justify-between mb-4">
               <span className="text-xs text-accent-gold/70 uppercase tracking-[0.3em] font-bold">
-                Tutorial {currentIndex + 1}/{totalSteps}
+                {t("tutorial.step", { current: currentIndex + 1, total: totalSteps })}
               </span>
               <button
                 onClick={onSkip}
                 className="text-[10px] uppercase tracking-widest text-accent-silver/40 hover:text-accent-silver transition"
               >
-                Saltar
+                {t("tutorial.skip")}
               </button>
             </div>
 
@@ -93,7 +95,7 @@ export default function TutorialOverlay({
                 onClick={onNext}
                 className="px-5 py-2.5 rounded-lg bg-gradient-to-r from-accent-gold to-yellow-500 text-surface-900 font-bold text-sm hover:brightness-110 transition shadow-md shadow-accent-gold/30"
               >
-                {currentIndex === totalSteps - 1 ? "Empezar" : "Siguiente →"}
+                {currentIndex === totalSteps - 1 ? t("tutorial.start") : t("tutorial.nextArrow")}
               </button>
             </div>
           </div>

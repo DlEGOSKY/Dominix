@@ -1,4 +1,5 @@
 import { motion } from "framer-motion";
+import { useTranslation } from "@/engine/i18n";
 
 export type SanctuaryChoice = "heal_actions" | "remove_tile" | "gold";
 
@@ -9,6 +10,7 @@ interface SanctuaryScreenProps {
 }
 
 export default function SanctuaryScreen({ onSelect, goldReward, extraActions }: SanctuaryScreenProps) {
+  const { t } = useTranslation();
   return (
     <div className="min-h-screen flex flex-col items-center justify-center p-4">
       <motion.div
@@ -37,17 +39,17 @@ export default function SanctuaryScreen({ onSelect, goldReward, extraActions }: 
         </motion.div>
 
         <div className="text-center">
-          <h1 className="text-3xl font-bold text-white mb-2">Santuario</h1>
+          <h1 className="text-3xl font-bold text-white mb-2">{t("sanctuary.title")}</h1>
           <p className="text-accent-silver/60 leading-relaxed max-w-md mx-auto">
-            Un momento de calma antes de continuar. Elige un beneficio.
+            {t("sanctuary.subtitle")}
           </p>
         </div>
 
         {/* Choices */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4 w-full">
           <ChoiceCard
-            title="Energia"
-            description={`+${extraActions} acciones extra esta ronda`}
+            title={t("sanctuary.energy")}
+            description={t("sanctuary.energyDesc", { n: extraActions })}
             color="blue"
             onClick={() => onSelect("heal_actions")}
             icon={
@@ -57,8 +59,8 @@ export default function SanctuaryScreen({ onSelect, goldReward, extraActions }: 
             }
           />
           <ChoiceCard
-            title="Purificar"
-            description="Remueve una ficha al azar del pool"
+            title={t("sanctuary.purify")}
+            description={t("sanctuary.purifyDesc")}
             color="purple"
             onClick={() => onSelect("remove_tile")}
             icon={
@@ -69,8 +71,8 @@ export default function SanctuaryScreen({ onSelect, goldReward, extraActions }: 
             }
           />
           <ChoiceCard
-            title="Ofrenda"
-            description={`+${goldReward} oro`}
+            title={t("sanctuary.offering")}
+            description={t("sanctuary.offeringDesc", { n: goldReward })}
             color="gold"
             onClick={() => onSelect("gold")}
             icon={

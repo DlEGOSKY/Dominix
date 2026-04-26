@@ -3,6 +3,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { GiLaurelCrown, GiInfinity } from "react-icons/gi";
 import { celebrateBigEvent } from "@/engine/celebrate";
 import { audio } from "@/engine/audio";
+import { useTranslation } from "@/engine/i18n";
 import OrbitingRays from "./cinematic/OrbitingRays";
 import Sparkles from "./cinematic/Sparkles";
 import RadialFlash from "./cinematic/RadialFlash";
@@ -30,6 +31,7 @@ interface VictoryOverlayProps {
  *  - massive title: "ETERNIDAD"
  */
 export default function VictoryOverlay({ finalRound, totalScore, onContinue }: VictoryOverlayProps) {
+  const { t } = useTranslation();
   const [visible, setVisible] = useState(true);
 
   useEffect(() => {
@@ -40,7 +42,7 @@ export default function VictoryOverlay({ finalRound, totalScore, onContinue }: V
   // Auto-advance after 4.2s, but any input dismisses early
   useEffect(() => {
     if (!visible) return;
-    const t = window.setTimeout(() => {
+    const timer = window.setTimeout(() => {
       setVisible(false);
       window.setTimeout(onContinue, 350);
     }, 4200);
@@ -50,7 +52,7 @@ export default function VictoryOverlay({ finalRound, totalScore, onContinue }: V
     };
     window.addEventListener("keydown", onKey);
     return () => {
-      window.clearTimeout(t);
+      window.clearTimeout(timer);
       window.removeEventListener("keydown", onKey);
     };
   }, [visible, onContinue]);
@@ -62,10 +64,10 @@ export default function VictoryOverlay({ finalRound, totalScore, onContinue }: V
 
   // Subtitle adapts to how deep the player went
   const subtitle = (() => {
-    if (totalScore >= 50000) return "Tu nombre se inscribe en el firmamento.";
-    if (totalScore >= 20000) return "Has cruzado el umbral del dominio.";
-    if (finalRound >= 20) return "El Eco te reconoce.";
-    return "Mas alla del ritual, solo queda lo que dejaste.";
+    if (totalScore >= 50000) return t("victory.subtitle.firmament");
+    if (totalScore >= 20000) return t("victory.subtitle.threshold");
+    if (finalRound >= 20) return t("victory.subtitle.echo");
+    return t("victory.subtitle.beyond");
   })();
 
   return (
@@ -129,7 +131,7 @@ export default function VictoryOverlay({ finalRound, totalScore, onContinue }: V
               className="flex items-center gap-3 text-[11px] font-bold uppercase tracking-[0.6em] text-amber-200/75"
             >
               <GiInfinity size={16} />
-              <span>El Eco te recibe</span>
+              <span>{t("victory.eyebrow")}</span>
               <GiInfinity size={16} />
             </motion.div>
 
@@ -149,7 +151,7 @@ export default function VictoryOverlay({ finalRound, totalScore, onContinue }: V
                 filter: "drop-shadow(0 4px 20px rgba(0,0,0,0.6))",
               }}
             >
-              ETERNIDAD
+              {t("victory.title")}
             </motion.h2>
 
             {/* Subtitle */}
@@ -170,12 +172,12 @@ export default function VictoryOverlay({ finalRound, totalScore, onContinue }: V
               className="flex items-center gap-6 mt-3 px-6 py-2.5 rounded-full bg-black/40 border border-amber-400/30 backdrop-blur-sm"
             >
               <div className="flex flex-col items-center">
-                <span className="text-[9px] font-bold uppercase tracking-widest text-amber-200/50">Ronda</span>
+                <span className="text-[9px] font-bold uppercase tracking-widest text-amber-200/50">{t("victory.round")}</span>
                 <span className="text-2xl font-mono font-bold text-amber-100 tabular-nums">{finalRound}</span>
               </div>
               <span className="w-px h-8 bg-amber-400/20" />
               <div className="flex flex-col items-center">
-                <span className="text-[9px] font-bold uppercase tracking-widest text-amber-200/50">Score</span>
+                <span className="text-[9px] font-bold uppercase tracking-widest text-amber-200/50">{t("victory.score")}</span>
                 <span className="text-2xl font-mono font-bold text-amber-100 tabular-nums">
                   {totalScore.toLocaleString()}
                 </span>
@@ -189,7 +191,7 @@ export default function VictoryOverlay({ finalRound, totalScore, onContinue }: V
               transition={{ delay: 2 }}
               className="text-[10px] uppercase tracking-[0.4em] text-amber-100/40 mt-2"
             >
-              Click para continuar
+              {t("boss.clickToContinue")}
             </motion.span>
           </div>
         </motion.div>
