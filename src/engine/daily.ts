@@ -1,5 +1,6 @@
 import type { Tile } from "@/types/domino";
 import { generateFullSet } from "./tiles";
+import { getLanguage } from "./i18n";
 
 function seededRandom(seed: number): () => number {
   let state = seed;
@@ -18,8 +19,12 @@ function getDailySeed(): number {
 }
 
 export function getDailyDateString(): string {
+  // Resolve the active i18n language so the home screen date string stays
+  // in sync with the selected UI language. i18n has no dep on daily so this
+  // is a clean one-way import.
+  const locale = getLanguage() === "en" ? "en-US" : "es-ES";
   const now = new Date();
-  return now.toLocaleDateString("es-ES", {
+  return now.toLocaleDateString(locale, {
     weekday: "long",
     year: "numeric",
     month: "long",

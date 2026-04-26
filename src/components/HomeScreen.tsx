@@ -7,7 +7,24 @@ import { getNextUnlocks } from "@/engine/unlocks";
 import { ALL_RELICS } from "@/engine/relics";
 import { loadProgression, getXPForNextLevel, LEVEL_REWARDS, getProgressionBonuses, saveActiveSkin, loadActiveSkin } from "@/engine/progression";
 import { loadAscension } from "@/engine/ascension";
+import { useTranslation } from "@/engine/i18n";
+import { useLocalizedRelic } from "@/engine/i18nContent";
 import ModifierSelect from "./ModifierSelect";
+
+/**
+ * Single "next unlock" row — kept as a subcomponent so we can call
+ * `useLocalizedRelic` (a hook) for each relic without violating hook rules.
+ */
+function NextUnlockRow({ relicId, description }: { relicId: string; description: string }) {
+  const relic = ALL_RELICS.find((r) => r.id === relicId);
+  const loc = useLocalizedRelic(relic ?? { id: relicId, name: relicId, description: "", trigger: "passive", effect: { type: "bonus_flat", value: 0 } } as never);
+  return (
+    <span className="text-[10px] text-accent-silver/40">
+      <span className="text-accent-gold font-medium">{loc.name}</span>
+      {" — "}{description}
+    </span>
+  );
+}
 
 export interface HomeScreenProps {
   savedData: SavedData;
@@ -26,6 +43,7 @@ export interface HomeScreenProps {
 }
 
 export default function HomeScreen({ savedData, onStartRun, onStartDaily, onShowWeekly, onStartEndless, onShowAchievements, onShowLeaderboard, onShowHowToPlay, onShowStats, onShowCollection, onShowTalents, onShowSettings, onShowCodex }: HomeScreenProps) {
+  const { t } = useTranslation();
   const hasPlayed = savedData.totalRuns > 0;
   const [showModifiers, setShowModifiers] = useState(false);
   const dailyPlayed = hasDailyBeenPlayed();
@@ -57,11 +75,11 @@ export default function HomeScreen({ savedData, onStartRun, onStartDaily, onShow
             onClick={onShowHowToPlay}
             className="px-3 py-1.5 rounded-lg bg-blue-500/10 border border-blue-500/25 text-blue-400 text-xs font-semibold hover:bg-blue-500/20 transition"
           >
-            Como jugar
+            {t("home.howToPlay")}
           </button>
           {ascension.highestCleared > 0 && (
             <div
-              title={`Ascension maxima superada: A${ascension.highestCleared}`}
+              title={t("home.ascensionTooltip", { n: ascension.highestCleared })}
               className="px-2 py-1 rounded-lg bg-red-500/10 border border-red-400/30 text-red-300 text-[10px] font-mono font-bold uppercase tracking-widest"
             >
               A{ascension.highestCleared}
@@ -70,26 +88,26 @@ export default function HomeScreen({ savedData, onStartRun, onStartDaily, onShow
         </div>
         <div className="flex items-center gap-1.5">
           {[
-            { label: "Talentos", action: onShowTalents, style: "text-blue-400/70" },
-            { label: "Stats", action: onShowStats, style: "text-accent-silver/50" },
-            { label: "Ranking", action: onShowLeaderboard, style: "text-accent-silver/50" },
-            { label: "Coleccion", action: onShowCollection, style: "text-purple-400/60" },
-            { label: "Codex", action: onShowCodex, style: "text-indigo-400/70" },
-            { label: "Logros", action: onShowAchievements, style: "text-accent-gold/60" },
+            { key: "home.talents",       action: onShowTalents,     style: "text-blue-400/70" },
+            { key: "home.stats",         action: onShowStats,       style: "text-accent-silver/50" },
+            { key: "home.leaderboard",   action: onShowLeaderboard, style: "text-accent-silver/50" },
+            { key: "home.collection",    action: onShowCollection,  style: "text-purple-400/60" },
+            { key: "home.codex",         action: onShowCodex,       style: "text-indigo-400/70" },
+            { key: "home.achievements",  action: onShowAchievements,style: "text-accent-gold/60" },
           ].map((item) => (
             <button
-              key={item.label}
+              key={item.key}
               onClick={item.action}
               className={`px-2.5 py-1.5 rounded-lg bg-surface-800/60 border border-surface-600/40 text-xs font-medium hover:border-surface-500 transition ${item.style}`}
             >
-              {item.label}
+              {t(item.key)}
             </button>
           ))}
           <button
             onClick={onShowSettings}
             className="px-2.5 py-1.5 rounded-lg bg-surface-800/60 border border-surface-600/40 text-xs text-accent-silver/40 hover:border-surface-500 transition"
           >
-            Opciones
+            {t("home.settings")}
           </button>
         </div>
       </motion.nav>
@@ -107,7 +125,7 @@ export default function HomeScreen({ savedData, onStartRun, onStartDaily, onShow
             DOMINIX
           </h1>
           <p className="text-accent-silver/40 text-[10px] tracking-[0.3em] uppercase font-medium">
-            El ritual del dominio
+            {t("home.tagline")}
           </p>
         </motion.div>
 
@@ -122,7 +140,7 @@ export default function HomeScreen({ savedData, onStartRun, onStartDaily, onShow
             onClick={() => setShowModifiers(true)}
             className="flex-1 sm:flex-none px-10 py-3.5 rounded-2xl bg-gradient-to-b from-accent-gold to-amber-600 text-surface-900 font-bold text-base tracking-wide btn-premium"
           >
-            Nueva Run
+            {t("home.newRun")}
           </motion.button>
 
           <motion.button
@@ -140,7 +158,7 @@ export default function HomeScreen({ savedData, onStartRun, onStartDaily, onShow
                 : "bg-gradient-to-b from-blue-500 to-blue-700 text-white",
             ].join(" ")}
           >
-            {dailyPlayed ? "Diario completado" : "Reto Diario"}
+            {dailyPlayed ? t("home.dailyComplete") : t("home.dailyChallenge")}
           </motion.button>
 
           <motion.button
@@ -152,7 +170,7 @@ export default function HomeScreen({ savedData, onStartRun, onStartDaily, onShow
             onClick={onShowWeekly}
             className="flex-1 sm:flex-none px-10 py-3.5 rounded-2xl bg-gradient-to-b from-emerald-500 to-emerald-700 text-white font-bold text-base tracking-wide btn-premium"
           >
-            Reto Semanal
+            {t("home.weeklyChallenge")}
           </motion.button>
 
           <motion.button
@@ -164,7 +182,7 @@ export default function HomeScreen({ savedData, onStartRun, onStartDaily, onShow
             onClick={onStartEndless}
             className="flex-1 sm:flex-none px-10 py-3.5 rounded-2xl bg-gradient-to-b from-purple-500 to-purple-700 text-white font-bold text-base tracking-wide btn-premium"
           >
-            Endless
+            {t("home.endlessRun")}
           </motion.button>
         </div>
 
@@ -187,10 +205,10 @@ export default function HomeScreen({ savedData, onStartRun, onStartDaily, onShow
           >
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
               {[
-                { value: savedData.bestRound, label: "Mejor ronda", color: "text-white" },
-                { value: savedData.bestScore.toLocaleString(), label: "Mejor score", color: "text-accent-gold" },
-                { value: savedData.totalRuns, label: "Runs totales", color: "text-white" },
-                { value: savedData.totalRoundsPlayed, label: "Rondas jugadas", color: "text-white" },
+                { value: savedData.bestRound, label: t("home.bestRound"), color: "text-white" },
+                { value: savedData.bestScore.toLocaleString(), label: t("home.bestScore"), color: "text-accent-gold" },
+                { value: savedData.totalRuns, label: t("home.totalRuns"), color: "text-white" },
+                { value: savedData.totalRoundsPlayed, label: t("home.totalRounds"), color: "text-white" },
               ].map((stat) => (
                 <div key={stat.label} className="flex flex-col items-center gap-1">
                   <span className={`font-mono font-black text-xl tabular-nums ${stat.color}`}>
@@ -213,8 +231,8 @@ export default function HomeScreen({ savedData, onStartRun, onStartDaily, onShow
                   </div>
                   <div className="flex-1 flex flex-col gap-1">
                     <div className="flex items-baseline justify-between">
-                      <span className="text-[9px] font-bold text-accent-silver/35 uppercase tracking-widest">Nivel {prog.level}</span>
-                      <span className="text-[9px] font-mono text-accent-silver/25">{xpInfo.current}/{xpInfo.needed} XP</span>
+                      <span className="text-[9px] font-bold text-accent-silver/35 uppercase tracking-widest">{t("home.levelN", { n: prog.level })}</span>
+                      <span className="text-[9px] font-mono text-accent-silver/25">{xpInfo.current}/{xpInfo.needed} {t("home.xp")}</span>
                     </div>
                     <div className="relative w-full h-1.5 rounded-full bg-surface-700 overflow-hidden">
                       <motion.div
@@ -234,7 +252,7 @@ export default function HomeScreen({ savedData, onStartRun, onStartDaily, onShow
               const nextReward = LEVEL_REWARDS.find((r) => r.level > prog.level);
               return nextReward ? (
                 <p className="text-[9px] text-accent-silver/25 text-center">
-                  Nivel {nextReward.level}: {nextReward.name}
+                  {t("home.nextLevelReward", { level: nextReward.level, reward: nextReward.name })}
                 </p>
               ) : null;
             })()}
@@ -249,7 +267,7 @@ export default function HomeScreen({ savedData, onStartRun, onStartDaily, onShow
             transition={{ delay: 0.57 }}
             className="flex items-center gap-3"
           >
-            <span className="text-[9px] font-bold text-accent-silver/30 uppercase tracking-widest">Skin</span>
+            <span className="text-[9px] font-bold text-accent-silver/30 uppercase tracking-widest">{t("home.skin")}</span>
             <div className="flex gap-1.5">
               {availableSkins.map((skin) => {
                 const isActive = skin === selectedSkin;
@@ -301,32 +319,20 @@ export default function HomeScreen({ savedData, onStartRun, onStartDaily, onShow
             className="flex flex-col items-center gap-1.5"
           >
             <span className="text-[9px] text-accent-silver/30 uppercase tracking-widest font-bold">
-              Proximos desbloqueos
+              {t("home.nextUnlocks")}
             </span>
-            {nextUnlocks.map((unlock) => {
-              const relic = ALL_RELICS.find((r) => r.id === unlock.relicId);
-              return (
-                <span key={unlock.relicId} className="text-[10px] text-accent-silver/40">
-                  <span className="text-accent-gold font-medium">{relic?.name ?? unlock.relicId}</span>
-                  {" — "}{unlock.description}
-                </span>
-              );
-            })}
+            {nextUnlocks.map((unlock) => (
+              <NextUnlockRow key={unlock.relicId} relicId={unlock.relicId} description={unlock.description} />
+            ))}
           </motion.div>
         )}
       </div>
 
       {/* Footer — narrative flavor, rotates slowly across runs */}
       {(() => {
-        const FLAVORS = [
-          "Cada ficha es un verso.",
-          "El dominio no se impone, se pacta.",
-          "Toda cadena encuentra su ultimo eco.",
-          "Lo que no entra en el ritual, se pierde.",
-          "Un buen patron no se busca, se reconoce.",
-          "La ceremonia recuerda a quienes la sostienen.",
-        ];
-        const idx = savedData.totalRuns % FLAVORS.length;
+        // 6 flavor strings, rotated by total runs played. Keys live in i18n.ts
+        // so they translate cleanly per language.
+        const idx = savedData.totalRuns % 6;
         return (
           <motion.p
             initial={{ opacity: 0 }}
@@ -334,7 +340,7 @@ export default function HomeScreen({ savedData, onStartRun, onStartDaily, onShow
             transition={{ delay: 0.7 }}
             className="absolute bottom-6 italic text-[10px] text-accent-silver/30 tracking-widest font-medium"
           >
-            {FLAVORS[idx]}
+            {t(`home.flavor.${idx}`)}
           </motion.p>
         );
       })()}

@@ -12,6 +12,7 @@ interface SettingsScreenProps {
 }
 
 export default function SettingsScreen({ onBack }: SettingsScreenProps) {
+  const { t } = useTranslation();
   const [settings, update] = useSettings();
   const [musicMuted, setMusicMuted] = useState(ambient.isMuted());
   const [musicVolume, setMusicVolume] = useState(ambient.getVolume());
@@ -35,7 +36,7 @@ export default function SettingsScreen({ onBack }: SettingsScreenProps) {
             onClick={onBack}
             className="text-accent-silver/60 hover:text-white text-sm transition"
           >
-            ← Volver
+            ← {t("settings.back")}
           </button>
           <button
             onClick={() => {
@@ -44,7 +45,7 @@ export default function SettingsScreen({ onBack }: SettingsScreenProps) {
             }}
             className="text-accent-silver/40 hover:text-accent-gold text-[10px] uppercase tracking-widest transition"
           >
-            Restaurar
+            {t("settings.restore")}
           </button>
         </div>
 
@@ -53,20 +54,20 @@ export default function SettingsScreen({ onBack }: SettingsScreenProps) {
           animate={{ opacity: 1, y: 0 }}
           className="text-3xl font-bold text-white tracking-tight"
         >
-          Opciones
+          {t("settings.title")}
         </motion.h1>
 
         {/* Audio */}
-        <Section title="Audio">
+        <Section title={t("settings.audio")}>
           <ToggleRow
-            label="Sonido"
-            hint="Activa o silencia todos los efectos"
+            label={t("settings.sound")}
+            hint={t("settings.soundHint")}
             value={!settings.muted}
             onChange={(v) => update({ muted: !v })}
           />
           <SliderRow
-            label="Volumen SFX"
-            hint="Nivel de efectos de juego"
+            label={t("settings.sfxVolume")}
+            hint={t("settings.sfxVolumeHint")}
             value={settings.sfxVolume}
             disabled={settings.muted}
             onChange={(v) => {
@@ -75,14 +76,14 @@ export default function SettingsScreen({ onBack }: SettingsScreenProps) {
             }}
           />
           <ToggleRow
-            label="Musica ambient"
-            hint="Capas sonoras que cambian con cada acto"
+            label={t("settings.musicAmbient")}
+            hint={t("settings.musicAmbientHint")}
             value={!musicMuted}
             onChange={(v) => ambient.setMuted(!v)}
           />
           <SliderRow
-            label="Volumen musica"
-            hint="Nivel del ambient y escenas por acto"
+            label={t("settings.musicVolume")}
+            hint={t("settings.musicVolumeHint")}
             value={musicVolume}
             disabled={musicMuted}
             onChange={(v) => ambient.setVolume(v)}
@@ -90,29 +91,29 @@ export default function SettingsScreen({ onBack }: SettingsScreenProps) {
         </Section>
 
         {/* Motion */}
-        <Section title="Movimiento y efectos">
+        <Section title={t("settings.motionSection")}>
           <ToggleRow
-            label="Reducir movimiento"
-            hint="Desactiva animaciones ambientales y efectos flashy"
+            label={t("settings.reduceMotion")}
+            hint={t("settings.reduceMotionHint")}
             value={settings.reduceMotion}
             onChange={(v) => update({ reduceMotion: v })}
           />
           <ToggleRow
-            label="Animaciones rapidas"
-            hint="Acorta animaciones para un ritmo mas agil"
+            label={t("settings.fastAnimations")}
+            hint={t("settings.fastAnimationsHint")}
             value={settings.fastAnimations}
             onChange={(v) => update({ fastAnimations: v })}
           />
         </Section>
 
         {/* Accessibility */}
-        <Section title="Accesibilidad">
+        <Section title={t("settings.accessibilitySection")}>
           <SelectRow
-            label="Modo daltonico"
-            hint="Ajusta colores de feedback para distintos tipos de daltonismo"
+            label={t("settings.colorblindMode")}
+            hint={t("settings.colorblindHint")}
             value={settings.colorblindMode}
             options={[
-              { value: "off", label: "Desactivado" },
+              { value: "off", label: t("settings.colorblind.off") },
               { value: "protanopia", label: "Protanopia" },
               { value: "deuteranopia", label: "Deuteranopia" },
               { value: "tritanopia", label: "Tritanopia" },
@@ -122,16 +123,16 @@ export default function SettingsScreen({ onBack }: SettingsScreenProps) {
         </Section>
 
         {/* Gameplay */}
-        <Section title="Juego">
+        <Section title={t("settings.gameplaySection")}>
           <ToggleRow
-            label="Preview de score al pasar"
-            hint="Muestra el bonus estimado al pasar el mouse sobre una ficha"
+            label={t("settings.scorePreview")}
+            hint={t("settings.scorePreviewHint")}
             value={settings.showPreview}
             onChange={(v) => update({ showPreview: v })}
           />
           <ToggleRow
-            label="Pistas activas"
-            hint="Muestra sugerencias contextuales durante la partida"
+            label={t("settings.activeHints")}
+            hint={t("settings.activeHintsHint")}
             value={settings.showHints}
             onChange={(v) => update({ showHints: v })}
           />
@@ -144,7 +145,7 @@ export default function SettingsScreen({ onBack }: SettingsScreenProps) {
         <DataSection />
 
         <div className="text-[10px] text-accent-silver/30 text-center pt-2">
-          Los cambios se guardan automaticamente
+          {t("settings.autosaved")}
         </div>
       </div>
     </div>
@@ -155,7 +156,7 @@ function LanguageSection() {
   const { t, lang, setLang } = useTranslation();
   return (
     <Section title={t("settings.language")}>
-      <Row label={t("settings.language")} hint={"Español / English"}>
+      <Row label={t("settings.language")} hint={t("settings.languageHint")}>
         <select
           value={lang}
           onChange={(e) => setLang(e.target.value as Language)}
@@ -170,6 +171,7 @@ function LanguageSection() {
 }
 
 function DataSection() {
+  const { t } = useTranslation();
   const [status, setStatus] = useState<{ kind: "ok" | "err"; text: string } | null>(null);
   const [importValue, setImportValue] = useState("");
   const [showImport, setShowImport] = useState(false);
@@ -186,23 +188,23 @@ function DataSection() {
     const blob = exportSave();
     try {
       await navigator.clipboard.writeText(blob);
-      flash("ok", "Copiado al portapapeles");
+      flash("ok", t("settings.copiedClipboard"));
       audio.play("button_click");
     } catch {
       // Fallback: open a textarea so the user can copy manually
-      window.prompt("Codigo de partida (copia manualmente):", blob);
+      window.prompt(t("settings.exportFallbackPrompt"), blob);
     }
   };
 
   const handleImport = () => {
     const result = importSave(importValue);
     if (result.ok) {
-      flash("ok", `Importado (${result.keysImported} claves). Recarga la pagina.`);
+      flash("ok", t("settings.imported", { n: result.keysImported ?? 0 }));
       setImportValue("");
       setShowImport(false);
       audio.play("button_click");
     } else {
-      flash("err", result.error || "No se pudo importar");
+      flash("err", result.error || t("settings.importErr"));
     }
   };
 
@@ -213,27 +215,27 @@ function DataSection() {
       return;
     }
     const removed = resetAllSaveData();
-    flash("ok", `Borradas ${removed} claves. Recarga la pagina.`);
+    flash("ok", t("settings.resetDone", { n: removed }));
     setConfirmReset(false);
     audio.play("button_click");
   };
 
   return (
-    <Section title="Datos">
-      <Row label="Exportar partida" hint="Copia tu progreso al portapapeles">
+    <Section title={t("settings.data")}>
+      <Row label={t("settings.exportSave")} hint={t("settings.exportHint")}>
         <button
           onClick={handleExport}
           className="px-3 py-1.5 rounded-lg text-[11px] font-bold uppercase tracking-widest bg-accent-gold/15 text-accent-gold border border-accent-gold/40 hover:bg-accent-gold/25 transition-colors"
         >
-          Exportar
+          {t("settings.exportAction")}
         </button>
       </Row>
-      <Row label="Importar partida" hint="Pega un codigo de partida">
+      <Row label={t("settings.importSave")} hint={t("settings.importHint")}>
         <button
           onClick={() => setShowImport((v) => !v)}
           className="px-3 py-1.5 rounded-lg text-[11px] font-bold uppercase tracking-widest bg-surface-700 text-accent-silver/80 border border-surface-600 hover:bg-surface-600 transition-colors"
         >
-          {showImport ? "Cerrar" : "Importar"}
+          {showImport ? t("settings.importClose") : t("settings.importAction")}
         </button>
       </Row>
       {showImport && (
@@ -241,7 +243,7 @@ function DataSection() {
           <textarea
             value={importValue}
             onChange={(e) => setImportValue(e.target.value)}
-            placeholder="Pega aqui el codigo exportado..."
+            placeholder={t("settings.importPlaceholder")}
             rows={3}
             className="bg-surface-900/50 text-white text-[11px] font-mono px-3 py-2 rounded-lg border border-surface-600 focus:border-accent-gold focus:outline-none resize-none"
           />
@@ -250,11 +252,11 @@ function DataSection() {
             disabled={!importValue.trim()}
             className="self-end px-4 py-1.5 rounded-lg text-[11px] font-bold uppercase tracking-widest bg-accent-gold/20 text-accent-gold border border-accent-gold/40 hover:bg-accent-gold/30 transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
           >
-            Aplicar
+            {t("settings.importApply")}
           </button>
         </div>
       )}
-      <Row label="Borrar partida" hint="Esto borra TODO el progreso. Sin vuelta atras.">
+      <Row label={t("settings.resetSave")} hint={t("settings.resetWarn")}>
         <button
           onClick={handleReset}
           className={[
@@ -264,7 +266,7 @@ function DataSection() {
               : "bg-surface-700 text-red-300/70 border-red-600/30 hover:bg-red-500/20",
           ].join(" ")}
         >
-          {confirmReset ? "Confirmar?" : "Borrar"}
+          {confirmReset ? t("settings.resetConfirm") : t("settings.resetAction")}
         </button>
       </Row>
       {status && (
