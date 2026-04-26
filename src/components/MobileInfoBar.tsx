@@ -131,9 +131,9 @@ export default function MobileInfoBar({
 
 function RelicsContent({ relicIds }: { relicIds: string[] }) {
   // Subscribe to lang changes so localized relic names refresh on switch.
-  useTranslation();
+  const { t } = useTranslation();
   if (relicIds.length === 0) {
-    return <p className="text-xs text-accent-silver/40 text-center py-4">No hay reliquias aun</p>;
+    return <p className="text-xs text-accent-silver/40 text-center py-4">{t("mobile.noRelics")}</p>;
   }
   return (
     <div className="flex flex-col gap-2">

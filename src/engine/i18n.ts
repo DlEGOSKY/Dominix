@@ -370,6 +370,19 @@ const STRINGS: Record<string, Record<Language, string>> = {
   "talents.branchTiles.desc": { es: "Inicios con reliquias potentes", en: "Strong relic starting builds" },
   "talents.branchEconomy.desc": { es: "Oro, descuentos y comercio", en: "Gold, discounts, and trade" },
 
+  // Tile selector titles (used by remove/duplicate tile mutations)
+  "tileSelector.removeTitle": { es: "Eliminar ficha", en: "Remove tile" },
+  "tileSelector.removeSubtitle": { es: "Selecciona una ficha para quitar de tu set", en: "Select a tile to remove from your set" },
+  "tileSelector.duplicateTitle": { es: "Duplicar ficha", en: "Duplicate tile" },
+  "tileSelector.duplicateSubtitle": { es: "Selecciona una ficha para duplicar", en: "Select a tile to duplicate" },
+
+  // Mobile info bar
+  "mobile.noRelics": { es: "No hay reliquias aun", en: "No relics yet" },
+
+  // Game board outcome banner
+  "outcome.bossDefeated": { es: "Jefe derrotado", en: "Boss defeated" },
+  "outcome.roundCleared": { es: "Ronda superada", en: "Round cleared" },
+
   // Number converter
   "converter.title": { es: "Convertir numero", en: "Convert number" },
   "converter.selectTile": { es: "Selecciona la ficha a modificar", en: "Choose the tile to modify" },

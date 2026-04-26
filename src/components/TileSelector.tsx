@@ -1,5 +1,6 @@
 import type { Tile } from "@/types/domino";
 import TileView from "./TileView";
+import { useTranslation } from "@/engine/i18n";
 
 interface TileSelectorProps {
   tiles: Tile[];
@@ -16,6 +17,7 @@ export default function TileSelector({
   onSelect,
   onCancel,
 }: TileSelectorProps) {
+  const { t } = useTranslation();
   return (
     <div className="fixed inset-0 bg-surface-900/95 flex items-center justify-center z-50">
       <div className="flex flex-col items-center gap-6 max-w-3xl px-6">
@@ -39,7 +41,7 @@ export default function TileSelector({
           onClick={onCancel}
           className="mt-2 px-4 py-2 text-sm text-accent-silver/50 hover:text-accent-silver transition"
         >
-          Cancelar
+          {t("btn.cancel")}
         </button>
       </div>
     </div>

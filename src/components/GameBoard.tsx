@@ -18,6 +18,7 @@ import type { GameEvent, EventEffect } from "@/engine/events"; // EventEffect us
 import { TUTORIAL_STEPS, isTutorialComplete, markTutorialComplete } from "@/engine/tutorial";
 import { getRandomRelics, ALL_RELICS, computeFamilySetBonuses, FAMILY_META } from "@/engine/relics";
 import { localizeRelic, localizePatternById, localizeBoss } from "@/engine/i18nContent";
+import { t as translate } from "@/engine/i18n";
 import { celebrateSetBonus, celebrateAchievement, celebrateLegendaryPattern, celebrateBigEvent } from "@/engine/celebrate";
 import BossDefeatedOverlay from "./BossDefeatedOverlay";
 import type { RelicFamily } from "@/types/relic";
@@ -1933,8 +1934,8 @@ export default function GameBoard({ onGameOver, isDaily = false, isEndless = fal
     return (
       <TileSelector
         tiles={game.tilePool}
-        title="Eliminar ficha"
-        subtitle="Selecciona una ficha para quitar de tu set"
+        title={translate("tileSelector.removeTitle")}
+        subtitle={translate("tileSelector.removeSubtitle")}
         onSelect={handleRemoveTile}
         onCancel={handleCancelMutation}
       />
@@ -1945,8 +1946,8 @@ export default function GameBoard({ onGameOver, isDaily = false, isEndless = fal
     return (
       <TileSelector
         tiles={game.tilePool}
-        title="Duplicar ficha"
-        subtitle="Selecciona una ficha para duplicar"
+        title={translate("tileSelector.duplicateTitle")}
+        subtitle={translate("tileSelector.duplicateSubtitle")}
         onSelect={handleDuplicateTile}
         onCancel={handleCancelMutation}
       />
@@ -2579,7 +2580,7 @@ export default function GameBoard({ onGameOver, isDaily = false, isEndless = fal
             className="flex flex-col items-center gap-2"
           >
             <span className="font-display font-black text-4xl tracking-tight bg-gradient-to-b from-green-200 via-green-400 to-green-600 bg-clip-text text-transparent drop-shadow-[0_0_20px_rgba(74,222,128,0.3)]">
-              {currentBoss ? "Jefe derrotado" : "Ronda superada"}
+              {currentBoss ? translate("outcome.bossDefeated") : translate("outcome.roundCleared")}
             </span>
           </motion.div>
           <ScoreReveal breakdown={scoreBreakdown} finalScore={modifiedTotal} target={game.target} won={true} extras={scoreRevealExtras} />
