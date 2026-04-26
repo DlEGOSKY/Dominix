@@ -33,8 +33,11 @@ export default function AnimatedDemo({ steps, intervalMs = 2000 }: AnimatedDemoP
   const current = steps[stepIdx]!;
 
   return (
-    <div
-      className="relative w-full rounded-2xl bg-surface-800/60 border border-surface-600/30 overflow-hidden cursor-pointer"
+    <button
+      type="button"
+      aria-pressed={paused}
+      aria-label={paused ? "Reanudar demostracion" : "Pausar demostracion"}
+      className="relative w-full text-left rounded-2xl bg-surface-800/60 border border-surface-600/30 overflow-hidden cursor-pointer"
       onClick={() => setPaused((p) => !p)}
     >
       {/* Progress dots + pause */}
@@ -140,6 +143,6 @@ export default function AnimatedDemo({ steps, intervalMs = 2000 }: AnimatedDemoP
       <div className="absolute bottom-1.5 right-2.5">
         <span className="text-[7px] text-accent-silver/12">click para {paused ? "continuar" : "pausar"}</span>
       </div>
-    </div>
+    </button>
   );
 }
