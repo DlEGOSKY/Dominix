@@ -587,7 +587,7 @@ export default function GameBoard({ onGameOver, isDaily = false, isEndless = fal
         setGame((prev) => ({ ...prev, target: Math.round(prev.target * mods.targetMultiplier) }));
       }
       // Toast the twist
-      pushReaction(twist.tone === "good" ? "big_score" : twist.tone === "bad" ? "pattern" : "wild", `Caos: ${twist.name}`);
+      pushReaction(twist.tone === "good" ? "big_score" : twist.tone === "bad" ? "pattern" : "wild", translate("gb.toast.chaos", { name: twist.name }));
       triggerShake(twist.tone === "bad" ? "medium" : "small");
       if (twist.tone === "good") audio.playAlignmentChord();
       if (twist.tone === "bad") audio.play("round_lose");
@@ -611,7 +611,7 @@ export default function GameBoard({ onGameOver, isDaily = false, isEndless = fal
     const parts: string[] = [];
     if (leg.celestial) parts.push(leg.celestial.name);
     if (leg.consumable) parts.push(leg.consumable.name);
-    pushReaction("big_score", `Legado: ${parts.join(" + ")}`);
+    pushReaction("big_score", translate("gb.toast.legacy", { parts: parts.join(" + ") }));
     audio.playAlignmentChord();
     // Only runs once on mount
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -626,13 +626,13 @@ export default function GameBoard({ onGameOver, isDaily = false, isEndless = fal
     const newCosmic = current.cosmic && !prev.cosmic;
     if (newFirmaments.length > 0) {
       for (const f of newFirmaments) {
-        pushReaction("pattern", `Alineacion ${FIRMAMENT_META[f as Firmament].label}`);
+        pushReaction("pattern", translate("gb.toast.alignment", { name: FIRMAMENT_META[f as Firmament].label }));
       }
       triggerShake("medium");
       audio.playAlignmentChord();
     }
     if (newCosmic) {
-      pushReaction("big_score", "Alineacion Cosmica");
+      pushReaction("big_score", translate("gb.toast.cosmicAlignment"));
       triggerShake("large");
       triggerAberration();
       audio.playCosmicChord();
@@ -663,7 +663,7 @@ export default function GameBoard({ onGameOver, isDaily = false, isEndless = fal
       setGame((prev) => ({ ...prev, target: Math.round(prev.target * Math.pow(1.1, newRages)) }));
       setBossRageFlash((f) => f + 1);
       triggerShake("medium");
-      pushReaction("pattern", "Jefe se enfurece");
+      pushReaction("pattern", translate("gb.toast.bossRage"));
       audio.playBossRage();
     } else {
       setBossHeat(totalHeat % 100);
@@ -703,7 +703,7 @@ export default function GameBoard({ onGameOver, isDaily = false, isEndless = fal
         celebrateSetBonus(fam);
         audio.play("pattern_mega");
         triggerShake("medium");
-        pushReaction("big_score", `Set ${FAMILY_META[fam].name} activado`);
+        pushReaction("big_score", translate("gb.toast.setActivated", { name: FAMILY_META[fam].name }));
       }
     }
     prevActiveFamiliesRef.current = current;
@@ -815,7 +815,7 @@ export default function GameBoard({ onGameOver, isDaily = false, isEndless = fal
         const cosmicActive = computeCelestialSetBonus(ownedCelestials).cosmicAlignment;
         if (cosmicActive) { approx = Math.floor(approx * 1.2); parts.push("cosmos"); }
         const suffix = parts.length > 0 ? ` (${parts.join(" + ")})` : "";
-        pushReaction("big_score", `Pacto +${approx}${suffix}`);
+        pushReaction("big_score", translate("gb.toast.pact", { n: approx, suffix }));
         triggerShake("medium");
         triggerAberration();
         audio.playPactHit();
@@ -1041,10 +1041,10 @@ export default function GameBoard({ onGameOver, isDaily = false, isEndless = fal
           actions: { ...prev.actions, maxActions: prev.actions.maxActions + effect.amount },
         };
       });
-      pushReaction("pattern", `+${effect.amount} acciones`);
+      pushReaction("pattern", translate("gb.toast.actionsGain", { n: effect.amount }));
     } else if (effect.type === "gain_gold") {
       setGold((g) => g + effect.amount);
-      pushReaction("pattern", `+${effect.amount} oro`);
+      pushReaction("pattern", translate("gb.toast.goldGain", { n: effect.amount }));
     } else if (effect.type === "gain_score") {
       setGame((prev) => ({ ...prev, score: prev.score + effect.amount }));
       pushReaction("big_score", `+${effect.amount}`);
@@ -1064,7 +1064,7 @@ export default function GameBoard({ onGameOver, isDaily = false, isEndless = fal
         const newHand = prev.hand.map((t) => t.id === target.id ? { ...t, edition: "foil" as const } : t);
         return { ...prev, hand: newHand };
       });
-      pushReaction("pattern", "Foil aplicado");
+      pushReaction("pattern", translate("gb.toast.foilApplied"));
     } else if (effect.type === "purge_draw") {
       setGame((prev) => {
         if (prev.hand.length === 0) return prev;
@@ -1083,7 +1083,7 @@ export default function GameBoard({ onGameOver, isDaily = false, isEndless = fal
           },
         };
       });
-      pushReaction("pattern", "Purga");
+      pushReaction("pattern", translate("gb.toast.purge"));
     } else if (effect.type === "refill_hand") {
       setGame((prev) => {
         const need = Math.max(0, effect.target - prev.hand.length);
@@ -1096,10 +1096,10 @@ export default function GameBoard({ onGameOver, isDaily = false, isEndless = fal
           stats: { ...prev.stats, tilesDrawn: prev.stats.tilesDrawn + drawn.length },
         };
       });
-      pushReaction("pattern", "Mano restaurada");
+      pushReaction("pattern", translate("gb.toast.handRestored"));
     } else if (effect.type === "double_next_score") {
       setDoubleNextScoreActive(true);
-      pushReaction("pattern", "x2 proxima ficha");
+      pushReaction("pattern", translate("gb.toast.x2Next"));
     } else {
       applied = false;
     }
@@ -1419,9 +1419,9 @@ export default function GameBoard({ onGameOver, isDaily = false, isEndless = fal
       });
       if (completed && currentQuest.reward.kind === "gold") {
         earnedGold += currentQuest.reward.amount;
-        setQuestToast({ text: `Reto superado: ${currentQuest.title} · +${currentQuest.reward.amount} oro`, success: true });
+        setQuestToast({ text: translate("gb.questPassed", { title: currentQuest.title, amount: currentQuest.reward.amount }), success: true });
       } else if (!completed) {
-        setQuestToast({ text: `Reto fallado: ${currentQuest.title}`, success: false });
+        setQuestToast({ text: translate("gb.questFailed", { title: currentQuest.title }), success: false });
       }
     }
     // Pick next quest for upcoming round
@@ -1469,7 +1469,7 @@ export default function GameBoard({ onGameOver, isDaily = false, isEndless = fal
       // Celebrate new relic acquisition
       celebrateAchievement();
       audio.play("pattern_combo");
-      pushReaction("big_score", `Nueva reliquia: ${localizeRelic(reward.relic).name}`);
+      pushReaction("big_score", translate("gb.toast.newRelic", { name: localizeRelic(reward.relic).name }));
       setGame((prev) => {
         const newPrev = { ...prev, relics: [...prev.relics, reward.relic.id], stats: { ...prev.stats, relicsCollected: prev.stats.relicsCollected + 1 } };
         setRewardOptions([]);
@@ -1691,7 +1691,7 @@ export default function GameBoard({ onGameOver, isDaily = false, isEndless = fal
         }
         if (!target) return prev;
         const newEdition = rollRandomEdition();
-        pushReaction("pattern", `Forjada: ${newEdition}`);
+        pushReaction("pattern", translate("gb.toast.forged", { edition: newEdition }));
         triggerShake("medium");
         if (fromHand) {
           return {
@@ -2157,7 +2157,7 @@ export default function GameBoard({ onGameOver, isDaily = false, isEndless = fal
         >
           <span className="text-accent-gold text-lg leading-none">◆</span>
           <div className="flex flex-col flex-1 min-w-0">
-            <span className="text-[9px] uppercase tracking-widest text-accent-silver/40 font-bold">Reto de ronda</span>
+            <span className="text-[9px] uppercase tracking-widest text-accent-silver/40 font-bold">{translate("gb.questLabel")}</span>
             <span className="text-xs text-white font-semibold truncate">{currentQuest.title}</span>
             <span className="text-[10px] text-accent-silver/50 truncate">{currentQuest.description}</span>
           </div>
@@ -2348,7 +2348,7 @@ export default function GameBoard({ onGameOver, isDaily = false, isEndless = fal
       {/* Boss restriction indicator */}
       {activeBossRestriction && game.result === "playing" && currentBoss && (() => {
         const r = activeBossRestriction;
-        const phaseLabel = currentBoss.phases ? `Fase ${bossPhase + 1}/${currentBoss.phases.length}` : null;
+        const phaseLabel = currentBoss.phases ? translate("gb.phase", { n: bossPhase + 1, total: currentBoss.phases.length }) : null;
 
         type RuleInfo = { icon: React.ReactNode; label: string; detail?: string; progress?: { current: number; max: number }; isRequirement?: boolean };
         const chainLen = game.chain.placed.length;
@@ -2358,67 +2358,67 @@ export default function GameBoard({ onGameOver, isDaily = false, isEndless = fal
           switch (r.type) {
             case "no_doubles": return {
               icon: <svg width="18" height="18" viewBox="0 0 24 24" fill="none"><circle cx="8" cy="12" r="2" fill="currentColor"/><circle cx="16" cy="12" r="2" fill="currentColor"/><line x1="4" y1="4" x2="20" y2="20" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/></svg>,
-              label: "Sin dobles",
-              detail: "Las fichas dobles estan prohibidas",
+              label: translate("gb.r.no_doubles.label"),
+              detail: translate("gb.r.no_doubles.detail"),
             };
             case "only_doubles": return {
               icon: <svg width="18" height="18" viewBox="0 0 24 24" fill="none"><circle cx="8" cy="12" r="2" fill="currentColor"/><circle cx="16" cy="12" r="2" fill="currentColor"/><rect x="3" y="7" width="18" height="10" rx="2" stroke="currentColor" strokeWidth="1.6"/></svg>,
-              label: "Solo dobles",
-              detail: "Unicamente fichas dobles son validas",
+              label: translate("gb.r.only_doubles.label"),
+              detail: translate("gb.r.only_doubles.detail"),
             };
             case "no_wild": return {
               icon: <svg width="18" height="18" viewBox="0 0 24 24" fill="none"><path d="M12 3l2.5 5.5L20 9l-4 4 1 6-5-2.5L7 19l1-6-4-4 5.5-.5z" stroke="currentColor" strokeWidth="1.6"/><line x1="4" y1="4" x2="20" y2="20" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/></svg>,
-              label: "Sin comodines",
-              detail: "Las fichas comodin no tienen efecto",
+              label: translate("gb.r.no_wild.label"),
+              detail: translate("gb.r.no_wild.detail"),
             };
             case "max_tiles": return {
               icon: <svg width="18" height="18" viewBox="0 0 24 24" fill="none"><rect x="3" y="8" width="18" height="8" rx="2" stroke="currentColor" strokeWidth="1.6"/><path d="M8 8V6M16 8V6" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/></svg>,
-              label: `Maximo ${r.count} fichas`,
-              detail: "La cadena no puede exceder este limite",
+              label: translate("gb.r.max_tiles.label", { n: r.count }),
+              detail: translate("gb.r.max_tiles.detail"),
               progress: { current: chainLen, max: r.count },
             };
             case "min_patterns": return {
               icon: <svg width="18" height="18" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="3" fill="currentColor" opacity="0.5"/><circle cx="12" cy="12" r="7" stroke="currentColor" strokeWidth="1.6"/><path d="M12 5v2M12 17v2M5 12h2M17 12h2" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/></svg>,
-              label: `${r.count} patrones requeridos`,
-              detail: "Debes activar al menos este numero de patrones",
+              label: translate("gb.r.min_patterns.label", { n: r.count }),
+              detail: translate("gb.r.min_patterns.detail"),
               progress: { current: patternsNow, max: r.count },
               isRequirement: true,
             };
             case "min_chain_length": return {
               icon: <svg width="18" height="18" viewBox="0 0 24 24" fill="none"><path d="M4 12h4m4 0h4m4 0h0" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/><circle cx="4" cy="12" r="2" fill="currentColor"/><circle cx="12" cy="12" r="2" fill="currentColor"/><circle cx="20" cy="12" r="2" fill="currentColor"/></svg>,
-              label: `Minimo ${r.count} fichas en cadena`,
-              detail: "Necesitas llegar a esta longitud para ganar",
+              label: translate("gb.r.min_chain_length.label", { n: r.count }),
+              detail: translate("gb.r.min_chain_length.detail"),
               progress: { current: chainLen, max: r.count },
               isRequirement: true,
             };
             case "only_low": return {
               icon: <svg width="18" height="18" viewBox="0 0 24 24" fill="none"><path d="M12 19V5M5 12l7-7 7 7" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round"/></svg>,
-              label: `Solo fichas suma <= ${r.max}`,
-              detail: "Valores mas altos estan bloqueados",
+              label: translate("gb.r.only_low.label", { n: r.max }),
+              detail: translate("gb.r.only_low.detail"),
             };
             case "no_repeat_number": return {
               icon: <svg width="18" height="18" viewBox="0 0 24 24" fill="none"><path d="M4 8h4v8H4zM16 8h4v8h-4z" stroke="currentColor" strokeWidth="1.6"/><path d="M8 12h8" stroke="currentColor" strokeWidth="1.6" strokeDasharray="2 2"/><line x1="4" y1="4" x2="20" y2="20" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/></svg>,
-              label: "Sin numero consecutivo repetido",
-              detail: "El numero de conexion debe cambiar con cada ficha",
+              label: translate("gb.r.no_repeat_number.label"),
+              detail: translate("gb.r.no_repeat_number.detail"),
             };
             case "max_doubles": {
               const doublesUsed = game.chain.placed.filter((p) => p.tile.top === p.tile.bottom).length;
               return {
                 icon: <svg width="18" height="18" viewBox="0 0 24 24" fill="none"><circle cx="8" cy="12" r="2" fill="currentColor"/><circle cx="16" cy="12" r="2" fill="currentColor"/><rect x="3" y="7" width="18" height="10" rx="2" stroke="currentColor" strokeWidth="1.6"/><path d="M3 19l18-14" stroke="currentColor" strokeWidth="2" strokeLinecap="round" opacity="0.5"/></svg>,
-                label: `Maximo ${r.count} dobles`,
-                detail: "Solo puedes colocar esta cantidad de dobles en la cadena",
+                label: translate("gb.r.max_doubles.label", { n: r.count }),
+                detail: translate("gb.r.max_doubles.detail"),
                 progress: { current: doublesUsed, max: r.count },
               };
             }
             case "even_sum_only": return {
               icon: <svg width="18" height="18" viewBox="0 0 24 24" fill="none"><path d="M6 12h12M8 16h8M8 8h8" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round"/></svg>,
-              label: "Solo sumas pares",
-              detail: "Las fichas con suma impar estan bloqueadas",
+              label: translate("gb.r.even_sum_only.label"),
+              detail: translate("gb.r.even_sum_only.detail"),
             };
             case "exact_chain_length": return {
               icon: <svg width="18" height="18" viewBox="0 0 24 24" fill="none"><circle cx="4" cy="12" r="2" fill="currentColor"/><circle cx="12" cy="12" r="2" fill="currentColor"/><circle cx="20" cy="12" r="2" fill="currentColor"/><path d="M6 12h4m4 0h4" stroke="currentColor" strokeWidth="1.6"/><circle cx="12" cy="5" r="1.2" fill="currentColor" opacity="0.7"/><circle cx="12" cy="19" r="1.2" fill="currentColor" opacity="0.7"/></svg>,
-              label: `Exactamente ${r.count} fichas`,
-              detail: "La cadena debe tener precisamente esta longitud al terminar",
+              label: translate("gb.r.exact_chain_length.label", { n: r.count }),
+              detail: translate("gb.r.exact_chain_length.detail"),
               progress: { current: chainLen, max: r.count },
               isRequirement: true,
             };
@@ -2474,7 +2474,7 @@ export default function GameBoard({ onGameOver, isDaily = false, isEndless = fal
               </div>
               {/* Boss name */}
               <div className="shrink-0 text-right">
-                <div className="text-[9px] text-red-400/40 uppercase tracking-widest">Jefe</div>
+                <div className="text-[9px] text-red-400/40 uppercase tracking-widest">{translate("boss.label")}</div>
                 <div className="text-[10px] text-red-300/70 font-bold truncate max-w-[80px]">{localizeBoss(currentBoss).name}</div>
               </div>
             </div>
@@ -2749,9 +2749,9 @@ export default function GameBoard({ onGameOver, isDaily = false, isEndless = fal
               whileHover={{ scale: 1.05 }}
               whileTap={{ scale: 0.95 }}
               className="px-3.5 py-1.5 rounded-lg border border-amber-500/25 bg-amber-500/10 text-amber-300 text-[10px] font-bold uppercase tracking-wider hover:bg-amber-500/20 hover:border-amber-400/40 transition-all"
-              title="Deshacer ultima jugada (tecla U)"
+              title={translate("gb.undoTitle")}
             >
-              Deshacer
+              {translate("gb.undo")}
             </motion.button>
           )}
         </div>
