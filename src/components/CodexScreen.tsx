@@ -5,7 +5,7 @@ import { ALL_PATTERNS } from "@/engine/patterns";
 import { ALL_BOSSES } from "@/engine/boss";
 import { ALL_CELESTIAL, FIRMAMENT_META } from "@/engine/celestial";
 import { ALL_CHAOS_TWISTS } from "@/engine/chaos";
-import { localizePattern } from "@/engine/i18nContent";
+import { localizePattern, localizeBoss } from "@/engine/i18nContent";
 import { useTranslation } from "@/engine/i18n";
 
 interface CodexScreenProps {
@@ -130,6 +130,7 @@ export default function CodexScreen({ onBack }: CodexScreenProps) {
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
           {ALL_BOSSES.map((b) => {
             const known = codex.bossIds.has(b.id);
+            const loc = localizeBoss(b);
             return (
               <motion.div
                 key={b.id}
@@ -139,7 +140,7 @@ export default function CodexScreen({ onBack }: CodexScreenProps) {
               >
                 <div className="flex items-baseline justify-between gap-2">
                   <span className={`text-sm font-bold ${known ? "text-red-200" : "text-accent-silver/30"}`}>
-                    {known ? b.name : "???"}
+                    {known ? loc.name : "???"}
                   </span>
                   {known && (
                     <span className="text-[10px] font-mono text-red-300/70 tabular-nums">
@@ -148,7 +149,7 @@ export default function CodexScreen({ onBack }: CodexScreenProps) {
                   )}
                 </div>
                 <p className={`text-[11px] leading-snug mt-1 ${known ? "text-accent-silver/60" : "text-accent-silver/20 italic"}`}>
-                  {known ? b.description : "Aun no enfrentado"}
+                  {known ? loc.description : "Aun no enfrentado"}
                 </p>
               </motion.div>
             );

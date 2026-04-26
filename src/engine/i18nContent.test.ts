@@ -1,8 +1,9 @@
 import { describe, it, expect, beforeEach } from "vitest";
 import { setLanguage } from "./i18n";
-import { localizeRelic, localizeRelicById, localizePattern, localizePatternById } from "./i18nContent";
+import { localizeRelic, localizeRelicById, localizePattern, localizePatternById, localizeBoss } from "./i18nContent";
 import { ALL_RELICS } from "./relics";
 import { ALL_PATTERNS } from "./patterns";
+import { ALL_BOSSES } from "./boss";
 
 describe("i18nContent — relics", () => {
   beforeEach(() => {
@@ -103,6 +104,57 @@ describe("i18nContent — patterns", () => {
       const loc = localizePattern(pattern);
       if (loc.name === pattern.name && loc.description === pattern.description) {
         orphans.push(pattern.id);
+      }
+    }
+    expect(orphans, `Missing EN translations for: ${orphans.join(", ")}`).toEqual([]);
+  });
+});
+
+describe("i18nContent — bosses", () => {
+  beforeEach(() => {
+    setLanguage("es");
+  });
+
+  it("returns Spanish boss strings unchanged when language is es", () => {
+    const guardian = ALL_BOSSES.find((b) => b.id === "guardian")!;
+    setLanguage("es");
+    const loc = localizeBoss(guardian);
+    expect(loc.name).toBe(guardian.name);
+    expect(loc.description).toBe(guardian.description);
+  });
+
+  it("returns English translation for a boss when language is en", () => {
+    const guardian = ALL_BOSSES.find((b) => b.id === "guardian")!;
+    setLanguage("en");
+    const loc = localizeBoss(guardian);
+    expect(loc.name).toBe("Guardian of the Chain");
+    expect(loc.description).toBe("Target x1.6. You cannot use doubles.");
+  });
+
+  it("translates phase descriptions for multi-phase bosses", () => {
+    const verdugo = ALL_BOSSES.find((b) => b.id === "verdugo")!;
+    setLanguage("en");
+    const loc = localizeBoss(verdugo);
+    expect(loc.phases).toBeDefined();
+    expect(loc.phases![0]).toBe("Phase 1: Doubles only");
+    expect(loc.phases![1]).toBe("Phase 2: 2 patterns");
+  });
+
+  it("falls back to Spanish phase descriptions when EN entry has none", () => {
+    setLanguage("en");
+    // Forge a boss whose id is not in BOSS_EN to confirm the fallback path.
+    const fake = { id: "no-such-boss", name: "Fake", description: "Original", phases: [{ description: "Fase 1", restriction: undefined as never, targetMultiplier: 1 }] } as never;
+    const loc = localizeBoss(fake);
+    expect(loc.phases).toEqual(["Fase 1"]);
+  });
+
+  it("covers every boss id with an English translation (no orphans)", () => {
+    setLanguage("en");
+    const orphans: string[] = [];
+    for (const boss of ALL_BOSSES) {
+      const loc = localizeBoss(boss);
+      if (loc.name === boss.name && loc.description === boss.description) {
+        orphans.push(boss.id);
       }
     }
     expect(orphans, `Missing EN translations for: ${orphans.join(", ")}`).toEqual([]);

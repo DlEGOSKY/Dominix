@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { motion } from "framer-motion";
 import type { Boss } from "@/engine/boss";
+import { useLocalizedBoss } from "@/engine/i18nContent";
 
 interface BossIntroProps {
   boss: Boss;
@@ -9,13 +10,14 @@ interface BossIntroProps {
 }
 
 export default function BossIntro({ boss, round, onStart }: BossIntroProps) {
+  const loc = useLocalizedBoss(boss);
   // Letter-by-letter name reveal
   const [revealed, setRevealed] = useState(0);
   useEffect(() => {
     setRevealed(0);
     const interval = setInterval(() => {
       setRevealed((r) => {
-        if (r >= boss.name.length) {
+        if (r >= loc.name.length) {
           clearInterval(interval);
           return r;
         }
@@ -23,7 +25,7 @@ export default function BossIntro({ boss, round, onStart }: BossIntroProps) {
       });
     }, 65);
     return () => clearInterval(interval);
-  }, [boss.name]);
+  }, [loc.name]);
 
   const phaseCount = boss.phases?.length ?? 1;
 
@@ -103,9 +105,9 @@ export default function BossIntro({ boss, round, onStart }: BossIntroProps) {
         {/* Name revealed letter-by-letter */}
         <h2
           className="font-display font-black text-5xl text-center bg-gradient-to-b from-white via-white/90 to-red-200/40 bg-clip-text text-transparent min-h-[60px]"
-          aria-label={boss.name}
+          aria-label={loc.name}
         >
-          {boss.name.split("").map((ch, i) => (
+          {loc.name.split("").map((ch, i) => (
             <motion.span
               key={i}
               initial={{ opacity: 0, y: -12, filter: "blur(6px)" }}
@@ -116,7 +118,7 @@ export default function BossIntro({ boss, round, onStart }: BossIntroProps) {
               {ch}
             </motion.span>
           ))}
-          {revealed < boss.name.length && (
+          {revealed < loc.name.length && (
             <motion.span
               animate={{ opacity: [0.2, 1, 0.2] }}
               transition={{ duration: 0.8, repeat: Infinity }}
@@ -147,7 +149,7 @@ export default function BossIntro({ boss, round, onStart }: BossIntroProps) {
           transition={{ delay: 0.7 }}
           className="text-accent-silver/65 text-center text-base leading-relaxed max-w-sm"
         >
-          {boss.description}
+          {loc.description}
         </motion.p>
 
         {boss.restriction && (

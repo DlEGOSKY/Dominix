@@ -17,6 +17,7 @@
 import { getLanguage, useTranslation, type Language } from "./i18n";
 import type { Relic } from "@/types/relic";
 import type { PatternInfo } from "./patterns";
+import type { Boss } from "./boss";
 
 // =============================================================================
 // RELICS
@@ -199,6 +200,101 @@ export function localizePatternById(id: string, fallbackName: string, fallbackDe
 }
 
 // =============================================================================
+// BOSSES
+// =============================================================================
+
+interface BossEntry extends ContentEntry {
+  /** Per-phase descriptions, in order. Optional — only multi-phase bosses use this. */
+  phases?: string[];
+}
+
+const BOSS_EN: Record<string, BossEntry> = {
+  // ---- S1 — base ----
+  guardian:        { name: "Guardian of the Chain", description: "Target x1.6. You cannot use doubles." },
+  coloso:          { name: "Colossus",              description: "Target x2. No restrictions, pure power." },
+  minimalista:     { name: "The Minimalist",        description: "Target x1.4. Maximum 5 tiles in the chain." },
+  maestro:         { name: "Pattern Master",        description: "Target x1.5. Activate at least 2 patterns." },
+  purificador:     { name: "The Purifier",          description: "Target x1.8. Wild tiles do not work." },
+  espejista:       { name: "The Mirage",            description: "Target x1.5. Doubles only." },
+  susurro:         { name: "The Whisper",           description: "Target x1.4. Only tiles with sum 6 or less." },
+  arquitecto:      { name: "The Architect",         description: "Target x1.6. The chain must have at least 5 tiles to win." },
+  caos:            { name: "Agent of Chaos",        description: "Target x1.7. You cannot connect the same number twice in a row." },
+  titan:           { name: "The Titan",             description: "Target x2.2. No restrictions. Pure brute force." },
+  fantasma:        { name: "The Phantom",           description: "Target x1.5. Only tiles with sum 4 or less." },
+  perfeccionista:  { name: "The Perfectionist",     description: "Target x1.8. You must activate at least 3 patterns." },
+
+  // ---- S5/S6 — multi-phase ----
+  inquisidor: {
+    name: "The Inquisitor",
+    description: "Target x1.7. No wilds and at least 4 tiles.",
+    phases: ["Phase 1: No wilds", "Phase 2: Minimum 4 tiles"],
+  },
+  verdugo: {
+    name: "The Executioner",
+    description: "Target x2. Doubles only and at least 2 patterns.",
+    phases: ["Phase 1: Doubles only", "Phase 2: 2 patterns"],
+  },
+  abismo:        { name: "The Abyss",        description: "Target x1.6. Only low tiles and no repeating numbers." },
+  coleccionista: { name: "The Collector",    description: "Target x1.7. Only 1 double allowed in the entire chain." },
+  equinoccio:    { name: "The Equinox",      description: "Target x1.5. Only tiles with even sum are valid." },
+  ritual:        { name: "The Ritual",       description: "Target x1.7. The chain must have exactly 6 tiles." },
+
+  // ---- S7 ----
+  astrologo:     { name: "The Astrologer",   description: "Target x1.8. The chain must have exactly 7 tiles." },
+  heresiarca: {
+    name: "The Heresiarch",
+    description: "Target x1.9. Two phases: no doubles, then an exact chain of 6.",
+    phases: ["Phase 1: No doubles", "Phase 2: Chain of 6"],
+  },
+  desvanecido: {
+    name: "The Vanished",
+    description: "Target x1.7. Two phases: doubles only, then no number repeats.",
+    phases: ["Phase 1: Doubles only", "Phase 2: No repeating numbers"],
+  },
+
+  // ---- S8 — three-phase mythics ----
+  sirena: {
+    name: "The Siren",
+    description: "Target x1.6. Three phases: lows, doubles, no doubles. Adapt or perish.",
+    phases: ["Phase 1: Only tiles with sum <= 4", "Phase 2: Doubles only", "Phase 3: No doubles"],
+  },
+  tejedor: {
+    name: "Star Weaver",
+    description: "Target x1.8. Three phases: 2 patterns, chain 6+, 3 patterns. For ritual masters.",
+    phases: ["Phase 1: Activate 2+ patterns", "Phase 2: Chain of 6+ tiles", "Phase 3: Activate 3+ patterns"],
+  },
+};
+
+/** Localized boss — name, description, and per-phase descriptions if present. */
+export function localizeBoss(boss: Boss): { name: string; description: string; phases?: string[] } {
+  if (getLanguage() === "es") {
+    return {
+      name: boss.name,
+      description: boss.description,
+      phases: boss.phases?.map((p) => p.description),
+    };
+  }
+  const entry = BOSS_EN[boss.id];
+  if (!entry) {
+    return {
+      name: boss.name,
+      description: boss.description,
+      phases: boss.phases?.map((p) => p.description),
+    };
+  }
+  return {
+    name: entry.name,
+    description: entry.description,
+    phases: entry.phases ?? boss.phases?.map((p) => p.description),
+  };
+}
+
+/** id-keyed lookup for callers that only have a boss id in scope. */
+export function localizeBossById(id: string, fallbackName: string, fallbackDescription: string): { name: string; description: string } {
+  return pickContent(BOSS_EN, id, { name: fallbackName, description: fallbackDescription }, getLanguage());
+}
+
+// =============================================================================
 // REACTIVE HOOKS
 // =============================================================================
 // Components that render localized gameplay content should use these hooks
@@ -229,4 +325,10 @@ export function useLocalizedPattern(pattern: PatternInfo): { name: string; descr
 export function useLocalizedPatternById(id: string, fallbackName: string, fallbackDescription = ""): { name: string; description: string } {
   useTranslation();
   return localizePatternById(id, fallbackName, fallbackDescription);
+}
+
+/** Reactive variant of `localizeBoss` — name + description + phases. */
+export function useLocalizedBoss(boss: Boss): { name: string; description: string; phases?: string[] } {
+  useTranslation();
+  return localizeBoss(boss);
 }

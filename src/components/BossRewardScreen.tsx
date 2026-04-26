@@ -1,7 +1,7 @@
 import { motion } from "framer-motion";
 import type { Boss } from "@/engine/boss";
 import { ALL_RELICS } from "@/engine/relics";
-import { useLocalizedRelic } from "@/engine/i18nContent";
+import { useLocalizedRelic, useLocalizedBoss } from "@/engine/i18nContent";
 
 interface BossRewardScreenProps {
   boss: Boss;
@@ -14,6 +14,7 @@ export default function BossRewardScreen({ boss, bonusRelicId, onContinue }: Bos
   // Hook order: always call useLocalizedRelic; harmlessly localize a stub when
   // there is no bonus relic and just don't render that block below.
   const bonusLoc = useLocalizedRelic(bonusRelic ?? { id: "", name: "", description: "", trigger: "passive", effect: { type: "bonus_flat", value: 0 } } as never);
+  const bossLoc = useLocalizedBoss(boss);
 
   return (
     <div className="min-h-screen flex flex-col items-center justify-center gap-8 px-6">
@@ -34,7 +35,7 @@ export default function BossRewardScreen({ boss, bonusRelicId, onContinue }: Bos
         <h2 className="font-display font-black text-3xl bg-gradient-to-b from-green-300 to-green-500 bg-clip-text text-transparent">
           Jefe Derrotado
         </h2>
-        <span className="text-accent-silver/50 text-sm">{boss.name}</span>
+        <span className="text-accent-silver/50 text-sm">{bossLoc.name}</span>
       </motion.div>
 
       <motion.div

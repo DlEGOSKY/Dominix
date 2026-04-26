@@ -17,7 +17,7 @@ import { getRandomEvent, applyEventEffect } from "@/engine/events";
 import type { GameEvent, EventEffect } from "@/engine/events"; // EventEffect used in handleEventContinue param type
 import { TUTORIAL_STEPS, isTutorialComplete, markTutorialComplete } from "@/engine/tutorial";
 import { getRandomRelics, ALL_RELICS, computeFamilySetBonuses, FAMILY_META } from "@/engine/relics";
-import { localizeRelic, localizePatternById } from "@/engine/i18nContent";
+import { localizeRelic, localizePatternById, localizeBoss } from "@/engine/i18nContent";
 import { celebrateSetBonus, celebrateAchievement, celebrateLegendaryPattern, celebrateBigEvent } from "@/engine/celebrate";
 import BossDefeatedOverlay from "./BossDefeatedOverlay";
 import type { RelicFamily } from "@/types/relic";
@@ -2474,7 +2474,7 @@ export default function GameBoard({ onGameOver, isDaily = false, isEndless = fal
               {/* Boss name */}
               <div className="shrink-0 text-right">
                 <div className="text-[9px] text-red-400/40 uppercase tracking-widest">Jefe</div>
-                <div className="text-[10px] text-red-300/70 font-bold truncate max-w-[80px]">{currentBoss.name}</div>
+                <div className="text-[10px] text-red-300/70 font-bold truncate max-w-[80px]">{localizeBoss(currentBoss).name}</div>
               </div>
             </div>
           </motion.div>

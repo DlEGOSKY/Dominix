@@ -7,6 +7,7 @@ import { audio } from "@/engine/audio";
 import Shockwave from "./cinematic/Shockwave";
 import RadialParticles from "./cinematic/RadialParticles";
 import RadialFlash from "./cinematic/RadialFlash";
+import { useLocalizedBoss } from "@/engine/i18nContent";
 
 interface BossDefeatedOverlayProps {
   boss: Boss | null;
@@ -20,6 +21,8 @@ interface BossDefeatedOverlayProps {
  * massive title, crossed swords logo, ambient glow.
  */
 export default function BossDefeatedOverlay({ boss, visible, onContinue }: BossDefeatedOverlayProps) {
+  // Hook order requires unconditional invocation; use a stub when boss is null.
+  const loc = useLocalizedBoss(boss ?? ({ id: "", name: "", description: "", targetMultiplier: 1, reward: { gold: 0, extraRelic: false } } as never));
   useEffect(() => {
     if (!visible) return;
     celebrateBigEvent();
@@ -132,7 +135,7 @@ export default function BossDefeatedOverlay({ boss, visible, onContinue }: BossD
                 textShadow: "0 0 30px rgba(251,191,36,0.5), 0 4px 12px rgba(0,0,0,0.8)",
               }}
             >
-              {boss.name}
+              {loc.name}
             </motion.h2>
 
             {/* Description */}
@@ -142,7 +145,7 @@ export default function BossDefeatedOverlay({ boss, visible, onContinue }: BossD
               transition={{ delay: 0.85 }}
               className="text-sm text-white/70 italic max-w-md text-center"
             >
-              {boss.description.split(".")[0]}
+              {loc.description.split(".")[0]}
             </motion.p>
 
             {/* Reward pills */}
