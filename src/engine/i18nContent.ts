@@ -433,6 +433,48 @@ const EVENT_EN: Record<string, EventEntry> = {
   },
 };
 
+// =============================================================================
+// SKINS
+// =============================================================================
+
+interface SkinEntry {
+  name: string;
+  flavor: string;
+}
+
+const SKIN_EN: Record<string, SkinEntry> = {
+  default:    { name: "Classic",    flavor: "The basic stone of the ritual." },
+  obsidian:   { name: "Obsidian",   flavor: "Cut from the cold echo of the first pact." },
+  emerald:    { name: "Emerald",    flavor: "The greenery that precedes every chain." },
+  ruby:       { name: "Ruby",       flavor: "Heat that pushes the next move." },
+  ivory:      { name: "Ivory",      flavor: "Tradition. Fine inlay, the strength of the classics." },
+  void:       { name: "Void",       flavor: "No act is lost; all are devoured." },
+  neon:       { name: "Neon",       flavor: "Modern echo of the dominion." },
+  gold:       { name: "Gold",       flavor: "The privilege of those who close their ritual." },
+  pacto:      { name: "Pact",       flavor: "Marked in blood. Each tile remembers what was promised." },
+  reliquia:   { name: "Relic",      flavor: "Recovered from a previous ritual. Still bears its weight." },
+  cosmos:     { name: "Cosmos",     flavor: "It carves the night with every connection." },
+  bestiario:  { name: "Bestiary",   flavor: "Seven creatures. Seven values. Only one chain contains them." },
+  naturaleza: { name: "Nature",     flavor: "The forest holds seven forms. Recognize them and the chain blooms." },
+  mecanico:   { name: "Mechanical", flavor: "Forge, gear, discharge. The chain as a ritual machine." },
+  tarot:      { name: "Tarot",      flavor: "Each value is an arcanum. Domino as oracle." },
+  astral:     { name: "Astral",     flavor: "The solar system as a board. Each tile, a world." },
+};
+
+/** Localized skin display (name + flavor). Falls back to source strings. */
+export function localizeSkin(skin: { id: string; name: string; flavor: string }): SkinEntry {
+  if (getLanguage() === "es") return { name: skin.name, flavor: skin.flavor };
+  const entry = SKIN_EN[skin.id];
+  return entry ?? { name: skin.name, flavor: skin.flavor };
+}
+
+/** id-keyed lookup variant. */
+export function localizeSkinById(id: string, fallbackName: string, fallbackFlavor: string): SkinEntry {
+  if (getLanguage() === "es") return { name: fallbackName, flavor: fallbackFlavor };
+  const entry = SKIN_EN[id];
+  return entry ?? { name: fallbackName, flavor: fallbackFlavor };
+}
+
 /**
  * Localized event — name, description, and (for choice events) translated
  * option labels + descriptions in source order.
@@ -499,4 +541,16 @@ export function useLocalizedBoss(boss: Boss): { name: string; description: strin
 export function useLocalizedEvent(event: GameEvent): { name: string; description: string; options?: EventOptionEntry[] } {
   useTranslation();
   return localizeEvent(event);
+}
+
+/** Reactive variant of `localizeSkin`. */
+export function useLocalizedSkin(skin: { id: string; name: string; flavor: string }): SkinEntry {
+  useTranslation();
+  return localizeSkin(skin);
+}
+
+/** Reactive variant of `localizeSkinById`. */
+export function useLocalizedSkinById(id: string, fallbackName: string, fallbackFlavor: string): SkinEntry {
+  useTranslation();
+  return localizeSkinById(id, fallbackName, fallbackFlavor);
 }

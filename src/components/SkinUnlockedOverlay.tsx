@@ -7,6 +7,7 @@ import { celebrateAchievement } from "@/engine/celebrate";
 import { audio } from "@/engine/audio";
 import Sparkles from "./cinematic/Sparkles";
 import RadialFlash from "./cinematic/RadialFlash";
+import { useLocalizedSkin } from "@/engine/i18nContent";
 
 interface SkinUnlockedOverlayProps {
   /** Ids of skins to celebrate, in order. */
@@ -54,6 +55,8 @@ export default function SkinUnlockedOverlay({ skinIds, onComplete }: SkinUnlocke
     }
   };
 
+  // Hook order requires unconditional invocation.
+  const loc = useLocalizedSkin(def ?? { id: current ?? "", name: "", flavor: "" });
   if (!def || !current) return null;
 
   const isLast = index === skinIds.length - 1;
@@ -170,10 +173,10 @@ export default function SkinUnlockedOverlay({ skinIds, onComplete }: SkinUnlocke
                 textShadow: `0 0 28px ${def.accent}99`,
               }}
             >
-              {def.name}
+              {loc.name}
             </h2>
             <p className="text-sm sm:text-base italic text-white/60 max-w-md leading-relaxed">
-              {def.flavor}
+              {loc.flavor}
             </p>
           </motion.div>
 

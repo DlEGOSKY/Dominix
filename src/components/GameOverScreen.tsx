@@ -13,7 +13,7 @@ import TileView, { type TileSkin } from "./TileView";
 import RecapHighlights from "./RecapHighlights";
 import SkinUnlockedOverlay from "./SkinUnlockedOverlay";
 import VictoryOverlay from "./VictoryOverlay";
-import { localizeRelic, localizePatternById } from "@/engine/i18nContent";
+import { localizeRelic, localizePatternById, localizeSkin } from "@/engine/i18nContent";
 import { useTranslation } from "@/engine/i18n";
 
 /**
@@ -122,6 +122,8 @@ function RoundScoreChart({ scores }: { scores: number[] }) {
  * Shows a small TileView preview + name. Hidden if nothing was unlocked.
  */
 function UnlockedSkinsCard({ skinIds }: { skinIds: string[] }) {
+  // Subscribe to lang changes so skin names + flavor refresh on switch.
+  useTranslation();
   if (!skinIds || skinIds.length === 0) return null;
   const skins = skinIds
     .map((id) => ALL_TILE_SKINS.find((s) => s.id === id))
@@ -141,15 +143,18 @@ function UnlockedSkinsCard({ skinIds }: { skinIds: string[] }) {
         {skins.length === 1 ? "Skin desbloqueada" : "Skins desbloqueadas"}
       </p>
       <div className="flex flex-wrap items-center gap-4">
-        {skins.map((skin) => (
-          <div key={skin.id} className="flex items-center gap-2.5">
-            <TileView tile={previewTile} disabled skin={skin.id as TileSkin} size="sm" animate={false} />
-            <div className="flex flex-col">
-              <span className="text-sm font-bold text-white leading-tight">{skin.name}</span>
-              <span className="text-[10px] italic text-accent-silver/55 leading-tight max-w-[180px]">{skin.flavor}</span>
+        {skins.map((skin) => {
+          const loc = localizeSkin(skin);
+          return (
+            <div key={skin.id} className="flex items-center gap-2.5">
+              <TileView tile={previewTile} disabled skin={skin.id as TileSkin} size="sm" animate={false} />
+              <div className="flex flex-col">
+                <span className="text-sm font-bold text-white leading-tight">{loc.name}</span>
+                <span className="text-[10px] italic text-accent-silver/55 leading-tight max-w-[180px]">{loc.flavor}</span>
+              </div>
             </div>
-          </div>
-        ))}
+          );
+        })}
       </div>
     </motion.div>
   );

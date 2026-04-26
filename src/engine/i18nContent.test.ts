@@ -1,10 +1,11 @@
 import { describe, it, expect, beforeEach } from "vitest";
 import { setLanguage } from "./i18n";
-import { localizeRelic, localizeRelicById, localizePattern, localizePatternById, localizeBoss, localizeEvent } from "./i18nContent";
+import { localizeRelic, localizeRelicById, localizePattern, localizePatternById, localizeBoss, localizeEvent, localizeSkin } from "./i18nContent";
 import { ALL_RELICS } from "./relics";
 import { ALL_PATTERNS } from "./patterns";
 import { ALL_BOSSES } from "./boss";
 import { ALL_EVENTS } from "./events";
+import { ALL_TILE_SKINS } from "./tileSkins";
 
 describe("i18nContent — relics", () => {
   beforeEach(() => {
@@ -207,6 +208,40 @@ describe("i18nContent — events", () => {
       const loc = localizeEvent(event);
       if (loc.name === event.name && loc.description === event.description) {
         orphans.push(event.id);
+      }
+    }
+    expect(orphans, `Missing EN translations for: ${orphans.join(", ")}`).toEqual([]);
+  });
+});
+
+describe("i18nContent — skins", () => {
+  beforeEach(() => {
+    setLanguage("es");
+  });
+
+  it("returns Spanish skin strings unchanged when language is es", () => {
+    const ruby = ALL_TILE_SKINS.find((s) => s.id === "ruby")!;
+    setLanguage("es");
+    const loc = localizeSkin(ruby);
+    expect(loc.name).toBe(ruby.name);
+    expect(loc.flavor).toBe(ruby.flavor);
+  });
+
+  it("returns English translation for a skin when language is en", () => {
+    const ruby = ALL_TILE_SKINS.find((s) => s.id === "ruby")!;
+    setLanguage("en");
+    const loc = localizeSkin(ruby);
+    expect(loc.name).toBe("Ruby");
+    expect(loc.flavor).toBe("Heat that pushes the next move.");
+  });
+
+  it("covers every skin id with an English translation (no orphans)", () => {
+    setLanguage("en");
+    const orphans: string[] = [];
+    for (const skin of ALL_TILE_SKINS) {
+      const loc = localizeSkin(skin);
+      if (loc.name === skin.name && loc.flavor === skin.flavor) {
+        orphans.push(skin.id);
       }
     }
     expect(orphans, `Missing EN translations for: ${orphans.join(", ")}`).toEqual([]);

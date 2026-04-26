@@ -11,7 +11,7 @@ import { loadProgression, getProgressionBonuses, saveActiveSkin, loadActiveSkin 
 import { ALL_TILE_SKINS } from "@/engine/tileSkins";
 import { ALL_EDITIONS, loadDiscoveredEditions } from "@/engine/editions";
 import { audio } from "@/engine/audio";
-import { localizeRelic, localizePattern } from "@/engine/i18nContent";
+import { localizeRelic, localizePattern, localizeSkinById } from "@/engine/i18nContent";
 import { useTranslation } from "@/engine/i18n";
 import type { SavedData } from "@/types/domino";
 
@@ -368,13 +368,13 @@ export default function CollectionScreen({ savedData, onBack }: CollectionScreen
                       "text-sm font-bold",
                       isActive ? "text-accent-gold" : owned ? "text-white" : "text-accent-silver/40",
                     ].join(" ")}>
-                      {skin.name}
+                      {localizeSkinById(skin.id, skin.name, skin.flavor).name}
                     </span>
                     <span className={[
                       "text-[10px] italic leading-tight px-1",
                       owned ? "text-accent-silver/55" : "text-accent-silver/25",
                     ].join(" ")}>
-                      {owned ? skin.flavor : `Se desbloquea al nivel ${skin.unlockLevel}`}
+                      {owned ? localizeSkinById(skin.id, skin.name, skin.flavor).flavor : `Se desbloquea al nivel ${skin.unlockLevel}`}
                     </span>
                     {isActive && (
                       <span className="mt-1 text-[9px] text-accent-gold/70 uppercase tracking-widest font-bold">Activa</span>
