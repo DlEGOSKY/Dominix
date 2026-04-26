@@ -1,12 +1,14 @@
 import { motion } from "framer-motion";
 import { getLeaderboard, clearLeaderboard, type LeaderboardEntry } from "@/engine/leaderboard";
 import { useState } from "react";
+import { useTranslation } from "@/engine/i18n";
 
 interface LeaderboardScreenProps {
   onBack: () => void;
 }
 
 export default function LeaderboardScreen({ onBack }: LeaderboardScreenProps) {
+  const { t } = useTranslation();
   const [entries, setEntries] = useState<LeaderboardEntry[]>(getLeaderboard());
 
   const handleClear = () => {
@@ -21,7 +23,7 @@ export default function LeaderboardScreen({ onBack }: LeaderboardScreenProps) {
         animate={{ opacity: 1, y: 0 }}
         className="font-display font-black text-3xl text-accent-gold tracking-tight mb-8"
       >
-        Mejores Runs
+        {t("leaderboard.title")}
       </motion.h1>
 
       {entries.length === 0 ? (
@@ -30,7 +32,7 @@ export default function LeaderboardScreen({ onBack }: LeaderboardScreenProps) {
           animate={{ opacity: 1 }}
           className="text-accent-silver/50 text-sm"
         >
-          Sin runs registradas aun
+          {t("leaderboard.empty")}
         </motion.p>
       ) : (
         <div className="w-full max-w-lg space-y-2">
@@ -93,14 +95,14 @@ export default function LeaderboardScreen({ onBack }: LeaderboardScreenProps) {
           onClick={onBack}
           className="px-6 py-2.5 rounded-lg border border-surface-600 text-accent-silver/70 hover:text-white hover:border-accent-silver/40 transition text-sm font-medium"
         >
-          Volver
+          {t("btn.back")}
         </button>
         {entries.length > 0 && (
           <button
             onClick={handleClear}
             className="px-6 py-2.5 rounded-lg border border-red-500/30 text-red-400/70 hover:text-red-400 hover:border-red-500/50 transition text-sm font-medium"
           >
-            Borrar todo
+            {t("leaderboard.clearAll")}
           </button>
         )}
       </div>

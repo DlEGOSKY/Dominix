@@ -2,6 +2,7 @@ import { motion } from "framer-motion";
 import { ALL_ACHIEVEMENTS, getUnlockedAchievements, getAchievementProgress } from "@/engine/achievements";
 import { getAchievementIcon } from "@/engine/achievementIcons";
 import type { SavedData } from "@/types/domino";
+import { useTranslation } from "@/engine/i18n";
 
 interface AchievementsScreenProps {
   savedData: SavedData;
@@ -9,6 +10,7 @@ interface AchievementsScreenProps {
 }
 
 export default function AchievementsScreen({ savedData, onBack }: AchievementsScreenProps) {
+  const { t } = useTranslation();
   const unlockedIds = getUnlockedAchievements();
   const progress = getAchievementProgress(savedData);
 
@@ -20,7 +22,7 @@ export default function AchievementsScreen({ savedData, onBack }: AchievementsSc
         className="flex flex-col items-center gap-2 mb-8"
       >
         <h1 className="font-display font-black text-4xl tracking-tight text-white">
-          LOGROS
+          {t("achievements.title")}
         </h1>
         <div className="flex items-center gap-3">
           <div className="w-48 h-2 rounded-full bg-surface-700 overflow-hidden">
@@ -90,7 +92,7 @@ export default function AchievementsScreen({ savedData, onBack }: AchievementsSc
         onClick={onBack}
         className="px-6 py-3 rounded-xl border border-accent-silver/30 text-accent-silver font-medium hover:bg-surface-700 transition"
       >
-        Volver
+        {t("btn.back")}
       </motion.button>
     </div>
   );

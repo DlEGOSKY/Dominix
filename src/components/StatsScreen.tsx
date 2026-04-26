@@ -5,7 +5,7 @@ import { ALL_RELICS } from "@/engine/relics";
 import { getRelicIcon } from "@/engine/relicIcons";
 import Tooltip from "./Tooltip";
 import { localizeRelic } from "@/engine/i18nContent";
-import { useTranslation } from "@/engine/i18n";
+import { useTranslation, t as translate } from "@/engine/i18n";
 
 interface StatsScreenProps {
   onBack: () => void;
@@ -29,14 +29,14 @@ function StatCard({ label, value, color = "text-white", delay = 0 }: { label: st
 
 function OverviewTab() {
   // Subscribe to lang changes so favorite relic names update on switch.
-  useTranslation();
+  const { t } = useTranslation();
   const stats = getAggregateStats();
 
   if (stats.totalRuns === 0) {
     return (
       <div className="flex flex-col items-center gap-4 py-12">
-        <span className="text-accent-silver/40 text-sm">Aun no hay estadisticas</span>
-        <span className="text-accent-silver/30 text-xs">Completa una run para ver tus datos</span>
+        <span className="text-accent-silver/40 text-sm">{t("stats.empty.noStats")}</span>
+        <span className="text-accent-silver/30 text-xs">{t("stats.empty.noStatsHint")}</span>
       </div>
     );
   }
@@ -45,52 +45,52 @@ function OverviewTab() {
     <div className="flex flex-col gap-8">
       {/* Main stats */}
       <div>
-        <h3 className="text-xs font-bold text-accent-silver/40 uppercase tracking-widest mb-4">Resumen global</h3>
+        <h3 className="text-xs font-bold text-accent-silver/40 uppercase tracking-widest mb-4">{t("stats.section.global")}</h3>
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-          <StatCard label="Runs jugadas" value={stats.totalRuns} color="text-white" delay={0.05} />
-          <StatCard label="Score total" value={stats.totalScore.toLocaleString()} color="text-accent-gold" delay={0.1} />
-          <StatCard label="Fichas jugadas" value={stats.totalTilesPlayed} color="text-white" delay={0.15} />
-          <StatCard label="Patrones activados" value={stats.totalPatternsActivated} color="text-blue-400" delay={0.2} />
+          <StatCard label={t("stats.label.runs")} value={stats.totalRuns} color="text-white" delay={0.05} />
+          <StatCard label={t("stats.label.totalScore")} value={stats.totalScore.toLocaleString()} color="text-accent-gold" delay={0.1} />
+          <StatCard label={t("stats.label.totalTiles")} value={stats.totalTilesPlayed} color="text-white" delay={0.15} />
+          <StatCard label={t("stats.label.totalPatterns")} value={stats.totalPatternsActivated} color="text-blue-400" delay={0.2} />
         </div>
       </div>
 
       {/* Records */}
       <div>
-        <h3 className="text-xs font-bold text-accent-silver/40 uppercase tracking-widest mb-4">Records personales</h3>
+        <h3 className="text-xs font-bold text-accent-silver/40 uppercase tracking-widest mb-4">{t("stats.section.records")}</h3>
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-          <StatCard label="Mejor ronda" value={stats.bestRound} color="text-green-400" delay={0.25} />
-          <StatCard label="Mejor score" value={stats.bestScore.toLocaleString()} color="text-accent-gold" delay={0.3} />
-          <StatCard label="Mejor combo" value={`x${stats.bestCombo}` } color="text-purple-400" delay={0.35} />
-          <StatCard label="Mejor ronda individual" value={stats.bestSingleRoundScore} color="text-yellow-400" delay={0.4} />
+          <StatCard label={t("stats.label.bestRound")} value={stats.bestRound} color="text-green-400" delay={0.25} />
+          <StatCard label={t("stats.label.bestScore")} value={stats.bestScore.toLocaleString()} color="text-accent-gold" delay={0.3} />
+          <StatCard label={t("stats.label.bestCombo")} value={`x${stats.bestCombo}` } color="text-purple-400" delay={0.35} />
+          <StatCard label={t("stats.label.bestSingle")} value={stats.bestSingleRoundScore} color="text-yellow-400" delay={0.4} />
         </div>
       </div>
 
       {/* Averages & streaks */}
       <div>
-        <h3 className="text-xs font-bold text-accent-silver/40 uppercase tracking-widest mb-4">Promedios y rachas</h3>
+        <h3 className="text-xs font-bold text-accent-silver/40 uppercase tracking-widest mb-4">{t("stats.section.averages")}</h3>
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-          <StatCard label="Rondas promedio" value={stats.avgRounds} color="text-white" delay={0.45} />
-          <StatCard label="Score promedio" value={stats.avgScore.toLocaleString()} color="text-white" delay={0.5} />
-          <StatCard label="Racha actual" value={stats.currentWinStreak} color="text-green-400" delay={0.55} />
-          <StatCard label="Mejor racha" value={stats.longestWinStreak} color="text-accent-gold" delay={0.6} />
+          <StatCard label={t("stats.label.avgRounds")} value={stats.avgRounds} color="text-white" delay={0.45} />
+          <StatCard label={t("stats.label.avgScore")} value={stats.avgScore.toLocaleString()} color="text-white" delay={0.5} />
+          <StatCard label={t("stats.label.curStreak")} value={stats.currentWinStreak} color="text-green-400" delay={0.55} />
+          <StatCard label={t("stats.label.bestStreak")} value={stats.longestWinStreak} color="text-accent-gold" delay={0.6} />
         </div>
       </div>
 
       {/* Economy & bosses */}
       <div>
-        <h3 className="text-xs font-bold text-accent-silver/40 uppercase tracking-widest mb-4">Economia y combate</h3>
+        <h3 className="text-xs font-bold text-accent-silver/40 uppercase tracking-widest mb-4">{t("stats.section.economy")}</h3>
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-          <StatCard label="Oro total ganado" value={stats.totalGoldEarned} color="text-accent-gold" delay={0.65} />
-          <StatCard label="Compras en tienda" value={stats.totalShopPurchases} color="text-yellow-400" delay={0.7} />
-          <StatCard label="Jefes derrotados" value={stats.totalBossesDefeated} color="text-red-400" delay={0.75} />
-          <StatCard label="Reliquias totales" value={stats.totalRelicsCollected} color="text-purple-400" delay={0.8} />
+          <StatCard label={t("stats.label.totalGold")} value={stats.totalGoldEarned} color="text-accent-gold" delay={0.65} />
+          <StatCard label={t("stats.label.shopPurchases")} value={stats.totalShopPurchases} color="text-yellow-400" delay={0.7} />
+          <StatCard label={t("stats.label.bossesDefeated")} value={stats.totalBossesDefeated} color="text-red-400" delay={0.75} />
+          <StatCard label={t("stats.label.totalRelics")} value={stats.totalRelicsCollected} color="text-purple-400" delay={0.8} />
         </div>
       </div>
 
       {/* Favorite relics */}
       {stats.favoriteRelics.length > 0 && (
         <div>
-          <h3 className="text-xs font-bold text-accent-silver/40 uppercase tracking-widest mb-4">Reliquias favoritas</h3>
+          <h3 className="text-xs font-bold text-accent-silver/40 uppercase tracking-widest mb-4">{t("stats.section.favoriteRelics")}</h3>
           <div className="flex flex-wrap gap-2">
             {stats.favoriteRelics.map((fav, i) => {
               const relic = ALL_RELICS.find((r) => r.id === fav.id);
@@ -118,7 +118,7 @@ function OverviewTab() {
 
 function HistoryTab() {
   // Subscribe to lang changes so per-run relic chip names refresh.
-  useTranslation();
+  const { t } = useTranslation();
   const runs = getRecentRuns(30);
   // Identify the best run by total score so we can highlight it
   const bestRunId = useMemo(() => {
@@ -129,7 +129,7 @@ function HistoryTab() {
   if (runs.length === 0) {
     return (
       <div className="flex flex-col items-center gap-4 py-12">
-        <span className="text-accent-silver/40 text-sm">Sin historial</span>
+        <span className="text-accent-silver/40 text-sm">{t("stats.empty.noHistory")}</span>
       </div>
     );
   }
@@ -156,6 +156,7 @@ function shareRun(run: RunRecord): { ok: boolean; text: string } {
 }
 
 function RunRow({ run, index, isBest }: { run: RunRecord; index: number; isBest: boolean }) {
+  const { t } = useTranslation();
   const [expanded, setExpanded] = useState(false);
   const [shared, setShared] = useState(false);
 
@@ -213,35 +214,35 @@ function RunRow({ run, index, isBest }: { run: RunRecord; index: number; isBest:
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-center">
             <div className="flex flex-col gap-1">
               <span className="font-mono font-bold text-sm text-white">{run.tilesPlayed}</span>
-              <span className="text-[10px] text-accent-silver/40">Fichas</span>
+              <span className="text-[10px] text-accent-silver/40">{t("stats.run.tiles")}</span>
             </div>
             <div className="flex flex-col gap-1">
               <span className="font-mono font-bold text-sm text-blue-400">{run.patternsActivated}</span>
-              <span className="text-[10px] text-accent-silver/40">Patrones</span>
+              <span className="text-[10px] text-accent-silver/40">{t("stats.run.patterns")}</span>
             </div>
             <div className="flex flex-col gap-1">
               <span className="font-mono font-bold text-sm text-accent-gold">{run.goldEarned}</span>
-              <span className="text-[10px] text-accent-silver/40">Oro</span>
+              <span className="text-[10px] text-accent-silver/40">{t("gameover.stat.gold")}</span>
             </div>
             <div className="flex flex-col gap-1">
               <span className="font-mono font-bold text-sm text-red-400">{run.bossesDefeated}</span>
-              <span className="text-[10px] text-accent-silver/40">Jefes</span>
+              <span className="text-[10px] text-accent-silver/40">{t("gameover.stat.bosses")}</span>
             </div>
             <div className="flex flex-col gap-1">
               <span className="font-mono font-bold text-sm text-purple-400">x{run.bestCombo}</span>
-              <span className="text-[10px] text-accent-silver/40">Mejor combo</span>
+              <span className="text-[10px] text-accent-silver/40">{t("stats.label.bestCombo")}</span>
             </div>
             <div className="flex flex-col gap-1">
               <span className="font-mono font-bold text-sm text-yellow-400">{run.highestRoundScore}</span>
-              <span className="text-[10px] text-accent-silver/40">Mejor ronda</span>
+              <span className="text-[10px] text-accent-silver/40">{t("stats.label.bestRound")}</span>
             </div>
             <div className="flex flex-col gap-1">
               <span className="font-mono font-bold text-sm text-green-400">{run.shopPurchases}</span>
-              <span className="text-[10px] text-accent-silver/40">Compras</span>
+              <span className="text-[10px] text-accent-silver/40">{t("gameover.stat.purchases")}</span>
             </div>
             <div className="flex flex-col gap-1">
               <span className="font-mono font-bold text-sm text-accent-silver/60">{run.relicIds.length}</span>
-              <span className="text-[10px] text-accent-silver/40">Reliquias</span>
+              <span className="text-[10px] text-accent-silver/40">{t("reward.badge.relic")}</span>
             </div>
           </div>
 
@@ -287,7 +288,7 @@ function RunRow({ run, index, isBest }: { run: RunRecord; index: number; isBest:
               }}
               className="px-3 py-1 rounded-md text-[10px] font-bold uppercase tracking-widest bg-surface-700/60 hover:bg-surface-700 text-accent-silver/70 hover:text-white transition-colors"
             >
-              {shared ? "Copiado!" : "Compartir"}
+              {shared ? t("stats.run.copied") : t("stats.run.share")}
             </button>
           </div>
         </motion.div>
@@ -303,7 +304,7 @@ function RecordsTab() {
   if (runs.length === 0) {
     return (
       <div className="flex flex-col items-center gap-4 py-12">
-        <span className="text-accent-silver/40 text-sm">Sin records</span>
+        <span className="text-accent-silver/40 text-sm">{translate("stats.empty.noRecords")}</span>
       </div>
     );
   }
@@ -316,13 +317,13 @@ function RecordsTab() {
   const mostBossesRun = runs.reduce((best, r) => r.bossesDefeated > best.bossesDefeated ? r : best, runs[0]!);
 
   const records = [
-    { title: "Run mas larga", value: `${bestRoundRun.rounds} rondas`, date: bestRoundRun.date, color: "text-green-400" },
-    { title: "Mayor score total", value: `${bestScoreRun.totalScore.toLocaleString()} pts`, date: bestScoreRun.date, color: "text-accent-gold" },
-    { title: "Mas patrones en una run", value: `${mostPatternsRun.patternsActivated} patrones`, date: mostPatternsRun.date, color: "text-blue-400" },
-    { title: "Mas reliquias", value: `${mostRelicsRun.relicsCollected} reliquias`, date: mostRelicsRun.date, color: "text-purple-400" },
-    { title: "Mas jefes derrotados", value: `${mostBossesRun.bossesDefeated} jefes`, date: mostBossesRun.date, color: "text-red-400" },
-    { title: "Mejor combo", value: `x${stats.bestCombo}`, date: "", color: "text-yellow-400" },
-    { title: "Mejor ronda individual", value: `${stats.bestSingleRoundScore} pts`, date: "", color: "text-white" },
+    { title: translate("stats.records.longestRun"), value: translate("stats.unitRounds", { n: bestRoundRun.rounds }), date: bestRoundRun.date, color: "text-green-400" },
+    { title: translate("stats.records.highestScore"), value: translate("stats.unitPts", { n: bestScoreRun.totalScore.toLocaleString() }), date: bestScoreRun.date, color: "text-accent-gold" },
+    { title: translate("stats.records.mostPatterns"), value: translate("stats.unitPatterns", { n: mostPatternsRun.patternsActivated }), date: mostPatternsRun.date, color: "text-blue-400" },
+    { title: translate("stats.records.mostRelics"), value: translate("stats.unitRelics", { n: mostRelicsRun.relicsCollected }), date: mostRelicsRun.date, color: "text-purple-400" },
+    { title: translate("stats.records.mostBosses"), value: translate("stats.unitBosses", { n: mostBossesRun.bossesDefeated }), date: mostBossesRun.date, color: "text-red-400" },
+    { title: translate("stats.records.bestCombo"), value: `x${stats.bestCombo}`, date: "", color: "text-yellow-400" },
+    { title: translate("stats.records.bestSingle"), value: translate("stats.unitPts", { n: stats.bestSingleRoundScore }), date: "", color: "text-white" },
   ];
 
   return (
@@ -347,12 +348,13 @@ function RecordsTab() {
 }
 
 function GraphsTab() {
+  const { t } = useTranslation();
   const runs = getRecentRuns(30);
 
   if (runs.length < 2) {
     return (
       <div className="flex flex-col items-center gap-4 py-12">
-        <span className="text-accent-silver/40 text-sm">Necesitas al menos 2 runs para ver graficos</span>
+        <span className="text-accent-silver/40 text-sm">{t("stats.empty.needRuns")}</span>
       </div>
     );
   }
@@ -365,7 +367,7 @@ function GraphsTab() {
     <div className="flex flex-col gap-8">
       {/* Score per run */}
       <div>
-        <h3 className="text-xs font-bold text-accent-silver/40 uppercase tracking-widest mb-4">Score por run (ultimas {reversed.length})</h3>
+        <h3 className="text-xs font-bold text-accent-silver/40 uppercase tracking-widest mb-4">{t("stats.section.scorePerRun", { n: reversed.length })}</h3>
         <div className="flex items-end gap-1 h-40 p-3 rounded-xl bg-surface-800/50 border border-surface-600/30">
           {reversed.map((run, i) => {
             const height = Math.max(4, (run.totalScore / maxScore) * 100);
@@ -386,14 +388,14 @@ function GraphsTab() {
           })}
         </div>
         <div className="flex justify-between mt-1 px-3">
-          <span className="text-[9px] text-accent-silver/20">Mas antigua</span>
-          <span className="text-[9px] text-accent-silver/20">Mas reciente</span>
+          <span className="text-[9px] text-accent-silver/20">{t("stats.oldest")}</span>
+          <span className="text-[9px] text-accent-silver/20">{t("stats.newest")}</span>
         </div>
       </div>
 
       {/* Rounds per run */}
       <div>
-        <h3 className="text-xs font-bold text-accent-silver/40 uppercase tracking-widest mb-4">Rondas por run</h3>
+        <h3 className="text-xs font-bold text-accent-silver/40 uppercase tracking-widest mb-4">{t("stats.section.roundsPerRun")}</h3>
         <div className="flex items-end gap-1 h-32 p-3 rounded-xl bg-surface-800/50 border border-surface-600/30">
           {reversed.map((run, i) => {
             const height = Math.max(4, (run.rounds / maxRound) * 100);
@@ -425,10 +427,10 @@ function GraphsTab() {
           const trend = older5.length > 0 ? recentAvg - olderAvg : 0;
           return (
             <>
-              <StatCard label="Score prom. ultimas 5" value={recentAvg.toLocaleString()} color="text-accent-gold" delay={0.3} />
-              <StatCard label="Score prom. anteriores" value={olderAvg.toLocaleString()} color="text-accent-silver/70" delay={0.35} />
+              <StatCard label={t("stats.trend.recentAvg")} value={recentAvg.toLocaleString()} color="text-accent-gold" delay={0.3} />
+              <StatCard label={t("stats.trend.olderAvg")} value={olderAvg.toLocaleString()} color="text-accent-silver/70" delay={0.35} />
               <StatCard
-                label="Tendencia"
+                label={t("stats.trend.label")}
                 value={trend >= 0 ? `+${trend.toLocaleString()}` : trend.toLocaleString()}
                 color={trend >= 0 ? "text-green-400" : "text-red-400"}
                 delay={0.4}
@@ -442,13 +444,14 @@ function GraphsTab() {
 }
 
 export default function StatsScreen({ onBack }: StatsScreenProps) {
+  const { t } = useTranslation();
   const [tab, setTab] = useState<Tab>("overview");
 
   const tabs: { id: Tab; label: string }[] = [
-    { id: "overview", label: "Resumen" },
-    { id: "history", label: "Historial" },
-    { id: "records", label: "Records" },
-    { id: "graphs", label: "Graficos" },
+    { id: "overview", label: t("stats.tab.overview") },
+    { id: "history", label: t("stats.tab.history") },
+    { id: "records", label: t("stats.tab.records") },
+    { id: "graphs", label: t("stats.tab.graphs") },
   ];
 
   return (
@@ -461,10 +464,10 @@ export default function StatsScreen({ onBack }: StatsScreenProps) {
               onClick={onBack}
               className="px-4 py-2 rounded-lg text-sm text-accent-silver/60 hover:text-accent-silver border border-surface-600/30 hover:border-surface-600 transition-all"
             >
-              Volver
+              {t("btn.back")}
             </button>
             <h1 className="font-display font-black text-xl bg-gradient-to-b from-white to-white/70 bg-clip-text text-transparent">
-              Estadisticas
+              {t("stats.title")}
             </h1>
             <div className="w-20" />
           </div>
@@ -475,18 +478,18 @@ export default function StatsScreen({ onBack }: StatsScreenProps) {
       <div className="sticky top-[73px] z-10 bg-surface-900/95 backdrop-blur-sm border-b border-surface-600/30">
         <div className="max-w-3xl mx-auto px-6 py-3">
           <div className="flex gap-2">
-            {tabs.map((t) => (
+            {tabs.map((tabItem) => (
               <button
-                key={t.id}
-                onClick={() => setTab(t.id)}
+                key={tabItem.id}
+                onClick={() => setTab(tabItem.id)}
                 className={[
                   "px-4 py-2 rounded-xl text-sm font-medium transition-all",
-                  tab === t.id
+                  tab === tabItem.id
                     ? "bg-accent-gold/15 text-accent-gold border border-accent-gold/30"
                     : "bg-surface-800/50 text-accent-silver/50 border border-surface-600/30 hover:text-accent-silver/70"
                 ].join(" ")}
               >
-                {t.label}
+                {tabItem.label}
               </button>
             ))}
           </div>

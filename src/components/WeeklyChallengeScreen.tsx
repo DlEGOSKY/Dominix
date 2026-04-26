@@ -7,6 +7,7 @@ import {
   getWeeklyRecord,
   getWeeklyShareText,
 } from "@/engine/weekly";
+import { useTranslation } from "@/engine/i18n";
 
 interface WeeklyChallengeScreenProps {
   onStart: () => void;
@@ -19,6 +20,7 @@ interface WeeklyChallengeScreenProps {
  * share button so they can copy their result to clipboard.
  */
 export default function WeeklyChallengeScreen({ onStart, onBack }: WeeklyChallengeScreenProps) {
+  const { t } = useTranslation();
   const label = getWeeklyLabel();
   const theme = getWeeklyTheme();
   const preset = getWeeklyPreset();
@@ -45,7 +47,7 @@ export default function WeeklyChallengeScreen({ onStart, onBack }: WeeklyChallen
           onClick={onBack}
           className="text-accent-silver/60 hover:text-white text-sm transition self-start"
         >
-          ← Volver
+          ← {t("btn.back")}
         </button>
 
         {/* Title */}
@@ -55,7 +57,7 @@ export default function WeeklyChallengeScreen({ onStart, onBack }: WeeklyChallen
           className="flex flex-col items-center gap-2 text-center"
         >
           <span className="text-[10px] font-bold uppercase tracking-[0.4em] text-accent-silver/35">
-            Reto Semanal
+            {t("weekly.label")}
           </span>
           <h1 className="font-display font-black text-4xl text-transparent bg-clip-text bg-gradient-to-b from-white via-white/85 to-accent-silver/50">
             {theme}
@@ -71,13 +73,13 @@ export default function WeeklyChallengeScreen({ onStart, onBack }: WeeklyChallen
           className="rounded-2xl bg-gradient-to-b from-surface-800/80 to-surface-900/80 border border-accent-gold/20 p-5 flex flex-col items-center gap-2"
         >
           <span className="text-[10px] font-bold uppercase tracking-widest text-accent-gold/70">
-            Modificador de la semana
+            {t("weekly.modifierLabel")}
           </span>
           <p className="text-white text-lg font-semibold tracking-tight text-center">
             {preset.modifierText}
           </p>
           <p className="text-[11px] text-accent-silver/50 italic text-center max-w-sm">
-            Todos los jugadores enfrentan el mismo reto esta semana. Mismas fichas iniciales, mismo modificador.
+            {t("weekly.modifierHint")}
           </p>
         </motion.div>
 
@@ -88,9 +90,9 @@ export default function WeeklyChallengeScreen({ onStart, onBack }: WeeklyChallen
           transition={{ delay: 0.35, duration: 0.5 }}
           className="grid grid-cols-3 gap-2"
         >
-          <Stat label="Mejor score" value={record?.bestScore ? record.bestScore.toLocaleString() : "—"} />
-          <Stat label="Mejor ronda" value={record?.bestRound ? String(record.bestRound) : "—"} />
-          <Stat label="Intentos" value={String(record?.runs ?? 0)} />
+          <Stat label={t("weekly.bestScore")} value={record?.bestScore ? record.bestScore.toLocaleString() : "—"} />
+          <Stat label={t("weekly.bestRound")} value={record?.bestRound ? String(record.bestRound) : "—"} />
+          <Stat label={t("weekly.attempts")} value={String(record?.runs ?? 0)} />
         </motion.div>
 
         {/* Actions */}
@@ -104,7 +106,7 @@ export default function WeeklyChallengeScreen({ onStart, onBack }: WeeklyChallen
             onClick={onStart}
             className="w-full px-6 py-3.5 rounded-2xl bg-gradient-to-b from-accent-gold to-amber-600 text-surface-900 font-bold text-sm tracking-wide hover:brightness-110 btn-premium transition"
           >
-            {record ? "Intentar de nuevo" : "Comenzar reto"}
+            {record ? t("weekly.tryAgain") : t("weekly.start")}
           </button>
 
           {record && (
@@ -112,13 +114,13 @@ export default function WeeklyChallengeScreen({ onStart, onBack }: WeeklyChallen
               onClick={handleShare}
               className="w-full px-6 py-2.5 rounded-2xl bg-surface-800/70 border border-surface-600/40 text-accent-silver/70 hover:border-accent-silver/40 text-xs font-semibold tracking-wide transition"
             >
-              {shared ? "Copiado al portapapeles" : "Compartir resultado"}
+              {shared ? t("weekly.shareCopied") : t("weekly.share")}
             </button>
           )}
         </motion.div>
 
         <p className="text-[10px] text-accent-silver/30 text-center mt-2">
-          El reto rota cada semana. Tu mejor score queda guardado localmente hasta el siguiente lunes.
+          {t("weekly.footer")}
         </p>
       </div>
     </div>
