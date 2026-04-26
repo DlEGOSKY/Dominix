@@ -4,18 +4,16 @@ import TileView from "./TileView";
 import AnimatedDemo from "./AnimatedDemo";
 import RelicCard from "./RelicCard";
 import type { Tile } from "@/types/domino";
+import { useTranslation } from "@/engine/i18n";
+import { getHowToPlayContent } from "@/engine/howToPlayContent";
 
 interface HowToPlayScreenProps {
   onBack: () => void;
 }
 
-const SECTIONS = [
-  { id: "basics", title: "Que es el domino", icon: "1" },
-  { id: "gameplay", title: "Como se juega", icon: "2" },
-  { id: "patterns", title: "Patrones", icon: "3" },
-  { id: "advanced", title: "Sistemas avanzados", icon: "4" },
-  { id: "meta", title: "Sistemas meta", icon: "5" },
-];
+// Section icons stay numeric (no translation); titles come from
+// howToPlayContent so the navigation and footer stay live with language.
+const SECTION_ICONS = ["1", "2", "3", "4", "5"];
 
 // Demo tiles for examples
 const DEMO_TILES: Record<string, Tile> = {
@@ -34,38 +32,38 @@ const DEMO_TILES: Record<string, Tile> = {
 };
 
 function SectionBasics() {
+  const c = getHowToPlayContent().basics;
   return (
     <div className="flex flex-col gap-8">
       {/* What is a domino tile */}
       <div className="flex flex-col gap-4">
-        <h3 className="text-xl font-bold text-white">La ficha de domino</h3>
+        <h3 className="text-xl font-bold text-white">{c.tilesHeading}</h3>
         <p className="text-accent-silver/70 leading-relaxed">
-          Cada ficha tiene <span className="text-white font-semibold">dos mitades</span> con puntos del 0 al 6.
-          Los puntos representan el <span className="text-accent-gold font-semibold">valor</span> de cada lado.
+          {renderInline(c.tilesIntro)}
         </p>
         
         <div className="flex items-center justify-center gap-8 py-6">
           <div className="flex flex-col items-center gap-3">
             <TileView tile={DEMO_TILES["3-5"]!} disabled size="md" animate={false} />
             <div className="flex flex-col items-center gap-1">
-              <span className="text-xs text-accent-silver/50">Ficha 3|5</span>
-              <span className="text-xs text-accent-gold">Valor: 8 puntos</span>
+              <span className="text-xs text-accent-silver/50">{c.tile35Label}</span>
+              <span className="text-xs text-accent-gold">{c.tile35Value}</span>
             </div>
           </div>
           
           <div className="flex flex-col items-center gap-3">
             <TileView tile={DEMO_TILES["6-6"]!} disabled size="md" animate={false} />
             <div className="flex flex-col items-center gap-1">
-              <span className="text-xs text-accent-silver/50">Doble 6</span>
-              <span className="text-xs text-accent-gold">Valor: 12 puntos</span>
+              <span className="text-xs text-accent-silver/50">{c.tile66Label}</span>
+              <span className="text-xs text-accent-gold">{c.tile66Value}</span>
             </div>
           </div>
           
           <div className="flex flex-col items-center gap-3">
             <TileView tile={DEMO_TILES["1-1"]!} disabled size="md" animate={false} />
             <div className="flex flex-col items-center gap-1">
-              <span className="text-xs text-accent-silver/50">Doble 1</span>
-              <span className="text-xs text-accent-gold">Valor: 2 puntos</span>
+              <span className="text-xs text-accent-silver/50">{c.tile11Label}</span>
+              <span className="text-xs text-accent-gold">{c.tile11Value}</span>
             </div>
           </div>
         </div>
@@ -73,10 +71,9 @@ function SectionBasics() {
 
       {/* Animated connection demo */}
       <div className="flex flex-col gap-4">
-        <h3 className="text-xl font-bold text-white">Como se conectan</h3>
+        <h3 className="text-xl font-bold text-white">{c.connectHeading}</h3>
         <p className="text-accent-silver/70 leading-relaxed">
-          Las fichas se conectan cuando <span className="text-white font-semibold">los numeros coinciden</span>.
-          Mira como se forma una cadena paso a paso:
+          {renderInline(c.connectIntro)}
         </p>
 
         <AnimatedDemo
@@ -85,33 +82,33 @@ function SectionBasics() {
               hand: [DEMO_TILES["3-5"]!, DEMO_TILES["5-2"]!, DEMO_TILES["2-6"]!, DEMO_TILES["1-1"]!],
               chain: [],
               score: 0,
-              label: "Empieza con 4 fichas en la mano",
+              label: c.demoStart,
               highlight: "demo-3-5",
             },
             {
               hand: [DEMO_TILES["5-2"]!, DEMO_TILES["2-6"]!, DEMO_TILES["1-1"]!],
               chain: [DEMO_TILES["3-5"]!],
               score: 8,
-              label: "Juega 3|5 para iniciar la cadena (+8 pts)",
+              label: c.demoPlayFirst,
             },
             {
               hand: [DEMO_TILES["2-6"]!, DEMO_TILES["1-1"]!],
               chain: [DEMO_TILES["3-5"]!, DEMO_TILES["5-2"]!],
               score: 15,
-              label: "5|2 conecta por el 5 (+7 pts)",
+              label: c.demoConnectFive,
               highlight: "demo-5-2",
             },
             {
               hand: [DEMO_TILES["1-1"]!],
               chain: [DEMO_TILES["3-5"]!, DEMO_TILES["5-2"]!, DEMO_TILES["2-6"]!],
               score: 23,
-              label: "2|6 conecta por el 2 (+8 pts)",
+              label: c.demoConnectTwo,
             },
             {
               hand: [DEMO_TILES["1-1"]!],
               chain: [DEMO_TILES["3-5"]!, DEMO_TILES["5-2"]!, DEMO_TILES["2-6"]!],
               score: 38,
-              label: "Patron activado: Cadena Simple (+15 bonus)",
+              label: c.demoPattern,
             },
           ]}
           intervalMs={2200}
@@ -128,22 +125,36 @@ function SectionBasics() {
           <TileView tile={DEMO_TILES["1-1"]!} disabled size="sm" animate={false} />
         </div>
         <p className="text-sm text-red-400/70">
-          No se puede conectar: 3|5 no tiene 1
+          {c.invalidHint}
         </p>
       </div>
     </div>
   );
 }
 
+/**
+ * Render a string with **bold** segments. We accept Markdown-light syntax in
+ * the bilingual content registry so paragraph-level emphasis ports between
+ * languages without sprinkling React fragments through the data file.
+ */
+function renderInline(s: string): React.ReactNode {
+  const parts = s.split(/\*\*([^*]+)\*\*/g);
+  return parts.map((segment, i) =>
+    i % 2 === 1
+      ? <span key={i} className="text-white font-semibold">{segment}</span>
+      : <span key={i}>{segment}</span>
+  );
+}
+
 function SectionGameplay() {
+  const c = getHowToPlayContent().gameplay;
   return (
     <div className="flex flex-col gap-8">
       {/* Goal */}
       <div className="flex flex-col gap-4">
-        <h3 className="text-xl font-bold text-white">El objetivo</h3>
+        <h3 className="text-xl font-bold text-white">{c.goalHeading}</h3>
         <p className="text-accent-silver/70 leading-relaxed">
-          En cada ronda tienes una <span className="text-accent-gold font-semibold">meta de puntos</span> que debes alcanzar.
-          Si la superas, avanzas a la siguiente ronda. Si no, la run termina.
+          {renderInline(c.goalIntro)}
         </p>
         
         <div className="flex flex-col items-center gap-4 py-4">
@@ -172,17 +183,16 @@ function SectionGameplay() {
             </div>
           </div>
           <p className="text-sm text-accent-silver/50">
-            Necesitas 20 puntos mas para superar la ronda
+            {c.goalNeedMore}
           </p>
         </div>
       </div>
 
       {/* Animated round demo */}
       <div className="flex flex-col gap-4">
-        <h3 className="text-xl font-bold text-white">Jugando una ronda</h3>
+        <h3 className="text-xl font-bold text-white">{c.roundDemoHeading}</h3>
         <p className="text-accent-silver/70 leading-relaxed">
-          Empiezas con <span className="text-white font-semibold">7 fichas</span>. 
-          Coloca fichas, forma cadenas y trata de superar la meta. Asi se ve:
+          {renderInline(c.roundDemoIntro)}
         </p>
 
         <AnimatedDemo
@@ -191,39 +201,39 @@ function SectionGameplay() {
               hand: [DEMO_TILES["3-3"]!, DEMO_TILES["3-5"]!, DEMO_TILES["5-2"]!, DEMO_TILES["2-6"]!, DEMO_TILES["6-6"]!],
               chain: [],
               score: 0,
-              label: "Ronda 1 — Meta: 80 pts. Tu mano esta lista",
+              label: c.roundDemoStep1,
               highlight: "demo-3-3",
             },
             {
               hand: [DEMO_TILES["3-5"]!, DEMO_TILES["5-2"]!, DEMO_TILES["2-6"]!, DEMO_TILES["6-6"]!],
               chain: [DEMO_TILES["3-3"]!],
               score: 6,
-              label: "Juegas el doble 3 para empezar (+6)",
+              label: c.roundDemoStep2,
             },
             {
               hand: [DEMO_TILES["5-2"]!, DEMO_TILES["2-6"]!, DEMO_TILES["6-6"]!],
               chain: [DEMO_TILES["3-3"]!, DEMO_TILES["3-5"]!],
               score: 14,
-              label: "3|5 conecta por el 3 (+8)",
+              label: c.roundDemoStep3,
               highlight: "demo-3-5",
             },
             {
               hand: [DEMO_TILES["2-6"]!, DEMO_TILES["6-6"]!],
               chain: [DEMO_TILES["3-3"]!, DEMO_TILES["3-5"]!, DEMO_TILES["5-2"]!],
               score: 21,
-              label: "5|2 conecta por el 5 (+7). Patron: Cadena Simple",
+              label: c.roundDemoStep4,
             },
             {
               hand: [DEMO_TILES["6-6"]!],
               chain: [DEMO_TILES["3-3"]!, DEMO_TILES["3-5"]!, DEMO_TILES["5-2"]!, DEMO_TILES["2-6"]!],
               score: 29,
-              label: "2|6 conecta por el 2 (+8). Cadena crece",
+              label: c.roundDemoStep5,
             },
             {
               hand: [],
               chain: [DEMO_TILES["3-3"]!, DEMO_TILES["3-5"]!, DEMO_TILES["5-2"]!, DEMO_TILES["2-6"]!, DEMO_TILES["6-6"]!],
               score: 86,
-              label: "6|6 cierra. Score: 86 > Meta 80. Ronda ganada",
+              label: c.roundDemoStep6,
             },
           ]}
           intervalMs={2500}
@@ -232,10 +242,9 @@ function SectionGameplay() {
 
       {/* Rounds progression */}
       <div className="flex flex-col gap-4">
-        <h3 className="text-xl font-bold text-white">Progresion de rondas</h3>
+        <h3 className="text-xl font-bold text-white">{c.progressionHeading}</h3>
         <p className="text-accent-silver/70 leading-relaxed">
-          Las metas aumentan cada ronda. Despues de ganar, recibes <span className="text-accent-gold font-semibold">oro</span> y
-          eliges una <span className="text-purple-400 font-semibold">mejora</span> (reliquia o mutacion).
+          {renderInline(c.progressionIntro)}
         </p>
         
         <div className="flex items-center justify-center gap-3 py-4">
@@ -274,28 +283,29 @@ function SectionGameplay() {
 }
 
 function SectionPatterns() {
+  const c = getHowToPlayContent().patterns;
   const patterns = [
     {
-      name: "Cadena Simple",
-      description: "3+ fichas en la cadena",
+      name: c.chainSimpleName,
+      description: c.chainSimpleDesc,
       bonus: "+15",
       example: ["3-5", "5-2", "2-6"],
     },
     {
-      name: "Doble Doble",
-      description: "2 dobles en la cadena",
+      name: c.doubleDoubleName,
+      description: c.doubleDoubleDesc,
       bonus: "+20",
       example: ["3-3", "3-5", "5-5"],
     },
     {
-      name: "Dominio",
-      description: "Un numero aparece 3+ veces",
+      name: c.dominionName,
+      description: c.dominionDesc,
       bonus: "+25",
       example: ["5-5", "5-2", "2-5"],
     },
     {
-      name: "Escalera",
-      description: "Secuencia de numeros consecutivos",
+      name: c.ladderName,
+      description: c.ladderDesc,
       bonus: "+30",
       example: ["1-2", "2-3", "3-4"],
     },
@@ -306,10 +316,9 @@ function SectionPatterns() {
   return (
     <div className="flex flex-col gap-8">
       <div className="flex flex-col gap-4">
-        <h3 className="text-xl font-bold text-white">Sistema de patrones</h3>
+        <h3 className="text-xl font-bold text-white">{c.sectionHeading}</h3>
         <p className="text-accent-silver/70 leading-relaxed">
-          Los patrones son <span className="text-accent-gold font-semibold">combinaciones especiales</span> que otorgan puntos bonus.
-          Detectarlos y activarlos es clave para superar las metas mas altas.
+          {renderInline(c.sectionIntro)}
         </p>
       </div>
 
@@ -373,17 +382,16 @@ function SectionPatterns() {
       {/* Combo system */}
       <div className="flex flex-col gap-4 p-5 rounded-2xl bg-purple-500/5 border border-purple-500/20">
         <h4 className="font-bold text-white flex items-center gap-2">
-          <span className="px-2 py-0.5 rounded-md bg-purple-500/20 text-purple-400 text-xs font-bold">COMBO</span>
-          Sistema de combos
+          <span className="px-2 py-0.5 rounded-md bg-purple-500/20 text-purple-400 text-xs font-bold">{c.comboBadge}</span>
+          {c.comboHeading}
         </h4>
         <p className="text-sm text-accent-silver/60 leading-relaxed">
-          Cuando activas <span className="text-purple-400 font-semibold">2 o mas patrones</span> en la misma cadena,
-          obtienes un bonus de combo que multiplica tus puntos.
+          {renderInline(c.comboIntro)}
         </p>
         <div className="flex items-center gap-3 text-sm">
-          <span className="px-2 py-1 rounded-lg bg-surface-800 text-accent-silver/60">2 patrones = x1.15</span>
-          <span className="px-2 py-1 rounded-lg bg-surface-800 text-accent-silver/60">3 patrones = x1.35</span>
-          <span className="px-2 py-1 rounded-lg bg-surface-800 text-accent-silver/60">4+ = x1.6</span>
+          <span className="px-2 py-1 rounded-lg bg-surface-800 text-accent-silver/60">{c.combo2}</span>
+          <span className="px-2 py-1 rounded-lg bg-surface-800 text-accent-silver/60">{c.combo3}</span>
+          <span className="px-2 py-1 rounded-lg bg-surface-800 text-accent-silver/60">{c.combo4}</span>
         </div>
       </div>
     </div>
@@ -391,53 +399,54 @@ function SectionPatterns() {
 }
 
 function SectionAdvanced() {
+  const c = getHowToPlayContent().advanced;
   return (
     <div className="flex flex-col gap-8">
       {/* Special tiles */}
       <div className="flex flex-col gap-4">
-        <h3 className="text-xl font-bold text-white">Fichas especiales</h3>
+        <h3 className="text-xl font-bold text-white">{c.specialTilesHeading}</h3>
         <p className="text-accent-silver/70 leading-relaxed">
-          Durante la run puedes encontrar fichas con propiedades unicas.
+          {c.specialTilesIntro}
         </p>
         
         <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
           <div className="flex flex-col items-center gap-3 p-4 rounded-xl bg-purple-500/5 border border-purple-500/20">
             <TileView tile={DEMO_TILES["wild"]!} disabled size="sm" animate={false} />
-            <span className="font-bold text-purple-400">Wild</span>
+            <span className="font-bold text-purple-400">{c.wildName}</span>
             <p className="text-xs text-accent-silver/50 text-center">
-              Conecta con cualquier numero
+              {c.wildDesc}
             </p>
           </div>
           
           <div className="flex flex-col items-center gap-3 p-4 rounded-xl bg-yellow-500/5 border border-yellow-500/20">
             <TileView tile={DEMO_TILES["golden"]!} disabled size="sm" animate={false} />
-            <span className="font-bold text-yellow-400">Dorada</span>
+            <span className="font-bold text-yellow-400">{c.goldenName}</span>
             <p className="text-xs text-accent-silver/50 text-center">
-              Duplica su valor base (x2)
+              {c.goldenDesc}
             </p>
           </div>
           
           <div className="flex flex-col items-center gap-3 p-4 rounded-xl bg-surface-700/30 border border-surface-600/30">
             <TileView tile={DEMO_TILES["locked"]!} disabled size="sm" animate={false} />
-            <span className="font-bold text-accent-silver/60">Bloqueada</span>
+            <span className="font-bold text-accent-silver/60">{c.lockedName}</span>
             <p className="text-xs text-accent-silver/50 text-center">
-              Se desbloquea al activar un patron
+              {c.lockedDesc}
             </p>
           </div>
           
           <div className="flex flex-col items-center gap-3 p-4 rounded-xl bg-cyan-500/5 border border-cyan-500/20">
             <TileView tile={DEMO_TILES["mirror"]!} disabled size="sm" animate={false} />
-            <span className="font-bold text-cyan-400">Espejo</span>
+            <span className="font-bold text-cyan-400">{c.mirrorName}</span>
             <p className="text-xs text-accent-silver/50 text-center">
-              Conecta con cualquier extremo. Copia el valor al que se conecta
+              {c.mirrorDesc}
             </p>
           </div>
           
           <div className="flex flex-col items-center gap-3 p-4 rounded-xl bg-red-500/5 border border-red-500/20">
             <TileView tile={DEMO_TILES["bomb"]!} disabled size="sm" animate={false} />
-            <span className="font-bold text-red-400">Bomba</span>
+            <span className="font-bold text-red-400">{c.bombName}</span>
             <p className="text-xs text-accent-silver/50 text-center">
-              +15 puntos extra de base al jugarla en la cadena
+              {c.bombDesc}
             </p>
           </div>
         </div>
@@ -445,33 +454,33 @@ function SectionAdvanced() {
 
       {/* Animated special tiles demo */}
       <div className="flex flex-col gap-4">
-        <h3 className="text-xl font-bold text-white">Fichas especiales en accion</h3>
+        <h3 className="text-xl font-bold text-white">{c.specialDemoHeading}</h3>
         <AnimatedDemo
           steps={[
             {
               hand: [DEMO_TILES["mirror"]!, DEMO_TILES["bomb"]!, DEMO_TILES["wild"]!],
               chain: [DEMO_TILES["3-5"]!],
               score: 8,
-              label: "Tienes fichas especiales en tu mano",
+              label: c.specialDemoStep1,
               highlight: "demo-mirror",
             },
             {
               hand: [DEMO_TILES["bomb"]!, DEMO_TILES["wild"]!],
               chain: [DEMO_TILES["3-5"]!, DEMO_TILES["mirror"]!],
               score: 16,
-              label: "Espejo conecta al 5 y copia el valor. Ahora ambos extremos son 5",
+              label: c.specialDemoStep2,
             },
             {
               hand: [DEMO_TILES["wild"]!],
               chain: [DEMO_TILES["3-5"]!, DEMO_TILES["mirror"]!, DEMO_TILES["bomb"]!],
               score: 40,
-              label: "Bomba da +15 extra al score base. Gran impulso",
+              label: c.specialDemoStep3,
             },
             {
               hand: [],
               chain: [DEMO_TILES["3-5"]!, DEMO_TILES["mirror"]!, DEMO_TILES["bomb"]!, DEMO_TILES["wild"]!],
               score: 48,
-              label: "Wild conecta con cualquier numero sin restriccion",
+              label: c.specialDemoStep4,
             },
           ]}
           intervalMs={2800}
@@ -480,11 +489,9 @@ function SectionAdvanced() {
 
       {/* Relics */}
       <div className="flex flex-col gap-4">
-        <h3 className="text-xl font-bold text-white">Reliquias</h3>
+        <h3 className="text-xl font-bold text-white">{c.relicsHeading}</h3>
         <p className="text-accent-silver/70 leading-relaxed">
-          Las reliquias son <span className="text-accent-gold font-semibold">mejoras permanentes</span> que modifican las reglas del juego.
-          Cada una pertenece a una <span className="text-white font-semibold">familia</span> con color y efecto propios.
-          Juntar <span className="text-accent-gold font-semibold">3 reliquias de la misma familia</span> activa un bonus de set permanente.
+          {renderInline(c.relicsIntro)}
         </p>
 
         {/* Relic card showcase */}
@@ -510,11 +517,11 @@ function SectionAdvanced() {
         {/* Family bonuses */}
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
           {[
-            { label: "Patron", color: "text-amber-300 bg-amber-900/30 border-amber-400/20", bonus: "+25% bonus de patrones" },
-            { label: "Numero", color: "text-blue-300 bg-blue-900/30 border-blue-400/20", bonus: "+30 puntos fijos" },
-            { label: "Fuerza", color: "text-red-300 bg-red-900/30 border-red-400/20", bonus: "x1.10 multiplicador global" },
-            { label: "Cadena", color: "text-purple-300 bg-purple-900/30 border-purple-400/20", bonus: "+4 pts por ficha en cadena" },
-            { label: "Accion", color: "text-emerald-300 bg-emerald-900/30 border-emerald-400/20", bonus: "+1 accion por ronda" },
+            { label: c.familyPatron, color: "text-amber-300 bg-amber-900/30 border-amber-400/20", bonus: c.familyPatronBonus },
+            { label: c.familyNumero, color: "text-blue-300 bg-blue-900/30 border-blue-400/20", bonus: c.familyNumeroBonus },
+            { label: c.familyFuerza, color: "text-red-300 bg-red-900/30 border-red-400/20", bonus: c.familyFuerzaBonus },
+            { label: c.familyCadena, color: "text-purple-300 bg-purple-900/30 border-purple-400/20", bonus: c.familyCadenaBonus },
+            { label: c.familyAccion, color: "text-emerald-300 bg-emerald-900/30 border-emerald-400/20", bonus: c.familyAccionBonus },
           ].map((f) => (
             <div key={f.label} className={`flex items-center gap-2 px-3 py-2 rounded-lg border ${f.color}`}>
               <span className={`text-xs font-bold uppercase tracking-widest ${f.color.split(" ")[0]}`}>{f.label}</span>
@@ -527,20 +534,19 @@ function SectionAdvanced() {
 
       {/* Active mutations */}
       <div className="flex flex-col gap-4">
-        <h3 className="text-xl font-bold text-white">Poderes activos</h3>
+        <h3 className="text-xl font-bold text-white">{c.activeMutationsHeading}</h3>
         <p className="text-accent-silver/70 leading-relaxed">
-          Desde la ronda 3 puedes obtener <span className="text-purple-400 font-semibold">poderes activos</span> como recompensa.
-          Se activan durante la partida gastando acciones o puntos.
+          {renderInline(c.activeMutationsIntro)}
         </p>
         
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
           {[
-            { name: "Barajar mano", cost: "3 acc", desc: "Devuelve fichas al pool y roba nuevas" },
-            { name: "Toque salvaje", cost: "2 acc", desc: "Tu proxima ficha se vuelve wild" },
-            { name: "Detonacion", cost: "2 acc", desc: "+25 puntos instantaneos" },
-            { name: "Segundo aliento", cost: "20 pts", desc: "Recupera 4 acciones extra" },
-            { name: "Reversa", cost: "1 acc", desc: "Intercambia extremos de la cadena" },
-            { name: "Ancla", cost: "2 acc", desc: "La proxima ficha no cambia el extremo" },
+            { name: c.mut1Name, cost: "3 acc", desc: c.mut1Desc },
+            { name: c.mut2Name, cost: "2 acc", desc: c.mut2Desc },
+            { name: c.mut3Name, cost: "2 acc", desc: c.mut3Desc },
+            { name: c.mut4Name, cost: "20 pts", desc: c.mut4Desc },
+            { name: c.mut5Name, cost: "1 acc", desc: c.mut5Desc },
+            { name: c.mut6Name, cost: "2 acc", desc: c.mut6Desc },
           ].map((mut) => (
             <div key={mut.name} className="flex items-center gap-3 px-3 py-2 rounded-lg bg-purple-500/5 border border-purple-500/15">
               <div className="flex flex-col flex-1 min-w-0">
@@ -555,53 +561,51 @@ function SectionAdvanced() {
 
       {/* Shop */}
       <div className="flex flex-col gap-4">
-        <h3 className="text-xl font-bold text-white">Tienda</h3>
+        <h3 className="text-xl font-bold text-white">{c.shopHeading}</h3>
         <p className="text-accent-silver/70 leading-relaxed">
-          Cada 3 rondas aparece la tienda donde puedes gastar <span className="text-accent-gold font-semibold">oro</span> en:
+          {renderInline(c.shopIntro)}
         </p>
         
         <div className="grid grid-cols-2 gap-3">
           <div className="px-3 py-2 rounded-lg bg-purple-500/10 border border-purple-500/20">
-            <span className="text-sm font-medium text-purple-400">Reliquias</span>
+            <span className="text-sm font-medium text-purple-400">{c.shopRelics}</span>
           </div>
           <div className="px-3 py-2 rounded-lg bg-yellow-500/10 border border-yellow-500/20">
-            <span className="text-sm font-medium text-yellow-400">Dorar ficha</span>
+            <span className="text-sm font-medium text-yellow-400">{c.shopGild}</span>
           </div>
           <div className="px-3 py-2 rounded-lg bg-red-500/10 border border-red-500/20">
-            <span className="text-sm font-medium text-red-400">Eliminar ficha</span>
+            <span className="text-sm font-medium text-red-400">{c.shopRemove}</span>
           </div>
           <div className="px-3 py-2 rounded-lg bg-green-500/10 border border-green-500/20">
-            <span className="text-sm font-medium text-green-400">Reducir meta</span>
+            <span className="text-sm font-medium text-green-400">{c.shopReduce}</span>
           </div>
         </div>
       </div>
 
       {/* Bosses */}
       <div className="flex flex-col gap-4">
-        <h3 className="text-xl font-bold text-white">Jefes</h3>
+        <h3 className="text-xl font-bold text-white">{c.bossesHeading}</h3>
         <p className="text-accent-silver/70 leading-relaxed">
-          Cada 5 rondas enfrentas un <span className="text-red-400 font-semibold">jefe</span> con restricciones especiales.
-          Algunos tienen <span className="text-red-300 font-semibold">varias fases</span> con restricciones diferentes.
-          Derrotarlo otorga oro extra y a veces una reliquia.
+          {renderInline(c.bossesIntro)}
         </p>
         
         <div className="flex flex-col gap-2">
           <div className="p-4 rounded-xl bg-red-500/5 border border-red-500/20">
             <div className="flex items-center gap-3 mb-2">
               <span className="px-2 py-0.5 rounded-md bg-red-500/20 text-red-400 text-xs font-bold">JEFE</span>
-              <span className="font-bold text-white">El Coleccionista</span>
+              <span className="font-bold text-white">{c.bossExampleSingleName}</span>
             </div>
             <p className="text-sm text-accent-silver/50">
-              Restriccion: No puedes usar fichas dobles
+              {c.bossExampleSingleDesc}
             </p>
           </div>
           <div className="p-4 rounded-xl bg-red-500/5 border border-red-500/20">
             <div className="flex items-center gap-3 mb-2">
               <span className="px-2 py-0.5 rounded-md bg-red-500/20 text-red-400 text-xs font-bold">MULTI-FASE</span>
-              <span className="font-bold text-white">El Inquisidor</span>
+              <span className="font-bold text-white">{c.bossExampleMultiName}</span>
             </div>
             <p className="text-sm text-accent-silver/50">
-              Fase 1: Solo dobles. Fase 2: Minimo 4 fichas en cadena
+              {c.bossExampleMultiDesc}
             </p>
           </div>
         </div>
@@ -609,81 +613,55 @@ function SectionAdvanced() {
 
       {/* Actions system */}
       <div className="flex flex-col gap-4">
-        <h3 className="text-xl font-bold text-white">Acciones</h3>
+        <h3 className="text-xl font-bold text-white">{c.actionsHeading}</h3>
         <p className="text-accent-silver/70 leading-relaxed">
-          Cada ronda tienes un <span className="text-white font-semibold">limite de acciones</span>.
-          Jugar, descartar y robar fichas consume acciones. Cuando se agotan, la ronda termina automaticamente.
+          {renderInline(c.actionsIntro)}
         </p>
 
         <div className="grid grid-cols-3 gap-3">
           <div className="flex flex-col items-center gap-2 p-4 rounded-xl bg-surface-800/50 border border-surface-600/30">
             <span className="font-mono font-bold text-lg text-white">12+</span>
-            <span className="text-xs text-accent-silver/50 text-center">Acciones base por ronda</span>
+            <span className="text-xs text-accent-silver/50 text-center">{c.actionsBaseLabel}</span>
           </div>
           <div className="flex flex-col items-center gap-2 p-4 rounded-xl bg-red-500/5 border border-red-500/20">
             <span className="font-mono font-bold text-lg text-red-400">2</span>
-            <span className="text-xs text-accent-silver/50 text-center">Descartes por ronda</span>
+            <span className="text-xs text-accent-silver/50 text-center">{c.actionsDiscardLabel}</span>
           </div>
           <div className="flex flex-col items-center gap-2 p-4 rounded-xl bg-blue-500/5 border border-blue-500/20">
             <span className="font-mono font-bold text-lg text-blue-400">1-2</span>
-            <span className="text-xs text-accent-silver/50 text-center">Robos por ronda</span>
+            <span className="text-xs text-accent-silver/50 text-center">{c.actionsDrawLabel}</span>
           </div>
         </div>
       </div>
 
-      {/* Game modes */}
       <div className="flex flex-col gap-4">
-        <h3 className="text-xl font-bold text-white">Modos de juego</h3>
+        <h3 className="text-xl font-bold text-white">{c.modesHeading}</h3>
         <div className="flex flex-col gap-3">
           <div className="p-4 rounded-xl bg-accent-gold/5 border border-accent-gold/20">
-            <span className="font-bold text-accent-gold">Nueva Run</span>
-            <p className="text-sm text-accent-silver/50 mt-1">
-              Modo clasico. Avanza rondas, supera metas, construye tu build.
-            </p>
+            <span className="font-bold text-accent-gold">{c.modeNewName}</span>
+            <p className="text-sm text-accent-silver/50 mt-1">{c.modeNewDesc}</p>
           </div>
           <div className="p-4 rounded-xl bg-blue-500/5 border border-blue-500/20">
-            <span className="font-bold text-blue-400">Reto Diario</span>
-            <p className="text-sm text-accent-silver/50 mt-1">
-              Una run con seed fija. Todos juegan la misma partida. Compara tu score.
-            </p>
+            <span className="font-bold text-blue-400">{c.modeDailyName}</span>
+            <p className="text-sm text-accent-silver/50 mt-1">{c.modeDailyDesc}</p>
           </div>
           <div className="p-4 rounded-xl bg-purple-500/5 border border-purple-500/20">
-            <span className="font-bold text-purple-400">Endless</span>
-            <p className="text-sm text-accent-silver/50 mt-1">
-              Sin meta. Juega hasta que quieras parar. Score acumulado infinito.
-            </p>
+            <span className="font-bold text-purple-400">{c.modeEndlessName}</span>
+            <p className="text-sm text-accent-silver/50 mt-1">{c.modeEndlessDesc}</p>
           </div>
         </div>
       </div>
 
       {/* Tips */}
       <div className="flex flex-col gap-4 p-5 rounded-2xl bg-blue-500/5 border border-blue-500/20">
-        <h4 className="font-bold text-blue-400">Consejos para empezar</h4>
+        <h4 className="font-bold text-blue-400">{c.tipsHeading}</h4>
         <ul className="flex flex-col gap-2 text-sm text-accent-silver/70">
-          <li className="flex items-start gap-2">
-            <span className="text-blue-400 mt-0.5">1.</span>
-            <span>Prioriza cadenas largas para activar "Cadena Simple" y "Cadena Larga"</span>
-          </li>
-          <li className="flex items-start gap-2">
-            <span className="text-blue-400 mt-0.5">2.</span>
-            <span>Guarda los dobles para activar "Doble Doble" o "Triple Doble"</span>
-          </li>
-          <li className="flex items-start gap-2">
-            <span className="text-blue-400 mt-0.5">3.</span>
-            <span>Las reliquias se acumulan - elige las que complementen tu estrategia</span>
-          </li>
-          <li className="flex items-start gap-2">
-            <span className="text-blue-400 mt-0.5">4.</span>
-            <span>Ahorra oro para la tienda, las reliquias compradas son muy fuertes</span>
-          </li>
-          <li className="flex items-start gap-2">
-            <span className="text-blue-400 mt-0.5">5.</span>
-            <span>Las fichas espejo y bomba aparecen en rondas avanzadas, usalas estrategicamente</span>
-          </li>
-          <li className="flex items-start gap-2">
-            <span className="text-blue-400 mt-0.5">6.</span>
-            <span>Los poderes activos cuestan recursos, activalos solo cuando valga la pena</span>
-          </li>
+          {[c.tip1, c.tip2, c.tip3, c.tip4, c.tip5, c.tip6].map((tip, i) => (
+            <li key={i} className="flex items-start gap-2">
+              <span className="text-blue-400 mt-0.5">{i + 1}.</span>
+              <span>{tip}</span>
+            </li>
+          ))}
         </ul>
       </div>
     </div>
@@ -691,79 +669,25 @@ function SectionAdvanced() {
 }
 
 function SectionMeta() {
+  const c = getHowToPlayContent().meta;
   const blocks: { title: string; body: string; color: string; border: string; tag: string }[] = [
-    {
-      title: "Consumibles",
-      tag: "Tarot",
-      body: "Items de un solo uso que encuentras en tiendas y recompensas. Cambian la mano, revelan fichas, transforman dobles o dan puntos de golpe. Se guardan hasta que los uses.",
-      color: "bg-blue-500/5",
-      border: "border-blue-500/25",
-    },
-    {
-      title: "Ediciones de ficha",
-      tag: "Edicion",
-      body: "Algunas fichas tienen una edicion (Dorada, Holografica, etc) que les da un bonus extra al jugarlas. Se descubren en el codex y se pueden generar mediante eventos o con el Alquimista.",
-      color: "bg-amber-500/5",
-      border: "border-amber-500/25",
-    },
-    {
-      title: "Cartas celestes",
-      tag: "Firmamento",
-      body: "Cartas coleccionables que multiplican tu puntaje segun su firmamento (Solar, Lunar, Estelar, Cometa, Profundo). Cada firmamento potencia un estilo distinto: dobles, cadenas largas, patrones rapidos o pocas fichas.",
-      color: "bg-cyan-500/5",
-      border: "border-cyan-500/25",
-    },
-    {
-      title: "Alineaciones",
-      tag: "Set bonus",
-      body: "Tener 3 cartas del mismo firmamento activa la Alineacion de ese firmamento con un bonus extra. Si acumulas 5 cartas distintas activas la Alineacion Cosmica: tu jugada mas devastadora.",
-      color: "bg-purple-500/5",
-      border: "border-purple-500/25",
-    },
-    {
-      title: "Pacto Sagrado",
-      tag: "Modifier",
-      body: "Una ficha elegida al empezar la run queda marcada como pactada: +100 al jugarla. Evoluciona si la juegas dentro de un patron o con una edition. Con alineacion cosmica activa su bonus se amplifica un 20%.",
-      color: "bg-red-500/5",
-      border: "border-red-500/25",
-    },
-    {
-      title: "Modo Caos",
-      tag: "Modifier",
-      body: "Cada ronda rolea un giro aleatorio: buff (score+, meta-, accion+), nerf (meta+, accion-, patron-) o raro (shuffle, consumible gratis). Activado con el modifier Caos; da +10% score base de compensacion.",
-      color: "bg-violet-500/5",
-      border: "border-violet-500/25",
-    },
-    {
-      title: "Codex",
-      tag: "Discovery",
-      body: "Registra automaticamente cada patron, jefe, carta celeste y giro de caos que descubres. Los no descubiertos se muestran como '???' hasta que los vivas en una run. Accesible desde el menu principal.",
-      color: "bg-indigo-500/5",
-      border: "border-indigo-500/25",
-    },
-    {
-      title: "Legado",
-      tag: "Herencia",
-      body: "Al terminar cada run se guarda automaticamente 1 carta celeste + 1 consumible. Tu proxima run los hereda al iniciar: un toast te avisa cuando activas el legado. Conecta tus partidas entre si.",
-      color: "bg-emerald-500/5",
-      border: "border-emerald-500/25",
-    },
-    {
-      title: "Personajes",
-      tag: "Passive",
-      body: "Cada personaje empieza con condiciones distintas: Arquitecto (+5 por patron), Matematica (+score con dobles), Bombardero (bombas), Mercader (+oro), Alquimista (editions), Oraculo (celeste gratis), Cartografo (+score), Ermitaño (pacto gratis).",
-      color: "bg-teal-500/5",
-      border: "border-teal-500/25",
-    },
+    { title: c.consumablesTitle, tag: c.consumablesTag, body: c.consumablesBody, color: "bg-blue-500/5",   border: "border-blue-500/25" },
+    { title: c.editionsTitle,    tag: c.editionsTag,    body: c.editionsBody,    color: "bg-amber-500/5",  border: "border-amber-500/25" },
+    { title: c.celestialTitle,   tag: c.celestialTag,   body: c.celestialBody,   color: "bg-cyan-500/5",   border: "border-cyan-500/25" },
+    { title: c.alignmentsTitle,  tag: c.alignmentsTag,  body: c.alignmentsBody,  color: "bg-purple-500/5", border: "border-purple-500/25" },
+    { title: c.pactTitle,        tag: c.pactTag,        body: c.pactBody,        color: "bg-red-500/5",    border: "border-red-500/25" },
+    { title: c.chaosTitle,       tag: c.chaosTag,       body: c.chaosBody,       color: "bg-violet-500/5", border: "border-violet-500/25" },
+    { title: c.codexTitle,       tag: c.codexTag,       body: c.codexBody,       color: "bg-indigo-500/5", border: "border-indigo-500/25" },
+    { title: c.legacyTitle,      tag: c.legacyTag,      body: c.legacyBody,      color: "bg-emerald-500/5",border: "border-emerald-500/25" },
+    { title: c.charactersTitle,  tag: c.charactersTag,  body: c.charactersBody,  color: "bg-teal-500/5",   border: "border-teal-500/25" },
   ];
 
   return (
     <div className="flex flex-col gap-6">
       <div className="flex flex-col gap-2">
-        <h3 className="text-xl font-bold text-white">Capas meta del juego</h3>
+        <h3 className="text-xl font-bold text-white">{c.title}</h3>
         <p className="text-accent-silver/70 leading-relaxed">
-          Dominix se profundiza con sistemas que se revelan a medida que juegas.
-          No necesitas dominar todos desde el inicio: emerge naturalmente al explorar.
+          {c.intro}
         </p>
       </div>
 
@@ -785,19 +709,19 @@ function SectionMeta() {
       </div>
 
       <div className="flex flex-col gap-2 pt-4 border-t border-surface-700/30">
-        <h4 className="text-sm font-bold text-accent-silver/80">Atajos de teclado</h4>
+        <h4 className="text-sm font-bold text-accent-silver/80">{c.shortcutsHeading}</h4>
         <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 text-xs">
           <div className="flex items-center justify-between px-3 py-1.5 rounded-lg bg-surface-800/60 border border-surface-600/30">
             <span className="text-accent-silver/60">1-7</span>
-            <span className="text-accent-silver/80">Jugar ficha</span>
+            <span className="text-accent-silver/80">{c.shortcutPlay}</span>
           </div>
           <div className="flex items-center justify-between px-3 py-1.5 rounded-lg bg-surface-800/60 border border-surface-600/30">
             <span className="text-accent-silver/60">R</span>
-            <span className="text-accent-silver/80">Robar</span>
+            <span className="text-accent-silver/80">{c.shortcutDraw}</span>
           </div>
           <div className="flex items-center justify-between px-3 py-1.5 rounded-lg bg-surface-800/60 border border-surface-600/30">
             <span className="text-accent-silver/60">U</span>
-            <span className="text-accent-silver/80">Deshacer</span>
+            <span className="text-accent-silver/80">{c.shortcutUndo}</span>
           </div>
         </div>
       </div>
@@ -806,6 +730,10 @@ function SectionMeta() {
 }
 
 export default function HowToPlayScreen({ onBack }: HowToPlayScreenProps) {
+  // Subscribe to language changes so all subsections re-render on switch.
+  useTranslation();
+  const c = getHowToPlayContent();
+  const SECTIONS = c.sections.map((s, i) => ({ ...s, icon: SECTION_ICONS[i]! }));
   const [activeSection, setActiveSection] = useState("basics");
 
   return (
@@ -818,10 +746,10 @@ export default function HowToPlayScreen({ onBack }: HowToPlayScreenProps) {
               onClick={onBack}
               className="px-4 py-2 rounded-lg text-sm text-accent-silver/60 hover:text-accent-silver border border-surface-600/30 hover:border-surface-600 transition-all"
             >
-              Volver
+              {c.back}
             </button>
             <h1 className="font-display font-black text-xl bg-gradient-to-b from-white to-white/70 bg-clip-text text-transparent">
-              Como jugar
+              {c.title}
             </h1>
             <div className="w-20" />
           </div>
@@ -884,7 +812,7 @@ export default function HowToPlayScreen({ onBack }: HowToPlayScreenProps) {
               disabled={activeSection === SECTIONS[0]!.id}
               className="px-4 py-2 rounded-lg text-sm text-accent-silver/50 hover:text-accent-silver disabled:opacity-30 disabled:cursor-not-allowed transition-all"
             >
-              Anterior
+              {c.prev}
             </button>
             
             <div className="flex gap-1.5">
@@ -904,7 +832,7 @@ export default function HowToPlayScreen({ onBack }: HowToPlayScreenProps) {
                 onClick={onBack}
                 className="px-6 py-2 rounded-lg text-sm font-bold bg-accent-gold text-surface-900 hover:brightness-110 transition"
               >
-                Empezar a jugar
+                {c.startPlay}
               </button>
             ) : (
               <button
@@ -914,7 +842,7 @@ export default function HowToPlayScreen({ onBack }: HowToPlayScreenProps) {
                 }}
                 className="px-4 py-2 rounded-lg text-sm text-accent-gold hover:bg-accent-gold/10 transition-all"
               >
-                Siguiente
+                {c.next}
               </button>
             )}
           </div>
