@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { motion } from "framer-motion";
 import type { Boss } from "@/engine/boss";
 import { useLocalizedBoss } from "@/engine/i18nContent";
+import { useTranslation, t as translate } from "@/engine/i18n";
 
 interface BossIntroProps {
   boss: Boss;
@@ -10,6 +11,7 @@ interface BossIntroProps {
 }
 
 export default function BossIntro({ boss, round, onStart }: BossIntroProps) {
+  const { t } = useTranslation();
   const loc = useLocalizedBoss(boss);
   // Letter-by-letter name reveal
   const [revealed, setRevealed] = useState(0);
@@ -97,7 +99,7 @@ export default function BossIntro({ boss, round, onStart }: BossIntroProps) {
         >
           <div className="h-px w-8 bg-red-500/50" />
           <span className="text-red-400 text-[10px] font-bold tracking-[0.25em] uppercase">
-            Ronda {round} · Jefe
+            {t("boss.round", { n: round })}
           </span>
           <div className="h-px w-8 bg-red-500/50" />
         </motion.div>
@@ -138,7 +140,7 @@ export default function BossIntro({ boss, round, onStart }: BossIntroProps) {
               <div key={i} className="w-6 h-1 rounded-full bg-red-500/40" />
             ))}
             <span className="text-[9px] text-red-400/60 uppercase tracking-widest ml-2">
-              {phaseCount} fases
+              {t("boss.phases", { n: phaseCount })}
             </span>
           </motion.div>
         )}
@@ -186,7 +188,7 @@ export default function BossIntro({ boss, round, onStart }: BossIntroProps) {
           </div>
           {boss.reward.extraRelic && (
             <div className="px-3 py-1.5 rounded-lg bg-purple-500/10 border border-purple-500/30">
-              <span className="font-mono font-bold text-sm text-purple-300">+Reliquia</span>
+              <span className="font-mono font-bold text-sm text-purple-300">{t("boss.bonusRelic")}</span>
             </div>
           )}
         </motion.div>
@@ -208,7 +210,7 @@ export default function BossIntro({ boss, round, onStart }: BossIntroProps) {
             animate={{ x: ["-100%", "200%"] }}
             transition={{ duration: 2.2, repeat: Infinity, ease: "easeInOut", repeatDelay: 1 }}
           />
-          <span className="relative">Enfrentar</span>
+          <span className="relative">{t("boss.face")}</span>
         </motion.button>
       </motion.div>
     </div>
@@ -217,31 +219,23 @@ export default function BossIntro({ boss, round, onStart }: BossIntroProps) {
 
 function getRestrictionText(restriction: Boss["restriction"]): string {
   if (!restriction) return "";
+  // We use the imported `translate` (the static t() reference) here because
+  // this helper isn't a React component and can't call useTranslation. The
+  // BossIntro component itself is hooked to language changes, which causes
+  // this function to re-run on switch.
   switch (restriction.type) {
-    case "no_doubles":
-      return "Restriccion: No puedes jugar fichas dobles";
-    case "max_tiles":
-      return `Restriccion: Maximo ${restriction.count} fichas en la cadena`;
-    case "min_patterns":
-      return `Restriccion: Debes activar al menos ${restriction.count} patrones`;
-    case "no_wild":
-      return "Restriccion: Las fichas comodin estan desactivadas";
-    case "only_doubles":
-      return "Restriccion: Solo puedes jugar fichas dobles";
-    case "only_low":
-      return `Restriccion: Solo fichas con suma <= ${restriction.max}`;
-    case "min_chain_length":
-      return `Requisito: La cadena debe tener al menos ${restriction.count} fichas`;
-    case "no_repeat_number":
-      return "Restriccion: No puedes repetir el mismo numero de conexion consecutivo";
-    case "max_doubles":
-      return `Restriccion: Maximo ${restriction.count} ficha(s) doble en la cadena`;
-    case "even_sum_only":
-      return "Restriccion: Solo fichas con suma par son validas";
-    case "exact_chain_length":
-      return `Requisito: La cadena debe tener exactamente ${restriction.count} fichas`;
+    case "no_doubles":         return translate("restriction.no_doubles");
+    case "max_tiles":          return translate("restriction.max_tiles", { n: restriction.count });
+    case "min_patterns":       return translate("restriction.min_patterns", { n: restriction.count });
+    case "no_wild":            return translate("restriction.no_wild");
+    case "only_doubles":       return translate("restriction.only_doubles");
+    case "only_low":           return translate("restriction.only_low", { n: restriction.max });
+    case "min_chain_length":   return translate("restriction.min_chain_length", { n: restriction.count });
+    case "no_repeat_number":   return translate("restriction.no_repeat_number");
+    case "max_doubles":        return translate("restriction.max_doubles", { n: restriction.count });
+    case "even_sum_only":      return translate("restriction.even_sum_only");
+    case "exact_chain_length": return translate("restriction.exact_chain_length", { n: restriction.count });
     default: {
-      // Exhaustiveness guard: forces future BossRestriction types to be handled here.
       const _never: never = restriction;
       void _never;
       return "";

@@ -4,6 +4,7 @@ import { audio } from "@/engine/audio";
 import { getRelicRarity, getRelicFamily, FAMILY_META } from "@/engine/relics";
 import { getConsumable } from "@/engine/consumables";
 import { getCelestial, patternName } from "@/engine/celestial";
+import { useTranslation, t as translate } from "@/engine/i18n";
 import RelicCard from "./RelicCard";
 
 interface RewardScreenProps {
@@ -12,7 +13,11 @@ interface RewardScreenProps {
   onSkip: () => void;
 }
 
-function getCardStyle(option: RewardOption) {
+// Tier of the card; used both for the visual styling and to pick a translated
+// badge label via the `reward.badge.*` keys.
+type CardTier = "legendary" | "rare" | "relic" | "consumable" | "power" | "celestial" | "mutation";
+
+function getCardStyle(option: RewardOption): { border: string; glow: string; badge: string; tier: CardTier; badgeText: string; topGlow: string } {
   if (option.reward.type === "relic") {
     const rarity = getRelicRarity(option.reward.relic);
     if (rarity === "legendary") {
@@ -20,7 +25,8 @@ function getCardStyle(option: RewardOption) {
         border: "border-purple-400/60",
         glow: "hover:shadow-[0_0_40px_rgba(168,85,247,0.4)]",
         badge: "bg-purple-500/20 text-purple-300 border-purple-400/40",
-        badgeText: "Legendaria",
+        tier: "legendary",
+        badgeText: translate("reward.badge.legendary"),
         topGlow: "bg-gradient-to-b from-purple-500/20 to-transparent",
       };
     }
@@ -29,7 +35,8 @@ function getCardStyle(option: RewardOption) {
         border: "border-blue-400/50",
         glow: "hover:shadow-[0_0_35px_rgba(59,130,246,0.3)]",
         badge: "bg-blue-500/20 text-blue-300 border-blue-400/40",
-        badgeText: "Rara",
+        tier: "rare",
+        badgeText: translate("reward.badge.rare"),
         topGlow: "bg-gradient-to-b from-blue-500/15 to-transparent",
       };
     }
@@ -37,7 +44,8 @@ function getCardStyle(option: RewardOption) {
       border: "border-accent-gold/40",
       glow: "hover:shadow-[0_0_30px_rgba(212,168,83,0.2)]",
       badge: "bg-accent-gold/20 text-accent-gold border-accent-gold/30",
-      badgeText: "Reliquia",
+      tier: "relic",
+      badgeText: translate("reward.badge.relic"),
       topGlow: "bg-gradient-to-b from-accent-gold/10 to-transparent",
     };
   }
@@ -46,7 +54,8 @@ function getCardStyle(option: RewardOption) {
       border: "border-amber-500/50",
       glow: "hover:shadow-[0_0_35px_rgba(251,191,36,0.35)]",
       badge: "bg-amber-500/20 text-amber-300 border-amber-400/40",
-      badgeText: "Consumible",
+      tier: "consumable",
+      badgeText: translate("reward.badge.consumable"),
       topGlow: "bg-gradient-to-b from-amber-500/15 to-transparent",
     };
   }
@@ -55,7 +64,8 @@ function getCardStyle(option: RewardOption) {
       border: "border-purple-500/40",
       glow: "hover:shadow-[0_0_30px_rgba(168,85,247,0.25)]",
       badge: "bg-purple-500/20 text-purple-300 border-purple-400/40",
-      badgeText: "Poder",
+      tier: "power",
+      badgeText: translate("reward.badge.power"),
       topGlow: "bg-gradient-to-b from-purple-500/10 to-transparent",
     };
   }
@@ -64,7 +74,8 @@ function getCardStyle(option: RewardOption) {
       border: "border-indigo-400/50",
       glow: "hover:shadow-[0_0_35px_rgba(129,140,248,0.4)]",
       badge: "bg-indigo-500/20 text-indigo-200 border-indigo-400/40",
-      badgeText: "Celeste",
+      tier: "celestial",
+      badgeText: translate("reward.badge.celestial"),
       topGlow: "bg-gradient-to-b from-indigo-500/20 to-transparent",
     };
   }
@@ -72,12 +83,15 @@ function getCardStyle(option: RewardOption) {
     border: "border-cyan-500/40",
     glow: "hover:shadow-[0_0_30px_rgba(34,211,238,0.2)]",
     badge: "bg-cyan-500/20 text-cyan-300 border-cyan-400/30",
-    badgeText: "Mutacion",
+    tier: "mutation",
+    badgeText: translate("reward.badge.mutation"),
     topGlow: "bg-gradient-to-b from-cyan-500/10 to-transparent",
   };
 }
 
 export default function RewardScreen({ options, onSelect, onSkip }: RewardScreenProps) {
+  // Subscribe to language changes so getCardStyle() is re-invoked on switch.
+  const { t } = useTranslation();
   return (
     <motion.div
       initial={{ opacity: 0 }}
@@ -101,7 +115,7 @@ export default function RewardScreen({ options, onSelect, onSkip }: RewardScreen
             transition={{ delay: 0.1 }}
             className="font-display font-black text-3xl text-white tracking-tight"
           >
-            Elige una mejora
+            {t("reward.title")}
           </motion.h2>
           <motion.p
             initial={{ opacity: 0 }}
@@ -109,7 +123,7 @@ export default function RewardScreen({ options, onSelect, onSkip }: RewardScreen
             transition={{ delay: 0.15 }}
             className="text-sm text-accent-silver/40"
           >
-            Cada decision define tu build
+            {t("reward.subtitle")}
           </motion.p>
         </div>
 
@@ -211,7 +225,7 @@ export default function RewardScreen({ options, onSelect, onSkip }: RewardScreen
                       title={meta.setBonusDescription}
                     >
                       <FamilyIcon size={11} />
-                      {meta.name}
+                      {t(`family.${fam}`)}
                     </span>
                   );
                 })()}
@@ -219,11 +233,11 @@ export default function RewardScreen({ options, onSelect, onSkip }: RewardScreen
                 {/* Bottom decorative line */}
                 <div className="w-full mt-1">
                   <div className={`h-0.5 rounded-full bg-gradient-to-r ${
-                    style.badgeText === "Legendaria"
+                    style.tier === "legendary"
                       ? "from-purple-400/60 via-purple-400/30 to-transparent"
-                      : style.badgeText === "Rara"
+                      : style.tier === "rare"
                         ? "from-blue-400/60 via-blue-400/30 to-transparent"
-                        : style.badgeText === "Reliquia"
+                        : style.tier === "relic"
                           ? "from-accent-gold/40 via-accent-gold/20 to-transparent"
                           : "from-cyan-400/40 via-cyan-400/20 to-transparent"
                   }`} />
@@ -240,7 +254,7 @@ export default function RewardScreen({ options, onSelect, onSkip }: RewardScreen
           onClick={onSkip}
           className="mt-2 px-6 py-2.5 rounded-xl text-sm text-accent-silver/40 hover:text-accent-silver/70 border border-surface-600/50 hover:border-surface-600 transition-all"
         >
-          Saltar recompensa
+          {t("reward.skip")}
         </motion.button>
       </div>
     </motion.div>

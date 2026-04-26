@@ -2,6 +2,7 @@ import { motion } from "framer-motion";
 import type { Boss } from "@/engine/boss";
 import { ALL_RELICS } from "@/engine/relics";
 import { useLocalizedRelic, useLocalizedBoss } from "@/engine/i18nContent";
+import { useTranslation } from "@/engine/i18n";
 
 interface BossRewardScreenProps {
   boss: Boss;
@@ -15,6 +16,7 @@ export default function BossRewardScreen({ boss, bonusRelicId, onContinue }: Bos
   // there is no bonus relic and just don't render that block below.
   const bonusLoc = useLocalizedRelic(bonusRelic ?? { id: "", name: "", description: "", trigger: "passive", effect: { type: "bonus_flat", value: 0 } } as never);
   const bossLoc = useLocalizedBoss(boss);
+  const { t } = useTranslation();
 
   return (
     <div className="min-h-screen flex flex-col items-center justify-center gap-8 px-6">
@@ -33,7 +35,7 @@ export default function BossRewardScreen({ boss, bonusRelicId, onContinue }: Bos
           <div className="w-10 h-10 rounded-full bg-green-500/60" />
         </motion.div>
         <h2 className="font-display font-black text-3xl bg-gradient-to-b from-green-300 to-green-500 bg-clip-text text-transparent">
-          Jefe Derrotado
+          {t("boss.defeated")}
         </h2>
         <span className="text-accent-silver/50 text-sm">{bossLoc.name}</span>
       </motion.div>
@@ -50,7 +52,7 @@ export default function BossRewardScreen({ boss, bonusRelicId, onContinue }: Bos
           </div>
           <div className="flex flex-col gap-1">
             <span className="font-mono font-bold text-2xl text-accent-gold">+{boss.reward.gold}g</span>
-            <span className="text-[10px] font-bold text-accent-silver/40 uppercase tracking-widest">Oro de recompensa</span>
+            <span className="text-[10px] font-bold text-accent-silver/40 uppercase tracking-widest">{t("boss.rewardGold")}</span>
           </div>
         </div>
 
@@ -81,7 +83,7 @@ export default function BossRewardScreen({ boss, bonusRelicId, onContinue }: Bos
         onClick={onContinue}
         className="px-8 py-3 rounded-xl bg-gradient-to-b from-green-500 to-green-600 text-white font-bold text-sm tracking-wide hover:brightness-110 transition shadow-lg shadow-green-500/20"
       >
-        Continuar
+        {t("btn.continue")}
       </motion.button>
     </div>
   );

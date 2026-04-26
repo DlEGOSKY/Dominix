@@ -1,5 +1,6 @@
 import { motion } from "framer-motion";
 import type { ShopItem } from "@/engine/shop";
+import { useTranslation, t as translate } from "@/engine/i18n";
 import RelicCard from "./RelicCard";
 
 interface ShopScreenProps {
@@ -12,27 +13,32 @@ interface ShopScreenProps {
 }
 
 function getItemAccent(type: ShopItem["type"]) {
+  // labelKey → t() at render time, so the label is always live with the
+  // current language. translate() (the static t() reference) keeps the call
+  // self-contained outside React.
   switch (type) {
     case "relic":
-      return { border: "border-purple-500/40", glow: "hover:shadow-[0_0_24px_rgba(147,51,234,0.2)]", badge: "bg-purple-500/20 text-purple-400 border-purple-500/30", label: "Reliquia", accent: "from-purple-500/10" };
+      return { border: "border-purple-500/40", glow: "hover:shadow-[0_0_24px_rgba(147,51,234,0.2)]", badge: "bg-purple-500/20 text-purple-400 border-purple-500/30", label: translate("shop.tag.relic"), accent: "from-purple-500/10" };
     case "tile_upgrade":
-      return { border: "border-yellow-500/40", glow: "hover:shadow-[0_0_24px_rgba(234,179,8,0.2)]", badge: "bg-yellow-500/20 text-yellow-400 border-yellow-500/30", label: "Mejora", accent: "from-yellow-500/10" };
+      return { border: "border-yellow-500/40", glow: "hover:shadow-[0_0_24px_rgba(234,179,8,0.2)]", badge: "bg-yellow-500/20 text-yellow-400 border-yellow-500/30", label: translate("shop.tag.tile_upgrade"), accent: "from-yellow-500/10" };
     case "remove_tile":
-      return { border: "border-red-500/30", glow: "hover:shadow-[0_0_24px_rgba(239,68,68,0.15)]", badge: "bg-red-500/20 text-red-400 border-red-500/30", label: "Eliminar", accent: "from-red-500/8" };
+      return { border: "border-red-500/30", glow: "hover:shadow-[0_0_24px_rgba(239,68,68,0.15)]", badge: "bg-red-500/20 text-red-400 border-red-500/30", label: translate("shop.tag.remove_tile"), accent: "from-red-500/8" };
     case "heal":
-      return { border: "border-green-500/40", glow: "hover:shadow-[0_0_24px_rgba(34,197,94,0.2)]", badge: "bg-green-500/20 text-green-400 border-green-500/30", label: "Alivio", accent: "from-green-500/10" };
+      return { border: "border-green-500/40", glow: "hover:shadow-[0_0_24px_rgba(34,197,94,0.2)]", badge: "bg-green-500/20 text-green-400 border-green-500/30", label: translate("shop.tag.heal"), accent: "from-green-500/10" };
     case "wild_tile":
-      return { border: "border-violet-500/40", glow: "hover:shadow-[0_0_24px_rgba(139,92,246,0.2)]", badge: "bg-violet-500/20 text-violet-400 border-violet-500/30", label: "Wild", accent: "from-violet-500/10" };
+      return { border: "border-violet-500/40", glow: "hover:shadow-[0_0_24px_rgba(139,92,246,0.2)]", badge: "bg-violet-500/20 text-violet-400 border-violet-500/30", label: translate("shop.tag.wild_tile"), accent: "from-violet-500/10" };
     case "extra_hand":
-      return { border: "border-cyan-500/40", glow: "hover:shadow-[0_0_24px_rgba(6,182,212,0.2)]", badge: "bg-cyan-500/20 text-cyan-400 border-cyan-500/30", label: "Mano", accent: "from-cyan-500/10" };
+      return { border: "border-cyan-500/40", glow: "hover:shadow-[0_0_24px_rgba(6,182,212,0.2)]", badge: "bg-cyan-500/20 text-cyan-400 border-cyan-500/30", label: translate("shop.tag.extra_hand"), accent: "from-cyan-500/10" };
     case "forge_edition":
-      return { border: "border-pink-500/50", glow: "hover:shadow-[0_0_28px_rgba(236,72,153,0.25)]", badge: "bg-pink-500/20 text-pink-300 border-pink-500/40", label: "Forja", accent: "from-pink-500/10" };
+      return { border: "border-pink-500/50", glow: "hover:shadow-[0_0_28px_rgba(236,72,153,0.25)]", badge: "bg-pink-500/20 text-pink-300 border-pink-500/40", label: translate("shop.tag.forge_edition"), accent: "from-pink-500/10" };
     default:
-      return { border: "border-surface-600", glow: "", badge: "bg-surface-700 text-accent-silver/60 border-surface-600", label: "Item", accent: "from-surface-600/10" };
+      return { border: "border-surface-600", glow: "", badge: "bg-surface-700 text-accent-silver/60 border-surface-600", label: translate("shop.tag.item"), accent: "from-surface-600/10" };
   }
 }
 
 export default function ShopScreen({ items, gold, onBuy, onSkip, rerollCost, onReroll }: ShopScreenProps) {
+  // Subscribe to language changes so getItemAccent() re-renders on switch.
+  const { t } = useTranslation();
   return (
     <div className="min-h-screen flex flex-col items-center justify-center px-6 py-12">
       <motion.div
@@ -43,7 +49,7 @@ export default function ShopScreen({ items, gold, onBuy, onSkip, rerollCost, onR
         <div className="w-14 h-14 rounded-2xl bg-accent-gold/10 border border-accent-gold/30 flex items-center justify-center mb-1">
           <div className="w-6 h-6 rounded-full bg-accent-gold/70" />
         </div>
-        <h2 className="font-display font-black text-3xl text-white tracking-tight">Tienda</h2>
+        <h2 className="font-display font-black text-3xl text-white tracking-tight">{t("shop.title")}</h2>
         <div className="flex items-center gap-2 px-4 py-1.5 rounded-lg bg-accent-gold/10 border border-accent-gold/20">
           <div className="w-3 h-3 rounded-full bg-accent-gold/80" />
           <span className="font-mono font-bold text-xl text-accent-gold">{gold}</span>
@@ -116,7 +122,7 @@ export default function ShopScreen({ items, gold, onBuy, onSkip, rerollCost, onR
                 : "border-surface-700/50 text-surface-500 opacity-40 cursor-not-allowed",
             ].join(" ")}
           >
-            Reroll ({rerollCost}g)
+            {t("shop.reroll", { n: rerollCost })}
           </motion.button>
         )}
         <motion.button
@@ -126,7 +132,7 @@ export default function ShopScreen({ items, gold, onBuy, onSkip, rerollCost, onR
           onClick={onSkip}
           className="px-8 py-3 rounded-xl border border-surface-600/50 text-accent-silver/50 font-medium hover:text-accent-silver/80 hover:border-surface-600 transition-all"
         >
-          Continuar sin comprar
+          {t("shop.skip")}
         </motion.button>
       </div>
     </div>

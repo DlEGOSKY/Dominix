@@ -134,6 +134,79 @@ const STRINGS: Record<string, Record<Language, string>> = {
   "settings.resetDone": { es: "Borradas {n} claves. Recarga la pagina.", en: "Cleared {n} keys. Reload the page." },
   "settings.exportFallbackPrompt": { es: "Codigo de partida (copia manualmente):", en: "Save code (copy manually):" },
 
+  // Modifier select (pre-run modal)
+  "modifier.title": { es: "Configurar Run", en: "Configure Run" },
+  "modifier.difficulty": { es: "Dificultad", en: "Difficulty" },
+  "modifier.variants": { es: "Modificadores (opcional)", en: "Modifiers (optional)" },
+  "modifier.cancel": { es: "Cancelar", en: "Cancel" },
+  "modifier.start": { es: "Iniciar Run", en: "Start Run" },
+  "modifier.unlockRound": { es: "Desbloquea en ronda {n}", en: "Unlocks at round {n}" },
+  "modifier.unlockRuns": { es: "Desbloquea con {n} runs", en: "Unlocks after {n} runs" },
+  "modifier.challenge": { es: "Desafio", en: "Challenge" },
+
+  // Boss intro / reward / cinematic
+  "boss.round": { es: "Ronda {n} \u00b7 Jefe", en: "Round {n} \u00b7 Boss" },
+  "boss.phases": { es: "{n} fases", en: "{n} phases" },
+  "boss.face": { es: "Enfrentar", en: "Face it" },
+  "boss.bonusRelic": { es: "+Reliquia", en: "+Relic" },
+  "boss.defeated": { es: "Jefe Derrotado", en: "Boss Defeated" },
+  "boss.rewardGold": { es: "Oro de recompensa", en: "Reward gold" },
+  "boss.label": { es: "Jefe", en: "Boss" },
+
+  // Boss restrictions (shown in BossIntro / GameBoard HUD)
+  "restriction.no_doubles": { es: "Restriccion: No puedes jugar fichas dobles", en: "Restriction: No double tiles allowed" },
+  "restriction.max_tiles": { es: "Restriccion: Maximo {n} fichas en la cadena", en: "Restriction: Max {n} tiles in the chain" },
+  "restriction.min_patterns": { es: "Restriccion: Debes activar al menos {n} patrones", en: "Restriction: Activate at least {n} patterns" },
+  "restriction.no_wild": { es: "Restriccion: Las fichas comodin estan desactivadas", en: "Restriction: Wild tiles are disabled" },
+  "restriction.only_doubles": { es: "Restriccion: Solo puedes jugar fichas dobles", en: "Restriction: Only doubles allowed" },
+  "restriction.only_low": { es: "Restriccion: Solo fichas con suma <= {n}", en: "Restriction: Only tiles with sum <= {n}" },
+  "restriction.min_chain_length": { es: "Requisito: La cadena debe tener al menos {n} fichas", en: "Requirement: Chain must have at least {n} tiles" },
+  "restriction.no_repeat_number": { es: "Restriccion: No puedes repetir el mismo numero de conexion consecutivo", en: "Restriction: Cannot repeat the same connection number twice" },
+  "restriction.max_doubles": { es: "Restriccion: Maximo {n} ficha(s) doble en la cadena", en: "Restriction: Max {n} double tile(s) in the chain" },
+  "restriction.even_sum_only": { es: "Restriccion: Solo fichas con suma par son validas", en: "Restriction: Only tiles with even sum are valid" },
+  "restriction.exact_chain_length": { es: "Requisito: La cadena debe tener exactamente {n} fichas", en: "Requirement: Chain must have exactly {n} tiles" },
+
+  // Events
+  "event.blessing": { es: "Bendicion", en: "Blessing" },
+  "event.curse": { es: "Maldicion", en: "Curse" },
+  "event.choice": { es: "Evento", en: "Event" },
+  "event.continue": { es: "Continuar", en: "Continue" },
+
+  // Reward screen
+  "reward.title": { es: "Elige una mejora", en: "Choose an upgrade" },
+  "reward.subtitle": { es: "Cada decision define tu build", en: "Every decision shapes your build" },
+  "reward.skip": { es: "Saltar recompensa", en: "Skip reward" },
+  "reward.badge.legendary": { es: "Legendaria", en: "Legendary" },
+  "reward.badge.rare": { es: "Rara", en: "Rare" },
+  "reward.badge.relic": { es: "Reliquia", en: "Relic" },
+  "reward.badge.consumable": { es: "Consumible", en: "Consumable" },
+  "reward.badge.power": { es: "Poder", en: "Power" },
+  "reward.badge.celestial": { es: "Celeste", en: "Celestial" },
+  "reward.badge.mutation": { es: "Mutacion", en: "Mutation" },
+
+  // Relic family labels
+  "family.patron": { es: "Patron", en: "Pattern" },
+  "family.numero": { es: "Numero", en: "Number" },
+  "family.fuerza": { es: "Fuerza", en: "Force" },
+  "family.cadena": { es: "Cadena", en: "Chain" },
+  "family.accion": { es: "Accion", en: "Action" },
+
+  // Shop
+  "shop.title": { es: "Tienda", en: "Shop" },
+  "shop.skip": { es: "Continuar sin comprar", en: "Leave without buying" },
+  "shop.reroll": { es: "Reroll ({n}g)", en: "Reroll ({n}g)" },
+  "shop.tag.relic": { es: "Reliquia", en: "Relic" },
+  "shop.tag.tile_upgrade": { es: "Mejora", en: "Upgrade" },
+  "shop.tag.remove_tile": { es: "Eliminar", en: "Remove" },
+  "shop.tag.heal": { es: "Alivio", en: "Heal" },
+  "shop.tag.wild_tile": { es: "Wild", en: "Wild" },
+  "shop.tag.extra_hand": { es: "Mano", en: "Hand" },
+  "shop.tag.forge_edition": { es: "Forja", en: "Forge" },
+  "shop.tag.item": { es: "Item", en: "Item" },
+
+  // Boss defeated overlay (cinematic)
+  "boss.clickToContinue": { es: "Click para continuar", en: "Click to continue" },
+
   // Game over
   "gameover.epic": { es: "Eternidad", en: "Eternity" },
   "gameover.ritual": { es: "Ritual Consumado", en: "Ritual Complete" },

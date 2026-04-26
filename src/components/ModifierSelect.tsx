@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { motion } from "framer-motion";
 import { ALL_MODIFIERS, isModifierUnlocked } from "@/engine/modifiers";
+import { useTranslation } from "@/engine/i18n";
 
 interface ModifierSelectProps {
   bestRound: number;
@@ -10,6 +11,7 @@ interface ModifierSelectProps {
 }
 
 export default function ModifierSelect({ bestRound, totalRuns, onStart, onCancel }: ModifierSelectProps) {
+  const { t } = useTranslation();
   const [selectedDifficulty, setSelectedDifficulty] = useState("normal");
   const [selectedVariants, setSelectedVariants] = useState<string[]>([]);
 
@@ -41,13 +43,13 @@ export default function ModifierSelect({ bestRound, totalRuns, onStart, onCancel
         className="bg-surface-800 border border-surface-600 rounded-2xl p-6 max-w-lg w-full max-h-[90vh] overflow-y-auto"
       >
         <h2 className="font-display font-bold text-2xl text-white mb-6 text-center">
-          Configurar Run
+          {t("modifier.title")}
         </h2>
 
         {/* Dificultad */}
         <div className="mb-6">
           <h3 className="text-sm text-accent-silver/60 uppercase tracking-wider mb-3">
-            Dificultad
+            {t("modifier.difficulty")}
           </h3>
           <div className="grid grid-cols-2 gap-2">
             {difficulties.map((mod) => {
@@ -71,7 +73,7 @@ export default function ModifierSelect({ bestRound, totalRuns, onStart, onCancel
                     {unlocked ? mod.name : "???"}
                   </span>
                   <span className="text-xs opacity-70">
-                    {unlocked ? mod.description : `Desbloquea en ronda ${mod.unlockCondition?.value}`}
+                    {unlocked ? mod.description : t("modifier.unlockRound", { n: mod.unlockCondition?.value ?? 0 })}
                   </span>
                 </button>
               );
@@ -82,7 +84,7 @@ export default function ModifierSelect({ bestRound, totalRuns, onStart, onCancel
         {/* Variantes */}
         <div className="mb-6">
           <h3 className="text-sm text-accent-silver/60 uppercase tracking-wider mb-3">
-            Modificadores (opcional)
+            {t("modifier.variants")}
           </h3>
           <div className="flex flex-col gap-2">
             {variants.map((mod) => {
@@ -118,13 +120,13 @@ export default function ModifierSelect({ bestRound, totalRuns, onStart, onCancel
                       {unlocked
                         ? mod.description
                         : mod.unlockCondition?.type === "rounds"
-                        ? `Desbloquea en ronda ${mod.unlockCondition.value}`
-                        : `Desbloquea con ${mod.unlockCondition?.value} runs`}
+                        ? t("modifier.unlockRound", { n: mod.unlockCondition.value })
+                        : t("modifier.unlockRuns", { n: mod.unlockCondition?.value ?? 0 })}
                     </span>
                   </div>
                   {mod.type === "challenge" && unlocked && (
                     <span className="text-xs px-2 py-0.5 rounded bg-red-500/20 text-red-400 border border-red-500/30">
-                      Desafio
+                      {t("modifier.challenge")}
                     </span>
                   )}
                 </button>
@@ -139,13 +141,13 @@ export default function ModifierSelect({ bestRound, totalRuns, onStart, onCancel
             onClick={onCancel}
             className="flex-1 py-3 rounded-xl border border-surface-600 text-accent-silver font-medium hover:bg-surface-700 transition"
           >
-            Cancelar
+            {t("modifier.cancel")}
           </button>
           <button
             onClick={handleStart}
             className="flex-1 py-3 rounded-xl bg-accent-gold text-surface-900 font-bold hover:brightness-110 transition"
           >
-            Iniciar Run
+            {t("modifier.start")}
           </button>
         </div>
       </motion.div>

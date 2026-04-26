@@ -8,6 +8,7 @@ import Shockwave from "./cinematic/Shockwave";
 import RadialParticles from "./cinematic/RadialParticles";
 import RadialFlash from "./cinematic/RadialFlash";
 import { useLocalizedBoss } from "@/engine/i18nContent";
+import { useTranslation } from "@/engine/i18n";
 
 interface BossDefeatedOverlayProps {
   boss: Boss | null;
@@ -23,6 +24,7 @@ interface BossDefeatedOverlayProps {
 export default function BossDefeatedOverlay({ boss, visible, onContinue }: BossDefeatedOverlayProps) {
   // Hook order requires unconditional invocation; use a stub when boss is null.
   const loc = useLocalizedBoss(boss ?? ({ id: "", name: "", description: "", targetMultiplier: 1, reward: { gold: 0, extraRelic: false } } as never));
+  const { t } = useTranslation();
   useEffect(() => {
     if (!visible) return;
     celebrateBigEvent();
@@ -32,11 +34,11 @@ export default function BossDefeatedOverlay({ boss, visible, onContinue }: BossD
   // Auto-advance after 2.6s, or any key/click cuts it short
   useEffect(() => {
     if (!visible) return;
-    const t = window.setTimeout(onContinue, 2600);
+    const timer = window.setTimeout(onContinue, 2600);
     const onKey = () => onContinue();
     window.addEventListener("keydown", onKey);
     return () => {
-      window.clearTimeout(t);
+      window.clearTimeout(timer);
       window.removeEventListener("keydown", onKey);
     };
   }, [visible, onContinue]);
@@ -161,7 +163,7 @@ export default function BossDefeatedOverlay({ boss, visible, onContinue }: BossD
               </div>
               {boss.reward.extraRelic && (
                 <div className="px-4 py-1.5 rounded-lg bg-purple-500/15 border border-purple-400/40">
-                  <span className="text-xs font-bold uppercase tracking-widest text-purple-200">+ Reliquia</span>
+                  <span className="text-xs font-bold uppercase tracking-widest text-purple-200">{t("boss.bonusRelic")}</span>
                 </div>
               )}
             </motion.div>
@@ -173,7 +175,7 @@ export default function BossDefeatedOverlay({ boss, visible, onContinue }: BossD
               transition={{ delay: 1.6 }}
               className="text-[10px] uppercase tracking-[0.3em] text-white/30 mt-4"
             >
-              Click para continuar
+              {t("boss.clickToContinue")}
             </motion.span>
           </div>
         </motion.div>

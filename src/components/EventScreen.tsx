@@ -1,6 +1,7 @@
 import { motion } from "framer-motion";
 import type { GameEvent, ChoiceOption, EventEffect } from "@/engine/events";
 import { useLocalizedEvent } from "@/engine/i18nContent";
+import { useTranslation } from "@/engine/i18n";
 
 interface EventScreenProps {
   event: GameEvent;
@@ -8,6 +9,7 @@ interface EventScreenProps {
 }
 
 export default function EventScreen({ event, onContinue }: EventScreenProps) {
+  const { t } = useTranslation();
   const loc = useLocalizedEvent(event);
   const isChoice = event.effect.type === "choice";
   // Pair each source ChoiceOption (carries the actual effect we must run) with
@@ -48,7 +50,7 @@ export default function EventScreen({ event, onContinue }: EventScreenProps) {
       >
         <div className="flex flex-col items-center gap-4 text-center mb-8">
           <span className={`text-xs uppercase tracking-wider font-medium ${typeColors[event.type]}`}>
-            {event.type === "blessing" ? "Bendicion" : event.type === "curse" ? "Maldicion" : "Evento"}
+            {event.type === "blessing" ? t("event.blessing") : event.type === "curse" ? t("event.curse") : t("event.choice")}
           </span>
           <h2 className="font-display font-bold text-3xl text-white">
             {loc.name}
@@ -86,7 +88,7 @@ export default function EventScreen({ event, onContinue }: EventScreenProps) {
             onClick={() => onContinue(event.effect as Exclude<EventEffect, { type: "choice" }>)}
             className="w-full py-4 rounded-xl bg-surface-700 border border-surface-500 text-white font-semibold hover:bg-surface-600 transition"
           >
-            Continuar
+            {t("event.continue")}
           </motion.button>
         )}
       </motion.div>
