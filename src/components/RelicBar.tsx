@@ -10,7 +10,7 @@ import type { RelicFamily } from "@/types/relic";
 import RelicCard from "./RelicCard";
 import Tooltip, { RelicTooltipContent } from "./Tooltip";
 import { localizeRelic } from "@/engine/i18nContent";
-import { useTranslation } from "@/engine/i18n";
+import { useTranslation, t as translate } from "@/engine/i18n";
 
 interface RelicBarProps {
   relicIds: string[];
@@ -56,7 +56,7 @@ export default function RelicBar({ relicIds, pulseKey = 0, highlightIds }: Relic
     <div className="flex flex-col items-center gap-2 w-full">
       <div className="flex items-center gap-3">
         <span className="text-xs text-accent-silver/40 uppercase tracking-wider">
-          Reliquias ({relics.length})
+          {translate("relics.label", { n: relics.length })}
         </span>
         {/* Family progress pills */}
         {(Object.keys(counts) as RelicFamily[]).filter((f) => counts[f] > 0).map((family) => {
@@ -174,7 +174,7 @@ export default function RelicBar({ relicIds, pulseKey = 0, highlightIds }: Relic
                 title={FAMILY_META[f].setBonusDescription}
               >
                 <FamilyIcon size={11} />
-                <span>Set {FAMILY_META[f].name}</span>
+                <span>{translate("relics.setLabel", { name: FAMILY_META[f].name })}</span>
               </div>
             );
           })}

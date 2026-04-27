@@ -405,6 +405,16 @@ const STRINGS: Record<string, Record<Language, string>> = {
   "boss.rageMeta": { es: "+{n}% meta", en: "+{n}% target" },
   "chaos.eyebrow": { es: "Caos \u00b7 Ronda {n}", en: "Chaos \u00b7 Round {n}" },
 
+  // Active pattern list
+  "patterns.empty": { es: "Sin patrones activos", en: "No active patterns" },
+  "patterns.totalMult": { es: "Multiplicador total: x{n}", en: "Total multiplier: x{n}" },
+  "patterns.showMore": { es: "+{n} mas", en: "+{n} more" },
+  "patterns.showLess": { es: "Ocultar", en: "Hide" },
+
+  // Relic bar
+  "relics.label": { es: "Reliquias ({n})", en: "Relics ({n})" },
+  "relics.setLabel": { es: "Set {name}", en: "{name} set" },
+
   // ScoreReveal (round-end breakdown card)
   "scoreReveal.base": { es: "Base de cadena", en: "Chain base" },
   "scoreReveal.length": { es: "Longitud", en: "Length" },
