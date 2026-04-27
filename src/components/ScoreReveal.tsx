@@ -105,7 +105,11 @@ export default function ScoreReveal({ breakdown, finalScore, target, won, extras
     lines.push({ label: translate("scoreReveal.globalMult"), value: `x${breakdown.multiplier.toFixed(2)}`, color: "text-accent-gold", isMult: true });
   }
 
-  const STEP = 0.13;
+  // Adaptive stagger so a 16-line late-game breakdown doesn't hijack the
+  // pacing for 2+ seconds. Reveal target stays under ~1.4s total but
+  // never goes faster than 0.05s per line for short breakdowns.
+  const MAX_REVEAL = 1.4;
+  const STEP = lines.length > 0 ? Math.max(0.05, Math.min(0.13, MAX_REVEAL / lines.length)) : 0.13;
   const totalDelay = 0.15 + lines.length * STEP + 0.15;
 
   return (

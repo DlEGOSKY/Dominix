@@ -342,26 +342,34 @@ export default function GameOverScreen({
         className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-center mt-2 max-w-lg w-full"
       >
         {[
-          { value: stats.totalScore, label: t("gameover.stat.score"), color: "text-accent-gold" },
-          { value: stats.tilesPlayed, label: t("gameover.stat.tiles"), color: "text-white" },
-          { value: stats.patternsActivated, label: t("gameover.stat.patterns"), color: "text-blue-400" },
-          { value: stats.highestRoundScore, label: t("gameover.stat.bestRound"), color: "text-green-400" },
-          { value: stats.bossesDefeated, label: t("gameover.stat.bosses"), color: "text-red-400" },
-          { value: stats.goldEarned, label: t("gameover.stat.gold"), color: "text-yellow-400" },
-          { value: stats.shopPurchases, label: t("gameover.stat.purchases"), color: "text-cyan-400" },
-          { value: stats.bestCombo, label: t("gameover.stat.bestCombo"), color: "text-purple-400" },
+          { value: stats.totalScore, label: t("gameover.stat.score"), color: "text-accent-gold", accent: "from-accent-gold/15", border: "border-accent-gold/25" },
+          { value: stats.tilesPlayed, label: t("gameover.stat.tiles"), color: "text-white", accent: "from-white/10", border: "border-white/20" },
+          { value: stats.patternsActivated, label: t("gameover.stat.patterns"), color: "text-blue-400", accent: "from-blue-500/15", border: "border-blue-500/25" },
+          { value: stats.highestRoundScore, label: t("gameover.stat.bestRound"), color: "text-green-400", accent: "from-green-500/15", border: "border-green-500/25" },
+          { value: stats.bossesDefeated, label: t("gameover.stat.bosses"), color: "text-red-400", accent: "from-red-500/15", border: "border-red-500/25" },
+          { value: stats.goldEarned, label: t("gameover.stat.gold"), color: "text-yellow-400", accent: "from-yellow-500/15", border: "border-yellow-500/25" },
+          { value: stats.shopPurchases, label: t("gameover.stat.purchases"), color: "text-cyan-400", accent: "from-cyan-500/15", border: "border-cyan-500/25" },
+          { value: stats.bestCombo, label: t("gameover.stat.bestCombo"), color: "text-purple-400", accent: "from-purple-500/15", border: "border-purple-500/25" },
         ].filter((s) => s.value > 0).map((stat, i) => (
           <motion.div
             key={stat.label}
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
+            whileHover={{ y: -3 }}
             transition={{ delay: 0.35 + i * 0.05 }}
-            className="flex flex-col gap-1.5 p-4 rounded-xl bg-surface-800/80 border border-surface-600/40"
+            // Vertical accent gradient from top, plus a tinted border that
+            // matches the stat's value color — gives each card identity
+            // without screaming for attention.
+            className={`relative flex flex-col gap-1.5 p-4 rounded-xl bg-surface-800/80 border ${stat.border} overflow-hidden transition-shadow hover:shadow-lg`}
           >
-            <span className={`font-mono font-bold text-2xl ${stat.color}`}>
+            <div
+              aria-hidden
+              className={`pointer-events-none absolute inset-x-0 top-0 h-12 bg-gradient-to-b ${stat.accent} to-transparent`}
+            />
+            <span className={`relative font-mono font-bold text-2xl ${stat.color}`}>
               {stat.value}
             </span>
-            <span className="text-[10px] font-bold text-accent-silver/40 uppercase tracking-wider">{stat.label}</span>
+            <span className="relative text-[10px] font-bold text-accent-silver/40 uppercase tracking-wider">{stat.label}</span>
           </motion.div>
         ))}
       </motion.div>
