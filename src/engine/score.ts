@@ -28,6 +28,28 @@ export interface ScoreBreakdown {
   total: number;
 }
 
+/**
+ * Soft-cap the multiplier above x4 with a hyperbolic compression curve.
+ * Pattern multipliers stack multiplicatively (cadena_maxima x2 ×
+ * cadena_larga x1.5 × trinidad x1.15 ...), so 5+ active patterns easily
+ * produce x12-x16 stacks that trivialize late-game targets. We keep the
+ * satisfaction of combos but blunt the trivialization. The curve uses
+ *   f(raw) = KNEE + delta / (1 + delta * STRENGTH)
+ * with KNEE = 4 and STRENGTH = 0.15, plateauing near x10.7. It satisfies
+ * f(raw) <= raw above the knee (never amplifies) and is identity below:
+ *   x2  -> x2.00 · x4  -> x4.00 · x6  -> x5.54 · x8  -> x6.50
+ *   x12 -> x7.64 · x16 -> x8.29 · x20 -> x8.71 · x30 -> x9.46
+ *   x50 -> x9.82 · x100 -> x10.20
+ * Below x4 the function is the identity, so casual runs are unaffected.
+ */
+export function softCapMultiplier(raw: number): number {
+  const KNEE = 4;
+  const STRENGTH = 0.15;
+  if (raw <= KNEE) return raw;
+  const delta = raw - KNEE;
+  return KNEE + delta / (1 + delta * STRENGTH);
+}
+
 export function calculateScore(chain: ChainState, relicIds: string[] = [], patternBonusMultiplier: number = 1): ScoreBreakdown {
   const count = chain.placed.length;
   
@@ -48,7 +70,8 @@ export function calculateScore(chain: ChainState, relicIds: string[] = [], patte
 
   const effectivePatternBonus = Math.floor(patternAnalysis.totalBonus * patternBonusMultiplier);
   const subtotal = baseScore + lengthBonusValue + effectivePatternBonus + relicResult.bonus;
-  const multiplier = patternAnalysis.totalMultiplier * relicResult.multiplier;
+  const rawMultiplier = patternAnalysis.totalMultiplier * relicResult.multiplier;
+  const multiplier = softCapMultiplier(rawMultiplier);
   const total = Math.floor(subtotal * multiplier);
 
   return {

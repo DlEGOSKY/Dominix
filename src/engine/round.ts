@@ -14,8 +14,12 @@ const TARGETS: Record<number, number> = {
 export function getTarget(round: number): number {
   if (round <= 10) return TARGETS[round] ?? 80;
   // Act III onward: parabolic growth so the climax (r11-15) feels demanding
-  // and The Echo (r16+) becomes truly punishing.
+  // and The Echo (r16+) becomes truly punishing. Late-game tuning relies on
+  // a real player being able to push x4-x6 multipliers; without a steeper
+  // late curve, x10+ stacks (cadena_maxima x2 + cadena_larga x1.5 + small
+  // pattern mults) trivialize the climax. Curve sample:
+  //   r11 1022 · r13 1498 · r15 2150 · r18 3520 · r20 4550 · r25 8050
   const base = 850;
   const extra = round - 10;
-  return Math.floor(base + extra * 120 + extra * extra * 10);
+  return Math.floor(base + extra * 150 + extra * extra * 22);
 }
