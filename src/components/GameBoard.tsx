@@ -2499,7 +2499,7 @@ export default function GameBoard({ onGameOver, isDaily = false, isEndless = fal
             <path d="M12 3l2.5 5.5L20 9l-4 4 1 6-5-2.5L7 19l1-6-4-4 5.5-.5z" stroke="currentColor" strokeWidth="1.6" strokeLinejoin="round" />
           </svg>
           <div className="flex flex-col flex-1 min-w-0">
-            <span className="text-[9px] font-bold uppercase tracking-widest opacity-60">Caos · Ronda {game.round}</span>
+            <span className="text-[9px] font-bold uppercase tracking-widest opacity-60">{translate("chaos.eyebrow", { n: game.round })}</span>
             <div className="flex items-baseline gap-2">
               <span className="text-[11px] font-black uppercase tracking-wider truncate">{chaosTwist.name}</span>
               <span className="text-[9px] opacity-70 truncate">{chaosTwist.description}</span>
@@ -2521,7 +2521,7 @@ export default function GameBoard({ onGameOver, isDaily = false, isEndless = fal
             <svg width="11" height="11" viewBox="0 0 24 24" fill="none" className="text-red-400">
               <path d="M12 3c2 4 3 6 3 9a3 3 0 0 1-6 0c0-3 1-5 3-9z M12 14a3 3 0 0 0 0 6 3 3 0 0 0 0-6z" stroke="currentColor" strokeWidth="1.6" fill="currentColor" fillOpacity="0.3" />
             </svg>
-            <span className="text-[9px] font-bold uppercase tracking-widest text-red-300">Furor</span>
+            <span className="text-[9px] font-bold uppercase tracking-widest text-red-300">{translate("boss.heatLabel")}</span>
           </div>
           <div className="flex-1 h-1.5 bg-surface-700/60 rounded-full overflow-hidden relative">
             <motion.div
@@ -2541,7 +2541,7 @@ export default function GameBoard({ onGameOver, isDaily = false, isEndless = fal
           </span>
           {bossRageCount > 0 && (
             <span className="text-[9px] font-bold text-amber-300/90 uppercase tracking-widest shrink-0">
-              +{bossRageCount * 10}% meta
+              {translate("boss.rageMeta", { n: bossRageCount * 10 })}
             </span>
           )}
         </motion.div>
@@ -2555,7 +2555,7 @@ export default function GameBoard({ onGameOver, isDaily = false, isEndless = fal
         {game.chain.placed.length === 0 && game.result === "playing" && (
           <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
             <span className="text-[10px] text-accent-silver/15 uppercase tracking-[0.3em] font-medium" style={{ animation: "ambient-pulse 3s ease-in-out infinite" }}>
-              Juega una ficha
+              {translate("chain.empty")}
             </span>
           </div>
         )}
@@ -2596,12 +2596,12 @@ export default function GameBoard({ onGameOver, isDaily = false, isEndless = fal
             </div>
             {currentBoss && (
               <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-red-500/10 border border-red-500/20">
-                <span className="font-mono font-bold text-sm text-red-400">+{currentBoss.reward.gold} bonus</span>
+                <span className="font-mono font-bold text-sm text-red-400">{translate("outcome.bossBonus", { n: currentBoss.reward.gold })}</span>
               </div>
             )}
             {currentBoss?.reward.extraRelic && (
               <div className="px-3 py-1.5 rounded-lg bg-purple-500/10 border border-purple-500/20">
-                <span className="font-mono font-bold text-sm text-purple-400">+Reliquia</span>
+                <span className="font-mono font-bold text-sm text-purple-400">{translate("outcome.bossExtraRelic")}</span>
               </div>
             )}
           </motion.div>
@@ -2617,7 +2617,7 @@ export default function GameBoard({ onGameOver, isDaily = false, isEndless = fal
               onClick={handleClaimReward}
               className="px-10 py-3 rounded-2xl bg-gradient-to-b from-accent-gold to-amber-600 text-surface-900 font-bold text-sm tracking-wide btn-premium"
             >
-              Elegir recompensa
+              {translate("outcome.claimReward")}
             </motion.button>
             {isEndless && (
               <motion.button

@@ -4,7 +4,7 @@ import { ALL_PATTERNS } from "@/engine/patterns";
 import { getPatternIcon } from "@/engine/patternIcons";
 import Tooltip, { PatternTooltipContent } from "./Tooltip";
 import { localizePatternById } from "@/engine/i18nContent";
-import { useTranslation } from "@/engine/i18n";
+import { useTranslation, t as translate } from "@/engine/i18n";
 
 export interface ScoreRevealExtras {
   editionFlat?: number;
@@ -39,10 +39,14 @@ export default function ScoreReveal({ breakdown, finalScore, target, won, extras
   const lines: RevealLine[] = [];
 
   // --- Base ---
-  lines.push({ label: "Base de cadena", value: `+${breakdown.baseScore}`, color: "text-white" });
+  lines.push({ label: translate("scoreReveal.base"), value: `+${breakdown.baseScore}`, color: "text-white" });
 
   if (breakdown.lengthBonus > 0) {
-    lines.push({ label: `Longitud (${breakdown.patternAnalysis ? "+" : ""}${breakdown.lengthBonus})`, value: `+${breakdown.lengthBonus}`, color: "text-blue-300" });
+    lines.push({
+      label: `${translate("scoreReveal.length")} (${breakdown.patternAnalysis ? "+" : ""}${breakdown.lengthBonus})`,
+      value: `+${breakdown.lengthBonus}`,
+      color: "text-blue-300",
+    });
   }
 
   // --- Patrones individuales ---
@@ -57,55 +61,60 @@ export default function ScoreReveal({ breakdown, finalScore, target, won, extras
       }
     }
     if (breakdown.patternAnalysis.combo) {
-      lines.push({ label: `Combo: ${breakdown.patternAnalysis.combo.name}`, value: `+${breakdown.patternAnalysis.combo.bonus}`, color: "text-violet-300", indent: true });
+      lines.push({
+        label: translate("scoreReveal.combo", { name: breakdown.patternAnalysis.combo.name }),
+        value: `+${breakdown.patternAnalysis.combo.bonus}`,
+        color: "text-violet-300",
+        indent: true,
+      });
     }
   }
 
   // --- Reliquias ---
   if (breakdown.relicBonus > 0) {
-    lines.push({ label: "Reliquias (flat)", value: `+${breakdown.relicBonus}`, color: "text-purple-300" });
+    lines.push({ label: translate("scoreReveal.relicsFlat"), value: `+${breakdown.relicBonus}`, color: "text-purple-300" });
   }
   if (breakdown.relicMultiplier > 1) {
-    lines.push({ label: "Reliquias (mult)", value: `x${breakdown.relicMultiplier.toFixed(2)}`, color: "text-purple-400", isMult: true });
+    lines.push({ label: translate("scoreReveal.relicsMult"), value: `x${breakdown.relicMultiplier.toFixed(2)}`, color: "text-purple-400", isMult: true });
   }
 
   // --- Ediciones ---
   if (extras.editionFlat && extras.editionFlat > 0) {
-    lines.push({ label: "Ediciones (flat)", value: `+${extras.editionFlat}`, color: "text-pink-300" });
+    lines.push({ label: translate("scoreReveal.editionsFlat"), value: `+${extras.editionFlat}`, color: "text-pink-300" });
   }
   if (extras.editionMultiplier && extras.editionMultiplier > 1) {
-    lines.push({ label: "Ediciones (mult)", value: `x${extras.editionMultiplier.toFixed(2)}`, color: "text-pink-400", isMult: true });
+    lines.push({ label: translate("scoreReveal.editionsMult"), value: `x${extras.editionMultiplier.toFixed(2)}`, color: "text-pink-400", isMult: true });
   }
 
   // --- Talents / Familia ---
   if (extras.talentFlat && extras.talentFlat > 0) {
-    lines.push({ label: "Talentos", value: `+${extras.talentFlat}`, color: "text-amber-300" });
+    lines.push({ label: translate("scoreReveal.talents"), value: `+${extras.talentFlat}`, color: "text-amber-300" });
   }
   if (extras.familyFlat && extras.familyFlat > 0) {
-    lines.push({ label: "Familia (flat)", value: `+${extras.familyFlat}`, color: "text-emerald-300" });
+    lines.push({ label: translate("scoreReveal.familyFlat"), value: `+${extras.familyFlat}`, color: "text-emerald-300" });
   }
   if (extras.familyMultiplier && extras.familyMultiplier > 1) {
-    lines.push({ label: "Familia (mult)", value: `x${extras.familyMultiplier.toFixed(2)}`, color: "text-emerald-400", isMult: true });
+    lines.push({ label: translate("scoreReveal.familyMult"), value: `x${extras.familyMultiplier.toFixed(2)}`, color: "text-emerald-400", isMult: true });
   }
   if (extras.characterBonus && extras.characterBonus > 0) {
-    lines.push({ label: "Pasivo de personaje", value: `+${extras.characterBonus}`, color: "text-accent-gold" });
+    lines.push({ label: translate("scoreReveal.characterPassive"), value: `+${extras.characterBonus}`, color: "text-accent-gold" });
   }
 
   // --- Multiplicador total ---
   if (breakdown.multiplier > 1) {
-    lines.push({ label: "Multiplicador global", value: `x${breakdown.multiplier.toFixed(2)}`, color: "text-accent-gold", isMult: true });
+    lines.push({ label: translate("scoreReveal.globalMult"), value: `x${breakdown.multiplier.toFixed(2)}`, color: "text-accent-gold", isMult: true });
   }
 
   const STEP = 0.13;
   const totalDelay = 0.15 + lines.length * STEP + 0.15;
 
   return (
-    <div className="flex flex-col gap-1.5 w-full max-w-sm px-4 py-3 rounded-xl bg-surface-800/60 border border-surface-600/30 backdrop-blur-sm">
+    <div className="flex flex-col gap-1.5 w-full max-w-md px-4 py-3 rounded-xl bg-surface-800/60 border border-surface-600/30 backdrop-blur-sm">
       {lines.map((line, i) => {
         const patternDef = line.patternId ? ALL_PATTERNS.find((p) => p.id === line.patternId) : null;
         const Icon = line.patternId ? getPatternIcon(line.patternId) : null;
         const labelEl = (
-          <span className="flex items-center gap-1.5 text-[11px] text-accent-silver/50 truncate max-w-[60%]">
+          <span className="flex items-center gap-1.5 text-[11px] text-accent-silver/50 truncate flex-1 min-w-0 mr-2">
             {Icon && <Icon className="text-cyan-400/80 flex-shrink-0" size={12} />}
             <span className="truncate">{line.label}</span>
           </span>
@@ -168,7 +177,7 @@ export default function ScoreReveal({ breakdown, finalScore, target, won, extras
         transition={{ delay: totalDelay, duration: 0.4, ease: [0.22, 1, 0.36, 1] }}
         className="flex items-center justify-between pt-0.5"
       >
-        <span className="text-[10px] font-bold text-accent-silver/40 uppercase tracking-[0.18em]">Total</span>
+        <span className="text-[10px] font-bold text-accent-silver/40 uppercase tracking-[0.18em]">{translate("scoreReveal.total")}</span>
         <div className="flex items-center gap-2">
           <motion.span
             initial={{ scale: 0.8 }}
@@ -184,7 +193,7 @@ export default function ScoreReveal({ breakdown, finalScore, target, won, extras
             {finalScore}
           </motion.span>
           <div className="flex flex-col items-start">
-            <span className="text-[9px] text-accent-silver/25 font-mono uppercase tracking-widest">meta</span>
+            <span className="text-[9px] text-accent-silver/25 font-mono uppercase tracking-widest">{translate("scoreReveal.target")}</span>
             <span className="text-sm text-accent-silver/35 font-mono">{target}</span>
           </div>
         </div>

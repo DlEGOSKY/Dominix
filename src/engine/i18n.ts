@@ -293,6 +293,7 @@ const STRINGS: Record<string, Record<Language, string>> = {
   // Skin unlocked overlay CTA
   "skinUnlock.next": { es: "Siguiente", en: "Next" },
   "skinUnlock.continue": { es: "Continuar", en: "Continue" },
+  "skinUnlock.eyebrow": { es: "Skin desbloqueado", en: "Skin unlocked" },
 
   // AnimatedDemo (tutorial demo player)
   "demo.clickPause": { es: "click para pausar", en: "click to pause" },
@@ -392,6 +393,33 @@ const STRINGS: Record<string, Record<Language, string>> = {
   // Game board outcome banner
   "outcome.bossDefeated": { es: "Jefe derrotado", en: "Boss defeated" },
   "outcome.roundCleared": { es: "Ronda superada", en: "Round cleared" },
+  "outcome.claimReward": { es: "Elegir recompensa", en: "Choose reward" },
+  "outcome.bossBonus": { es: "+{n} bonus", en: "+{n} bonus" },
+  "outcome.bossExtraRelic": { es: "+Reliquia", en: "+Relic" },
+
+  // Chain area placeholder
+  "chain.empty": { es: "Juega una ficha", en: "Play a tile" },
+
+  // Boss heat / rage / chaos banners
+  "boss.heatLabel": { es: "Furor", en: "Rage" },
+  "boss.rageMeta": { es: "+{n}% meta", en: "+{n}% target" },
+  "chaos.eyebrow": { es: "Caos \u00b7 Ronda {n}", en: "Chaos \u00b7 Round {n}" },
+
+  // ScoreReveal (round-end breakdown card)
+  "scoreReveal.base": { es: "Base de cadena", en: "Chain base" },
+  "scoreReveal.length": { es: "Longitud", en: "Length" },
+  "scoreReveal.relicsFlat": { es: "Reliquias (flat)", en: "Relics (flat)" },
+  "scoreReveal.relicsMult": { es: "Reliquias (mult)", en: "Relics (mult)" },
+  "scoreReveal.editionsFlat": { es: "Ediciones (flat)", en: "Editions (flat)" },
+  "scoreReveal.editionsMult": { es: "Ediciones (mult)", en: "Editions (mult)" },
+  "scoreReveal.talents": { es: "Talentos", en: "Talents" },
+  "scoreReveal.familyFlat": { es: "Familia (flat)", en: "Family (flat)" },
+  "scoreReveal.familyMult": { es: "Familia (mult)", en: "Family (mult)" },
+  "scoreReveal.characterPassive": { es: "Pasivo de personaje", en: "Character passive" },
+  "scoreReveal.globalMult": { es: "Multiplicador global", en: "Global multiplier" },
+  "scoreReveal.combo": { es: "Combo: {name}", en: "Combo: {name}" },
+  "scoreReveal.total": { es: "Total", en: "Total" },
+  "scoreReveal.target": { es: "meta", en: "target" },
 
   // GameBoard HUD elements
   "gb.phase": { es: "Fase {n}/{total}", en: "Phase {n}/{total}" },

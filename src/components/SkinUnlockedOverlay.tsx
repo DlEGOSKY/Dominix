@@ -104,15 +104,16 @@ export default function SkinUnlockedOverlay({ skinIds, onComplete }: SkinUnlocke
           transition={{ duration: 3, repeat: Infinity, ease: "easeInOut" }}
         />
 
-        <div className="relative flex flex-col items-center gap-8 px-6 max-w-2xl">
-          {/* Eyebrow */}
+        <div className="relative flex flex-col items-center gap-14 sm:gap-20 px-6 max-w-2xl">
+          {/* Eyebrow — z-10 keeps it above the upward-animating tile preview that
+             would otherwise visually swallow it because of its scale-[1.85]. */}
           <motion.span
             initial={{ opacity: 0, y: -8 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.2 }}
-            className="text-[11px] font-bold uppercase tracking-[0.4em] text-white/50"
+            className="relative z-10 text-[11px] font-bold uppercase tracking-[0.4em] text-white/50"
           >
-            Skin desbloqueado
+            {t("skinUnlock.eyebrow")}
             {skinIds.length > 1 && (
               <span className="ml-3 text-white/30">
                 {index + 1} / {skinIds.length}

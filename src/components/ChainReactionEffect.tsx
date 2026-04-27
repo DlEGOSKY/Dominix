@@ -178,6 +178,13 @@ function PatternGlow({ label }: { label?: string }) {
 }
 
 function BigScoreBurst({ label }: { label?: string }) {
+  // The same effect is reused for two very different things:
+  //  1. Short numeric bursts ("+5000") — meant to feel cinematic and huge.
+  //  2. Long textual reactions ("Nueva reliquia: Cadena maestra",
+  //     "Pacto +200 (edition + cosmos)", "Caos: Buena suerte"). These were
+  //     overflowing the viewport because the span had no cap.
+  // We pick a size profile based on whether the label looks numeric & short.
+  const isShortNumeric = !!label && label.length <= 7 && /^[+\-x0-9.,\s]+$/.test(label);
   return (
     <>
       {/* Flash */}
@@ -188,7 +195,7 @@ function BigScoreBurst({ label }: { label?: string }) {
         animate={{ opacity: [0, 1, 0] }}
         transition={{ duration: 0.3 }}
       />
-      {/* Big number */}
+      {/* Big number / long-text variant */}
       {label && (
         <motion.div
           initial={{ opacity: 0, scale: 0.3, y: 40 }}
@@ -198,10 +205,15 @@ function BigScoreBurst({ label }: { label?: string }) {
             y: [40, 0, 0, -80],
           }}
           transition={{ duration: 1.5, times: [0, 0.2, 0.75, 1], ease: [0.2, 0.8, 0.2, 1] }}
-          className="absolute"
+          className="absolute px-6 max-w-[90vw] sm:max-w-[70vw] text-center"
         >
           <span
-            className="font-mono font-black text-7xl md:text-8xl text-accent-gold tabular-nums"
+            className={[
+              "font-mono font-black text-accent-gold tabular-nums leading-tight inline-block",
+              isShortNumeric
+                ? "text-7xl md:text-8xl whitespace-nowrap"
+                : "text-2xl sm:text-3xl md:text-4xl break-words",
+            ].join(" ")}
             style={{ textShadow: "0 0 40px rgba(234, 179, 8, 0.8), 0 0 80px rgba(234, 179, 8, 0.4)" }}
           >
             {label}
