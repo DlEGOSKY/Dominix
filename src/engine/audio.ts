@@ -44,22 +44,34 @@ class AudioManager {
   private sfxVolume = 0.5;
   private muted = false;
 
-  private getContext(): AudioContext {
-    if (!this.audioContext) {
-      this.audioContext = new AudioContext();
-    }
-    return this.audioContext;
+  /**
+   * Returns the live AudioContext only if it exists AND is running.
+   * Returning null means callers should silently no-op — they MUST NOT
+   * create or resume a context themselves, because both operations are
+   * only allowed inside a real user-gesture handler (Chrome / Safari
+   * autoplay policy). The very first user gesture goes through unlock().
+   */
+  private getRunningContext(): AudioContext | null {
+    const ctx = this.audioContext;
+    if (!ctx) return null;
+    if (ctx.state !== "running") return null;
+    return ctx;
   }
 
   /**
    * Resume the audio context if it is suspended (required by mobile / Safari
-   * autoplay policies). Should be called from a user gesture handler.
+   * autoplay policies). MUST be called from a user gesture handler.
+   * This is the only place that creates the AudioContext; lazy creation
+   * elsewhere triggers hundreds of "AudioContext was not allowed to start"
+   * warnings during a long run.
    */
   unlock(): void {
     try {
-      const ctx = this.getContext();
-      if (ctx.state === "suspended") {
-        void ctx.resume();
+      if (!this.audioContext) {
+        this.audioContext = new AudioContext();
+      }
+      if (this.audioContext.state === "suspended") {
+        void this.audioContext.resume();
       }
     } catch {
       // No-op if AudioContext not available
@@ -72,13 +84,10 @@ class AudioManager {
     const config = SYNTH_SOUNDS[name];
     if (!config) return;
 
+    const ctx = this.getRunningContext();
+    if (!ctx) return; // Silent until the first gesture unlocks audio.
+
     try {
-      const ctx = this.getContext();
-      // Mobile / Safari may keep context suspended until a user gesture; try
-      // to resume just in case (no-op if already running).
-      if (ctx.state === "suspended") {
-        void ctx.resume();
-      }
       const oscillator = ctx.createOscillator();
       const gainNode = ctx.createGain();
 
@@ -105,8 +114,10 @@ class AudioManager {
   playChord(notes: number[], duration: number = 0.3) {
     if (this.muted) return;
 
+    const ctx = this.getRunningContext();
+    if (!ctx) return; // Silent until the first gesture unlocks audio.
+
     try {
-      const ctx = this.getContext();
       const masterGain = ctx.createGain();
       masterGain.gain.setValueAtTime(0.2 * this.sfxVolume, ctx.currentTime);
       masterGain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + duration);

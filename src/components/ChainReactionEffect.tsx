@@ -34,6 +34,10 @@ export default function ChainReactionEffect({ event, onComplete }: ChainReaction
     <AnimatePresence>
       {visible && (
         <motion.div
+          // Stable key per reaction event; without it AnimatePresence cannot
+          // distinguish consecutive events when the queue advances quickly,
+          // which produced framer-motion warnings during long combo runs.
+          key={event.id}
           className="pointer-events-none fixed inset-0 z-40 flex items-center justify-center"
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
