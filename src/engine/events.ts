@@ -450,6 +450,119 @@ export const ALL_EVENTS: GameEvent[] = [
     },
     minRound: 7,
   },
+  // ---- S9: nuevos eventos narrativos ----
+  {
+    id: "codice_dominix",
+    name: "El Codice de Dominix",
+    description: "Encuentras un fragmento del codice original. Sus paginas revelan caminos perdidos.",
+    type: "choice",
+    effect: {
+      type: "choice",
+      options: [
+        {
+          label: "Leer el origen",
+          description: "Meta -20%. El conocimiento aligera el camino.",
+          effect: { type: "reduce_target", percent: 20 },
+        },
+        {
+          label: "Arrancar la pagina",
+          description: "+2 fichas nuevas al pool. La destruccion tambien crea.",
+          effect: { type: "add_tiles", count: 2 },
+        },
+      ],
+    },
+    minRound: 3,
+  },
+  {
+    id: "archivista",
+    name: "El Archivista",
+    description: "Un guardian de memorias te ofrece un intercambio justo: carne por conocimiento.",
+    type: "choice",
+    effect: {
+      type: "choice",
+      options: [
+        {
+          label: "Entregar una ficha",
+          description: "Pierdes 1 ficha del pool pero empiezas con +70 puntos.",
+          effect: { type: "remove_random_tile", count: 1 },
+        },
+        {
+          label: "Pedir sus secretos",
+          description: "+3 acciones extra esta ronda. El tiempo es su moneda.",
+          effect: { type: "bonus_actions", actions: 3, discards: 0, draws: 0 },
+        },
+      ],
+    },
+    minRound: 4,
+  },
+  {
+    id: "espiral_rota",
+    name: "La Espiral Rota",
+    description: "La estructura de la run se fractura. Un momento de caos puede ser una oportunidad.",
+    type: "curse",
+    effect: { type: "increase_target", percent: 15 },
+    minRound: 5,
+  },
+  {
+    id: "ultimo_viajero",
+    name: "El Ultimo Viajero",
+    description: "Un viajero exhausto llega al final de su run. Te entrega lo que le queda.",
+    type: "blessing",
+    effect: { type: "bonus_actions", actions: 0, discards: 2, draws: 2 },
+    minRound: 6,
+  },
+  {
+    id: "ojo_dominix",
+    name: "El Ojo de Dominix",
+    description: "El ojo del juego te observa. Puedes mirar de vuelta, o apartar la vista.",
+    type: "choice",
+    effect: {
+      type: "choice",
+      options: [
+        {
+          label: "Sostener la mirada",
+          description: "Meta +40% pero +100 puntos de bonus. El poder tiene un precio.",
+          effect: { type: "bonus_score", value: 100 },
+        },
+        {
+          label: "Apartar la vista",
+          description: "Meta -15%. La prudencia tambien es sabiduria.",
+          effect: { type: "reduce_target", percent: 15 },
+        },
+      ],
+    },
+    minRound: 8,
+  },
+  {
+    id: "espejo_fracturado",
+    name: "Espejo Fracturado",
+    description: "Tu reflejo actua antes que tu. Pierdes el control un instante.",
+    type: "curse",
+    effect: { type: "bonus_actions", actions: -2, discards: -1, draws: 0 },
+    minRound: 7,
+  },
+  {
+    id: "corona_ceniza",
+    name: "Corona de Ceniza",
+    description: "Los reyes de runs pasadas te ofrecen su corona. Puedes cargar su peso.",
+    type: "choice",
+    effect: {
+      type: "choice",
+      options: [
+        {
+          label: "Coronarse",
+          description: "+3 fichas al pool. El peso de la corona abre nuevos caminos.",
+          effect: { type: "add_tiles", count: 3 },
+        },
+        {
+          label: "Quemar la corona",
+          description: "+80 puntos de bonus. Las cenizas fertilizan el suelo.",
+          effect: { type: "bonus_score", value: 80 },
+        },
+      ],
+    },
+    minRound: 9,
+  },
 ];
 
 export function getRandomEvent(round: number): GameEvent | null {

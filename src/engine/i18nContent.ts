@@ -461,6 +461,52 @@ const EVENT_EN: Record<string, EventEntry> = {
       { label: "Ignore", description: "Lose 1 tile but gain +90 bonus points" },
     ],
   },
+
+  // ---- S9: narrative events ----
+  codice_dominix: {
+    name: "The Dominix Codex",
+    description: "You find a fragment of the original codex. Its pages reveal lost paths.",
+    options: [
+      { label: "Read the origin",  description: "Target -20%. Knowledge lightens the road." },
+      { label: "Tear the page",    description: "+2 new tiles to the pool. Destruction also creates." },
+    ],
+  },
+  archivista: {
+    name: "The Archivist",
+    description: "A guardian of memories offers a fair trade: flesh for knowledge.",
+    options: [
+      { label: "Hand over a tile", description: "Lose 1 tile from the pool but start with +70 points." },
+      { label: "Ask for secrets",  description: "+3 extra actions this round. Time is their currency." },
+    ],
+  },
+  espiral_rota: {
+    name: "The Broken Spiral",
+    description: "The run's structure fractures. A moment of chaos can be an opportunity.",
+  },
+  ultimo_viajero: {
+    name: "The Last Traveler",
+    description: "An exhausted traveler arrives at the end of their run. They hand you what remains.",
+  },
+  ojo_dominix: {
+    name: "The Eye of Dominix",
+    description: "The game's eye watches you. You can stare back — or look away.",
+    options: [
+      { label: "Hold the gaze", description: "Target +40% but +100 bonus points. Power has a price." },
+      { label: "Look away",     description: "Target -15%. Caution is also wisdom." },
+    ],
+  },
+  espejo_fracturado: {
+    name: "Fractured Mirror",
+    description: "Your reflection acts before you. You lose control for an instant.",
+  },
+  corona_ceniza: {
+    name: "Crown of Ash",
+    description: "The kings of past runs offer you their crown. Can you bear its weight?",
+    options: [
+      { label: "Take the crown", description: "+3 tiles to the pool. The crown's weight opens new paths." },
+      { label: "Burn the crown", description: "+80 bonus points. Ashes fertilize the ground." },
+    ],
+  },
 };
 
 // =============================================================================
