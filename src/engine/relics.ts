@@ -329,10 +329,10 @@ export const ALL_RELICS: Relic[] = [
     family: "patron",
   },
   {
-    id: "reloj_arena",
-    name: "Reloj de Arena",
-    description: "+12 puntos por cada ficha y +2 acciones",
-    trigger: "passive",
+    id: "ampolleta_maestra",
+    name: "Ampolleta Maestra",
+    description: "+12 puntos por cada ficha jugada (el tiempo es poder)",
+    trigger: "on_score",
     effect: { type: "bonus_per_tile", value: 12 },
     rarity: "legendary",
     family: "cadena",
@@ -501,6 +501,64 @@ export const ALL_RELICS: Relic[] = [
     rarity: "legendary",
     family: "patron",
   },
+  // ---- S9: nuevas reliquias ----
+  // Accion — dan identidad a la familia y suben masa critica para set bonus
+  {
+    id: "brazalete_tactico",
+    name: "Brazalete Tactico",
+    description: "+2 acciones y +2 descartes por ronda",
+    trigger: "passive",
+    effect: { type: "extra_actions", value: 2 },
+    rarity: "rare",
+    family: "accion",
+  },
+  {
+    id: "bolsa_infinita",
+    name: "Bolsa Infinita",
+    description: "+2 robos por ronda. La mano nunca se agota.",
+    trigger: "passive",
+    effect: { type: "extra_draws", value: 2 },
+    rarity: "rare",
+    family: "accion",
+  },
+  // Numero — cubren los huecos de 4 y 5 con mas personalidad
+  {
+    id: "cuatro_cardinal",
+    name: "Cuatro Cardinal",
+    description: "Cada 4 en la cadena otorga +14 (punto de cruce)",
+    trigger: "on_score",
+    effect: { type: "bonus_per_number", number: 4, value: 14 },
+    rarity: "common",
+    family: "numero",
+  },
+  {
+    id: "cinco_vertice",
+    name: "Cinco Vertice",
+    description: "Cada 5 en la cadena otorga +14 (centro del tablero)",
+    trigger: "on_score",
+    effect: { type: "bonus_per_number", number: 5, value: 14 },
+    rarity: "common",
+    family: "numero",
+  },
+  // Legendarias con mecanica nueva
+  {
+    id: "espiral_crescendo",
+    name: "Espiral Crescendo",
+    description: "Crescendo otorga x2.0 adicional. La escalada no tiene techo.",
+    trigger: "on_pattern",
+    effect: { type: "multiplier_if_pattern", patternId: "crescendo", value: 2.0 },
+    rarity: "legendary",
+    family: "patron",
+  },
+  {
+    id: "nudo_ouroboros",
+    name: "Nudo Ouroboros",
+    description: "Ouroboros otorga +200 extra. El circulo completo.",
+    trigger: "on_pattern",
+    effect: { type: "bonus_if_pattern", patternId: "ouroboros", value: 200 },
+    rarity: "legendary",
+    family: "patron",
+  },
 ];
 
 export function getRandomRelics(count: number, exclude: string[] = []): Relic[] {
@@ -618,7 +676,9 @@ const LEGENDARY_IDS = new Set<string>([
   "cascada_patrones",     // x1.15 per pattern
   "corona_rota",          // +50 per double
   "sello_firmamento",     // +25% celestial
-  "reloj_arena",          // +12/tile
+  "ampolleta_maestra",    // +12/tile legendary
+  "espiral_crescendo",    // crescendo x2
+  "nudo_ouroboros",       // ouroboros +200
 ]);
 
 const RARE_IDS = new Set<string>([
@@ -682,6 +742,8 @@ const FAMILY_MAP: Record<string, RelicFamily> = {
   cinco_central: "numero",
   dos_gemelos: "numero",
   impar_salvaje: "numero",
+  cuatro_cardinal: "numero",
+  cinco_vertice: "numero",
 
   // Fuerza
   impulso_inicial: "fuerza",
@@ -696,6 +758,7 @@ const FAMILY_MAP: Record<string, RelicFamily> = {
   cadena_maestra: "cadena",
   doble_corona: "cadena",
   doble_filo: "cadena",
+  ampolleta_maestra: "cadena",
 
   // Accion
   reloj_arena: "accion",
@@ -704,6 +767,8 @@ const FAMILY_MAP: Record<string, RelicFamily> = {
   reciclador: "accion",
   explorador: "accion",
   tactico: "accion",
+  brazalete_tactico: "accion",
+  bolsa_infinita: "accion",
 };
 
 export function getRelicFamily(relic: Relic): RelicFamily | null {

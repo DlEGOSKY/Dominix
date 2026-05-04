@@ -243,6 +243,43 @@ export const ALL_BOSSES: Boss[] = [
       { targetMultiplier: 1.3, restriction: { type: "min_patterns", count: 3 }, description: "Fase 3: Activa 3+ patrones" },
     ],
   },
+  // ---- S9: nuevos jefes ----
+  {
+    id: "ladron",
+    name: "El Ladron de Numeros",
+    description: "Meta x1.8. Solo puedes usar numeros pares en la cadena. Roba el impar.",
+    targetMultiplier: 1.8,
+    restriction: { type: "even_sum_only" },
+    reward: { gold: 90, extraRelic: true },
+    phases: [
+      { targetMultiplier: 1.8, restriction: { type: "even_sum_only" }, description: "Fase 1: Solo fichas de suma par" },
+      { targetMultiplier: 1.4, restriction: { type: "no_repeat_number" }, description: "Fase 2: Sin repetir numero en la cadena" },
+    ],
+  },
+  {
+    id: "mutante",
+    name: "El Mutante",
+    description: "Meta x2.0. La cadena debe tener exactamente 5 fichas y al menos 3 patrones.",
+    targetMultiplier: 2.0,
+    restriction: { type: "exact_chain_length", count: 5 },
+    reward: { gold: 100, extraRelic: true },
+    phases: [
+      { targetMultiplier: 2.0, restriction: { type: "exact_chain_length", count: 5 }, description: "Fase 1: Exactamente 5 fichas" },
+      { targetMultiplier: 1.5, restriction: { type: "min_patterns", count: 3 }, description: "Fase 2: Activa 3+ patrones" },
+      { targetMultiplier: 1.3, restriction: { type: "no_doubles" }, description: "Fase 3: Sin dobles" },
+    ],
+  },
+  {
+    id: "corruptor",
+    name: "El Corruptor",
+    description: "Meta x2.2. Sin restricciones pero la meta es brutal. Dobles prohibidos en Fase 2.",
+    targetMultiplier: 2.2,
+    reward: { gold: 110, extraRelic: true },
+    phases: [
+      { targetMultiplier: 2.2, description: "Fase 1: Sin restricciones — meta x2.2" },
+      { targetMultiplier: 1.6, restriction: { type: "max_doubles", count: 0 }, description: "Fase 2: Cero dobles permitidos" },
+    ],
+  },
 ];
 
 export function getBossForRound(round: number): Boss | null {

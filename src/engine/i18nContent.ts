@@ -104,12 +104,25 @@ const RELIC_EN: Record<string, ContentEntry> = {
   oraculo_cosmico:   { name: "Cosmic Oracle",      description: "Empowers all celestial cards by 18%" },
 
   // ---- Action economy ----
-  reloj_arena:       { name: "Hourglass",          description: "+3 actions per round" },
-  mano_larga:        { name: "Long Hand",          description: "+1 extra draw per round" },
-  filtro:            { name: "Filter",             description: "+1 extra discard per round" },
-  reciclador:        { name: "Recycler",           description: "+15 score per discarded tile" },
-  explorador:        { name: "Scout",              description: "+20 score per drawn tile" },
-  tactico:           { name: "Tactician",          description: "+4 actions per round" },
+  reloj_arena:       { name: "Hourglass",           description: "+3 actions per round" },
+  mano_larga:        { name: "Long Hand",           description: "+1 extra draw per round" },
+  filtro:            { name: "Filter",              description: "+1 extra discard per round" },
+  reciclador:        { name: "Recycler",            description: "+15 score per discarded tile" },
+  explorador:        { name: "Scout",               description: "+20 score per drawn tile" },
+  tactico:           { name: "Tactician",           description: "+4 actions per round" },
+  brazalete_tactico: { name: "Tactical Bracer",     description: "+2 actions and +2 discards per round" },
+  bolsa_infinita:    { name: "Infinite Bag",        description: "+2 draws per round. The hand never runs dry." },
+
+  // ---- S9: new number relics ----
+  cuatro_cardinal:   { name: "Cardinal Four",       description: "Each 4 in the chain grants +14 (crossroads)" },
+  cinco_vertice:     { name: "Fifth Vertex",        description: "Each 5 in the chain grants +14 (center of the board)" },
+
+  // ---- S9: legendary per-pattern ----
+  espiral_crescendo: { name: "Crescendo Spiral",    description: "Crescendo grants additional x2.0. The climb has no ceiling." },
+  nudo_ouroboros:    { name: "Ouroboros Knot",      description: "Ouroboros grants +200 extra. The circle is complete." },
+
+  // ---- Per-tile legendary ----
+  ampolleta_maestra: { name: "Master Hourglass",    description: "+12 score per tile played (time is power)" },
 };
 
 // =============================================================================
@@ -263,6 +276,23 @@ const BOSS_EN: Record<string, BossEntry> = {
     name: "Star Weaver",
     description: "Target x1.8. Three phases: 2 patterns, chain 6+, 3 patterns. For ritual masters.",
     phases: ["Phase 1: Activate 2+ patterns", "Phase 2: Chain of 6+ tiles", "Phase 3: Activate 3+ patterns"],
+  },
+
+  // ---- S9 ----
+  ladron: {
+    name: "The Number Thief",
+    description: "Target x1.8. Even-sum tiles only. He steals the odd.",
+    phases: ["Phase 1: Even-sum tiles only", "Phase 2: No repeating numbers"],
+  },
+  mutante: {
+    name: "The Mutant",
+    description: "Target x2.0. Exactly 5 tiles, then 3+ patterns, then no doubles.",
+    phases: ["Phase 1: Exactly 5 tiles", "Phase 2: Activate 3+ patterns", "Phase 3: No doubles"],
+  },
+  corruptor: {
+    name: "The Corruptor",
+    description: "Target x2.2. No restrictions — then zero doubles allowed.",
+    phases: ["Phase 1: No restrictions — target x2.2", "Phase 2: Zero doubles allowed"],
   },
 };
 

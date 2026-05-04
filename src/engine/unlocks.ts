@@ -55,6 +55,14 @@ const RELIC_UNLOCKS: RelicUnlock[] = [
   { relicId: "reciclador", condition: { type: "runs", value: 8 }, description: "Completa 8 runs" },
   { relicId: "explorador", condition: { type: "rounds", value: 8 }, description: "Alcanza ronda 8" },
   { relicId: "tactico", condition: { type: "rounds", value: 11 }, description: "Alcanza ronda 11" },
+  // ---- S9 ----
+  { relicId: "brazalete_tactico", condition: { type: "rounds", value: 6 }, description: "Alcanza ronda 6" },
+  { relicId: "bolsa_infinita", condition: { type: "runs", value: 4 }, description: "Completa 4 runs" },
+  { relicId: "cuatro_cardinal", condition: { type: "rounds", value: 4 }, description: "Alcanza ronda 4" },
+  { relicId: "cinco_vertice", condition: { type: "rounds", value: 4 }, description: "Alcanza ronda 4" },
+  { relicId: "espiral_crescendo", condition: { type: "rounds", value: 12 }, description: "Alcanza ronda 12" },
+  { relicId: "nudo_ouroboros", condition: { type: "score", value: 800 }, description: "Consigue 800 pts en una ronda" },
+  { relicId: "ampolleta_maestra", condition: { type: "rounds", value: 8 }, description: "Alcanza ronda 8" },
 ];
 
 export function isRelicUnlocked(relicId: string, savedData: SavedData): boolean {
