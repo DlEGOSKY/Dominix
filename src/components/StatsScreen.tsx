@@ -13,16 +13,21 @@ interface StatsScreenProps {
 
 type Tab = "overview" | "history" | "records" | "graphs";
 
-function StatCard({ label, value, color = "text-white", delay = 0 }: { label: string; value: string | number; color?: string; delay?: number }) {
+function StatCard({ label, value, color = "text-white", delay = 0, highlight = false }: { label: string; value: string | number; color?: string; delay?: number; highlight?: boolean }) {
   return (
     <motion.div
       initial={{ opacity: 0, y: 10 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ delay }}
-      className="flex flex-col gap-1.5 p-4 rounded-xl bg-surface-800/80 border border-surface-600/40"
+      className={[
+        "flex flex-col gap-1.5 p-4 rounded-xl border",
+        highlight
+          ? "bg-accent-gold/5 border-accent-gold/25 shadow-[0_0_20px_rgba(212,168,83,0.08)]"
+          : "bg-surface-800/80 border-surface-600/40",
+      ].join(" ")}
     >
-      <span className={`font-mono font-bold text-2xl tabular-nums ${color}`}>{value}</span>
-      <span className="text-[10px] font-bold text-accent-silver/40 uppercase tracking-wider">{label}</span>
+      <span className={`font-mono font-bold tabular-nums ${highlight ? "text-3xl" : "text-2xl"} ${color}`}>{value}</span>
+      <span className={`text-[10px] font-bold uppercase tracking-wider ${highlight ? "text-accent-gold/60" : "text-accent-silver/40"}`}>{label}</span>
     </motion.div>
   );
 }
@@ -58,9 +63,9 @@ function OverviewTab() {
       <div>
         <h3 className="text-xs font-bold text-accent-silver/40 uppercase tracking-widest mb-4">{t("stats.section.records")}</h3>
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-          <StatCard label={t("stats.label.bestRound")} value={stats.bestRound} color="text-green-400" delay={0.25} />
-          <StatCard label={t("stats.label.bestScore")} value={stats.bestScore.toLocaleString()} color="text-accent-gold" delay={0.3} />
-          <StatCard label={t("stats.label.bestCombo")} value={`x${stats.bestCombo}` } color="text-purple-400" delay={0.35} />
+          <StatCard label={t("stats.label.bestRound")} value={stats.bestRound} color="text-green-400" delay={0.25} highlight />
+          <StatCard label={t("stats.label.bestScore")} value={stats.bestScore.toLocaleString()} color="text-accent-gold" delay={0.3} highlight />
+          <StatCard label={t("stats.label.bestCombo")} value={`x${stats.bestCombo}` } color="text-purple-400" delay={0.35} highlight />
           <StatCard label={t("stats.label.bestSingle")} value={stats.bestSingleRoundScore} color="text-yellow-400" delay={0.4} />
         </div>
       </div>

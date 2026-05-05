@@ -89,21 +89,38 @@ export default function CollectionScreen({ savedData, onBack }: CollectionScreen
 
       {/* Tabs */}
       <div className="flex gap-2 w-full">
-        {tabs.map((tabDef) => (
-          <button
-            key={tabDef.id}
-            onClick={() => setTab(tabDef.id)}
-            className={[
-              "flex-1 py-2.5 rounded-xl text-sm font-bold tracking-wide transition-all",
-              tab === tabDef.id
-                ? "bg-accent-gold/15 border border-accent-gold/30 text-accent-gold"
-                : "bg-surface-800 border border-surface-600 text-accent-silver/50 hover:border-accent-silver/30",
-            ].join(" ")}
-          >
-            {tabDef.label}
-            <span className="ml-1.5 text-[10px] opacity-60">{tabDef.count}</span>
-          </button>
-        ))}
+        {tabs.map((tabDef) => {
+          const parts = tabDef.count.split('/').map(Number);
+          const current = parts[0] ?? 0;
+          const total = parts[1] ?? parts[0] ?? 1;
+          const progress = total > 0 ? (current / total) * 100 : 100;
+          return (
+            <button
+              key={tabDef.id}
+              onClick={() => setTab(tabDef.id)}
+              className={[
+                "relative flex-1 py-2.5 rounded-xl text-sm font-bold tracking-wide transition-all overflow-hidden",
+                tab === tabDef.id
+                  ? "bg-accent-gold/15 border border-accent-gold/30 text-accent-gold"
+                  : "bg-surface-800 border border-surface-600 text-accent-silver/50 hover:border-accent-silver/30",
+              ].join(" ")}
+            >
+              {/* Progress bar */}
+              <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-surface-700/40">
+                <motion.div
+                  initial={{ width: 0 }}
+                  animate={{ width: `${progress}%` }}
+                  transition={{ delay: 0.2, duration: 0.6, ease: "easeOut" }}
+                  className={tab === tabDef.id ? "h-full bg-accent-gold/60" : "h-full bg-accent-silver/30"}
+                />
+              </div>
+              <span className="relative">
+                {tabDef.label}
+                <span className="ml-1.5 text-[10px] opacity-60">{tabDef.count}</span>
+              </span>
+            </button>
+          );
+        })}
       </div>
 
       {/* Content */}
@@ -130,12 +147,20 @@ export default function CollectionScreen({ savedData, onBack }: CollectionScreen
                   <RelicCard relicId={relic.id} size="xs" showName={false} locked={!isUnlocked} />
                 </div>
                 <div className="flex flex-col gap-1 flex-1 min-w-0">
-                  <span className={[
-                    "font-bold text-sm",
-                    isUnlocked ? "text-white" : "text-accent-silver/40",
-                  ].join(" ")}>
-                    {isUnlocked ? loc.name : "???"}
-                  </span>
+                  <div className="flex items-center gap-2">
+                    {!isUnlocked && (
+                      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" className="text-accent-silver/30 shrink-0">
+                        <rect x="5" y="11" width="14" height="10" rx="2" stroke="currentColor" strokeWidth="2" fill="currentColor" fillOpacity="0.1" />
+                        <path d="M8 11V7a4 4 0 0 1 8 0v4" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+                      </svg>
+                    )}
+                    <span className={[
+                      "font-bold text-sm",
+                      isUnlocked ? "text-white" : "text-accent-silver/40",
+                    ].join(" ")}>
+                      {isUnlocked ? loc.name : "???"}
+                    </span>
+                  </div>
                   <span className="text-xs text-accent-silver/50">
                     {isUnlocked ? loc.description : (lockInfo?.description ?? t("collection.relicLocked"))}
                   </span>
