@@ -40,7 +40,7 @@ export default function ShopScreen({ items, gold, onBuy, onSkip, rerollCost, onR
   // Subscribe to language changes so getItemAccent() re-renders on switch.
   const { t } = useTranslation();
   return (
-    <div className="min-h-screen flex flex-col items-center justify-center px-6 py-12">
+    <div className="min-h-screen flex flex-col items-center justify-center px-4 sm:px-6 py-8 sm:py-12">
       <motion.div
         initial={{ opacity: 0, y: -20 }}
         animate={{ opacity: 1, y: 0 }}
@@ -88,14 +88,21 @@ export default function ShopScreen({ items, gold, onBuy, onSkip, rerollCost, onR
                   <span className="font-display font-bold text-white text-lg leading-tight">{item.name}</span>
                 </div>
                 <div className="flex flex-col items-end gap-2 shrink-0">
-                  <span
-                    className={[
-                      "px-3 py-1 rounded-lg text-sm font-mono font-bold",
-                      canAfford ? "bg-accent-gold/15 text-accent-gold border border-accent-gold/20" : "bg-surface-700 text-surface-500",
-                    ].join(" ")}
-                  >
-                    {item.cost}g
-                  </span>
+                  <div className="flex flex-col items-end gap-0.5">
+                    <span
+                      className={[
+                        "px-3 py-1 rounded-lg text-sm font-mono font-bold",
+                        canAfford ? "bg-accent-gold/15 text-accent-gold border border-accent-gold/20" : "bg-surface-700 text-surface-500",
+                      ].join(" ")}
+                    >
+                      {item.cost}g
+                    </span>
+                    {!canAfford && (
+                      <span className="text-[9px] font-mono text-red-400/60 tabular-nums">
+                        faltan {item.cost - gold}g
+                      </span>
+                    )}
+                  </div>
                   {item.type === "relic" && item.relic && (
                     <RelicCard relicId={item.relic.id} size="sm" showName={false} />
                   )}

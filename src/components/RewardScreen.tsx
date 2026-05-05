@@ -99,7 +99,7 @@ export default function RewardScreen({ options, onSelect, onSkip }: RewardScreen
       exit={{ opacity: 0 }}
       className="fixed inset-0 bg-surface-900/95 backdrop-blur-sm flex items-center justify-center z-50"
     >
-      <div className="flex flex-col items-center gap-8 max-w-3xl px-6">
+      <div className="flex flex-col items-center gap-6 w-full max-w-3xl px-4 sm:px-6 max-h-[95vh] overflow-y-auto">
         <div className="flex flex-col items-center gap-2">
           <motion.div
             initial={{ opacity: 0, scale: 0.5 }}
@@ -127,16 +127,17 @@ export default function RewardScreen({ options, onSelect, onSkip }: RewardScreen
           </motion.p>
         </div>
 
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-5 w-full">
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 w-full">
           {options.map((option, i) => {
             const style = getCardStyle(option);
+            const isFeatured = options.length === 3 && i === 1;
             return (
               <motion.button
                 key={option.id}
                 initial={{ opacity: 0, y: 30, scale: 0.9 }}
-                animate={{ opacity: 1, y: 0, scale: 1 }}
+                animate={{ opacity: 1, y: 0, scale: isFeatured ? 1.02 : 1 }}
                 transition={{ delay: 0.2 + i * 0.1, type: "spring", stiffness: 300, damping: 25 }}
-                whileHover={{ scale: 1.04, y: -6 }}
+                whileHover={{ scale: isFeatured ? 1.05 : 1.04, y: -6 }}
                 whileTap={{ scale: 0.97 }}
                 onClick={() => {
                   audio.play("relic_select");
@@ -147,6 +148,7 @@ export default function RewardScreen({ options, onSelect, onSkip }: RewardScreen
                   "reward-card",
                   style.border,
                   style.glow,
+                  isFeatured ? "shadow-[0_0_0_1px_rgba(255,255,255,0.06)]" : "",
                   "transition-shadow duration-300",
                 ].join(" ")}
               >

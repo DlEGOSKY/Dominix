@@ -322,17 +322,37 @@ export default function GameOverScreen({
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.2 }}
-        className="flex flex-col items-center gap-1"
+        className="flex items-end justify-center gap-8"
       >
-        <span
-          className="text-7xl font-mono font-black text-white tabular-nums tracking-tighter"
-          style={{ textShadow: "0 0 30px rgba(255,255,255,0.1)" }}
-        >
-          {finalRound}
-        </span>
-        <span className="text-[11px] font-bold text-accent-silver/40 uppercase tracking-widest">
-          {t("gameover.roundsComplete")}
-        </span>
+        {/* Total score — hero */}
+        <div className="flex flex-col items-center gap-1">
+          <motion.span
+            initial={{ scale: 0.7, opacity: 0 }}
+            animate={{ scale: 1, opacity: 1 }}
+            transition={{ delay: 0.25, type: "spring", stiffness: 260, damping: 20 }}
+            className="font-mono font-black text-6xl sm:text-7xl tabular-nums tracking-tighter text-accent-gold"
+            style={{ textShadow: "0 0 40px rgba(212,168,83,0.35), 0 0 80px rgba(212,168,83,0.15)" }}
+          >
+            {stats.totalScore.toLocaleString()}
+          </motion.span>
+          <span className="text-[11px] font-bold text-accent-gold/40 uppercase tracking-widest">
+            {t("gameover.stat.score")}
+          </span>
+        </div>
+        {/* Divider */}
+        <div className="w-px h-12 bg-surface-600/40 mb-3" />
+        {/* Rounds */}
+        <div className="flex flex-col items-center gap-1">
+          <span
+            className="text-4xl sm:text-5xl font-mono font-black text-white tabular-nums tracking-tighter"
+            style={{ textShadow: "0 0 20px rgba(255,255,255,0.08)" }}
+          >
+            {finalRound}
+          </span>
+          <span className="text-[11px] font-bold text-accent-silver/40 uppercase tracking-widest">
+            {t("gameover.roundsComplete")}
+          </span>
+        </div>
       </motion.div>
 
       <motion.div
@@ -342,7 +362,6 @@ export default function GameOverScreen({
         className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-center mt-2 max-w-lg w-full"
       >
         {[
-          { value: stats.totalScore, label: t("gameover.stat.score"), color: "text-accent-gold", accent: "from-accent-gold/15", border: "border-accent-gold/25" },
           { value: stats.tilesPlayed, label: t("gameover.stat.tiles"), color: "text-white", accent: "from-white/10", border: "border-white/20" },
           { value: stats.patternsActivated, label: t("gameover.stat.patterns"), color: "text-blue-400", accent: "from-blue-500/15", border: "border-blue-500/25" },
           { value: stats.highestRoundScore, label: t("gameover.stat.bestRound"), color: "text-green-400", accent: "from-green-500/15", border: "border-green-500/25" },
