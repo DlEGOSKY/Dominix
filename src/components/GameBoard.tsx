@@ -674,8 +674,13 @@ export default function GameBoard({ onGameOver, isDaily = false, isEndless = fal
     if (game.result === "win") {
       audio.playWinFanfare();
       if (currentBoss) triggerShake("large");
-      // Big score burst if round exceeded target by 50% or more
-      if (game.score >= game.target * 1.5) {
+      // Big score burst if round exceeded target by 200% or more
+      if (game.score >= game.target * 2) {
+        audio.playScoreBig();
+        pushReaction("big_score", `+${game.score}`);
+        triggerShake("large");
+        triggerAberration();
+      } else if (game.score >= game.target * 1.5) {
         pushReaction("big_score", `+${game.score}`);
         triggerShake("large");
         triggerAberration();
@@ -760,6 +765,7 @@ export default function GameBoard({ onGameOver, isDaily = false, isEndless = fal
       const boss = getBossForRound(next.round);
       if (boss) {
         setCurrentBoss(boss);
+        audio.playBossEnter();
         setRoundTransition({ round: next.round, isBoss: true });
         return {
           ...next,
@@ -977,6 +983,7 @@ export default function GameBoard({ onGameOver, isDaily = false, isEndless = fal
   const handleDiscard = useCallback(
     (tile: Tile) => {
       if (game.result !== "playing") return;
+      audio.play("discard_tile");
       setGame((prev) => {
         if (!prev.actions || !canDiscard(prev.actions)) return prev;
         const discardBonus = ALL_RELICS
@@ -995,6 +1002,7 @@ export default function GameBoard({ onGameOver, isDaily = false, isEndless = fal
   );
 
   const handleDraw = useCallback(() => {
+    audio.play("draw_tile");
     setGame((prev) => {
       if (prev.result !== "playing") return prev;
       if (!prev.actions || !canDraw(prev.actions)) return prev;
@@ -1155,6 +1163,7 @@ export default function GameBoard({ onGameOver, isDaily = false, isEndless = fal
   }, [game.result, game.hand, game.chain, game.actions, game.tilePool.length, undoSnapshot, undoUsesLeft, handlePlay, handleDraw, handleUndo]);
 
   const handleEndChain = useCallback(() => {
+    audio.playChainClear();
     setGame((prev) => {
       if (prev.result !== "playing") return prev;
       const raw = calculateScore(prev.chain, prev.relics, modRef.current.patternBonus);
@@ -1257,6 +1266,8 @@ export default function GameBoard({ onGameOver, isDaily = false, isEndless = fal
       if (prev.result !== "win") return prev;
       const event = getRandomEvent(prev.round);
       if (event) {
+        if (event.type === "blessing") audio.play("event_good");
+        else if (event.type === "curse") audio.play("event_bad");
         setCurrentEvent(event);
         return { ...prev, result: "event" };
       }
@@ -1311,6 +1322,8 @@ export default function GameBoard({ onGameOver, isDaily = false, isEndless = fal
 
       const event = getRandomEvent(prev.round);
       if (event) {
+        if (event.type === "blessing") audio.play("event_good");
+        else if (event.type === "curse") audio.play("event_bad");
         setCurrentEvent(event);
         return { ...prev, result: "event" };
       }
@@ -1624,6 +1637,7 @@ export default function GameBoard({ onGameOver, isDaily = false, isEndless = fal
 
   const handleBuyShopItem = useCallback((item: ShopItem) => {
     if (gold < item.cost) return;
+    audio.play("shop_buy");
     setGold((g) => g - item.cost);
 
     if (item.type === "relic" && item.relic) {
