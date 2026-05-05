@@ -79,6 +79,28 @@ export default function ScoreBar({ score, target, round }: ScoreBarProps) {
           transition={{ type: "spring", stiffness: 100, damping: 20 }}
         />
         <div className="absolute inset-0 bg-gradient-to-b from-white/[0.08] to-transparent pointer-events-none rounded-full" />
+        {/* Percentage label inside bar */}
+        {pct > 12 && (
+          <div className="absolute inset-0 flex items-center pl-2.5 pointer-events-none">
+            <span className={`text-[9px] font-mono font-bold tabular-nums ${met ? "text-green-900/70" : "text-surface-900/60"}`}>
+              {Math.round(pct)}%
+            </span>
+          </div>
+        )}
+      </div>
+
+      {/* Tactical status line */}
+      <div className="flex items-center justify-between w-full px-1 -mt-1">
+        <span className={`text-[9px] font-mono tabular-nums ${met ? "text-green-400/70" : "text-accent-silver/30"}`}>
+          {met
+            ? `+${score - target} sobre meta`
+            : `faltan ${target - score}`}
+        </span>
+        {!met && score > 0 && (
+          <span className="text-[9px] font-mono text-accent-silver/25 tabular-nums">
+            {Math.round(pct)}%
+          </span>
+        )}
       </div>
 
       <motion.span

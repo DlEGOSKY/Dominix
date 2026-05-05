@@ -63,6 +63,14 @@ export default function Hand({ tiles, chain, onPlay, disabled, skin, onDiscard, 
                 transition={{ type: "spring", stiffness: 400, damping: 30 }}
                 className="relative group"
               >
+                {/* Playable ring — only when chain has tiles and this tile connects */}
+                {playable && chain.placed.length > 0 && (
+                  <motion.div
+                    className="absolute -inset-1 rounded-2xl border border-accent-gold/30 pointer-events-none"
+                    animate={{ opacity: [0.3, 0.7, 0.3] }}
+                    transition={{ duration: 2.2, repeat: Infinity, ease: "easeInOut" }}
+                  />
+                )}
                 <TileView
                   tile={tile}
                   onClick={() => handleClick(tile)}

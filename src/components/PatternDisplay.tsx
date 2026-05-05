@@ -51,34 +51,32 @@ export default function PatternDisplay({ patterns, multiplier, combo }: PatternD
             const def = ALL_PATTERNS.find((d) => d.id === p.id);
             const Icon = getPatternIcon(p.id);
             const locName = localizePatternById(p.id, p.name).name;
+            const isDominant = i === 0 && patterns.length > 1;
             const chip = (
               <motion.div
                 key={p.id}
                 initial={{ opacity: 0, scale: 0.8, y: 10 }}
                 animate={{ opacity: 1, scale: 1, y: 0 }}
                 exit={{ opacity: 0, scale: 0.8 }}
-                transition={{ delay: i * 0.1, type: "spring", stiffness: 300, damping: 25 }}
-                className="px-3 py-1.5 rounded-md bg-surface-700 border border-accent-gold/30 text-sm flex items-center gap-1.5"
+                transition={{ delay: i * 0.08, type: "spring", stiffness: 300, damping: 25 }}
+                className={[
+                  "flex items-center gap-1.5 rounded-md border",
+                  isDominant
+                    ? "px-3.5 py-2 bg-surface-700 border-accent-gold/60 shadow-[0_0_8px_rgba(212,168,83,0.2)] text-sm"
+                    : "px-2.5 py-1.5 bg-surface-700/80 border-accent-gold/25 text-xs",
+                ].join(" ")}
               >
-                {Icon && <Icon className="text-accent-gold" size={14} />}
-                <span className="font-medium text-accent-gold">{locName}</span>
+                {Icon && <Icon className={isDominant ? "text-accent-gold" : "text-accent-gold/70"} size={isDominant ? 14 : 12} />}
+                <span className={`font-medium ${isDominant ? "text-accent-gold" : "text-accent-gold/80"}`}>{locName}</span>
                 {p.bonus > 0 && (
-                  <motion.span
-                    initial={{ opacity: 0 }}
-                    animate={{ opacity: 1 }}
-                    className="ml-2 text-green-400"
-                  >
+                  <span className={`font-mono ${isDominant ? "text-green-400" : "text-green-400/70"}`}>
                     +{p.bonus}
-                  </motion.span>
+                  </span>
                 )}
                 {p.multiplier > 1 && (
-                  <motion.span
-                    initial={{ opacity: 0 }}
-                    animate={{ opacity: 1 }}
-                    className="ml-2 text-blue-400"
-                  >
+                  <span className={`font-mono ${isDominant ? "text-blue-400" : "text-blue-400/70"}`}>
                     x{p.multiplier}
-                  </motion.span>
+                  </span>
                 )}
               </motion.div>
             );

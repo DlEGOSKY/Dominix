@@ -29,7 +29,7 @@ function detectCadenaSimple(chain: ChainState): PatternResult | null {
     return {
       id: "cadena_simple",
       name: "Cadena Simple",
-      bonus: 15,
+      bonus: 20,
       multiplier: 1,
     };
   }
@@ -89,7 +89,7 @@ function detectDominio(chain: ChainState): PatternResult | null {
 }
 
 function detectCierreExacto(chain: ChainState): PatternResult | null {
-  if (chain.placed.length < 2) return null;
+  if (chain.placed.length < 3) return null;
   if (chain.leftEnd === chain.rightEnd) {
     return {
       id: "cierre_exacto",
@@ -319,7 +319,7 @@ function detectTodoDobles(chain: ChainState): PatternResult | null {
   if (chain.placed.length < 3) return null;
   const allDoubles = chain.placed.every((p) => isDouble(p.tile.top, p.tile.bottom));
   if (allDoubles) {
-    return { id: "todo_dobles", name: "Todo Dobles", bonus: 0, multiplier: 2.5 };
+    return { id: "todo_dobles", name: "Todo Dobles", bonus: 0, multiplier: 2.0 };
   }
   return null;
 }
@@ -353,13 +353,16 @@ function detectSumaImpar(chain: ChainState): PatternResult | null {
 
 function detectAvalancha(chain: ChainState): PatternResult | null {
   if (chain.placed.length < 4) return null;
-  let increasing = true;
+  // Detect best run of strictly increasing sums (subchain of 4+)
+  let bestRun = 1;
+  let currentRun = 1;
   for (let i = 1; i < chain.placed.length; i++) {
-    const prevSum = chain.placed[i - 1]!.tile.top + chain.placed[i - 1]!.tile.bottom;
-    const currSum = chain.placed[i]!.tile.top + chain.placed[i]!.tile.bottom;
-    if (currSum < prevSum) { increasing = false; break; }
+    const prev = chain.placed[i - 1]!.tile.top + chain.placed[i - 1]!.tile.bottom;
+    const curr = chain.placed[i]!.tile.top + chain.placed[i]!.tile.bottom;
+    if (curr > prev) { currentRun++; if (currentRun > bestRun) bestRun = currentRun; }
+    else currentRun = 1;
   }
-  if (increasing) {
+  if (bestRun >= 4) {
     return { id: "avalancha", name: "Avalancha", bonus: 45, multiplier: 1.25 };
   }
   return null;
@@ -438,16 +441,16 @@ function detectConstelacion(chain: ChainState): PatternResult | null {
  */
 function detectDiminuendo(chain: ChainState): PatternResult | null {
   if (chain.placed.length < 4) return null;
-  let decreasing = true;
+  // Detect best run of strictly decreasing sums (subchain of 4+)
+  let bestRun = 1;
+  let currentRun = 1;
   for (let i = 1; i < chain.placed.length; i++) {
-    const prev = chain.placed[i - 1]!.tile;
-    const curr = chain.placed[i]!.tile;
-    if (curr.top + curr.bottom >= prev.top + prev.bottom) {
-      decreasing = false;
-      break;
-    }
+    const prev = chain.placed[i - 1]!.tile.top + chain.placed[i - 1]!.tile.bottom;
+    const curr = chain.placed[i]!.tile.top + chain.placed[i]!.tile.bottom;
+    if (curr < prev) { currentRun++; if (currentRun > bestRun) bestRun = currentRun; }
+    else currentRun = 1;
   }
-  if (decreasing) {
+  if (bestRun >= 4) {
     return { id: "diminuendo", name: "Diminuendo", bonus: 35, multiplier: 1.3 };
   }
   return null;
@@ -503,7 +506,8 @@ function detectHexagrama(chain: ChainState): PatternResult | null {
 function detectArmonia(chain: ChainState): PatternResult | null {
   if (chain.placed.length < 3) return null;
   const total = chain.placed.reduce((s, p) => s + p.tile.top + p.tile.bottom, 0);
-  if (isPrime(total)) {
+  // Require prime AND meaningful sum (>=20) so trivial short chains don't activate it
+  if (total >= 20 && isPrime(total)) {
     return { id: "armonia", name: "Armonia", bonus: 40, multiplier: 1.35 };
   }
   return null;
