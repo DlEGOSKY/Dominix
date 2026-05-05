@@ -2141,7 +2141,7 @@ export default function GameBoard({ onGameOver, isDaily = false, isEndless = fal
       key={`gb-shake-${shakeTrigger}`}
       animate={shakeTrigger > 0 ? shakeAnim : undefined}
       transition={{ duration: shakeIntensity === "large" ? 0.5 : shakeIntensity === "medium" ? 0.35 : 0.22 }}
-      className="flex flex-col items-center gap-3 md:gap-6 w-full max-w-3xl mx-auto px-3 md:px-4 py-3 md:py-8 min-h-screen relative ambient-grain"
+      className="flex flex-col items-center gap-3 md:gap-6 w-full max-w-3xl mx-auto px-3 md:px-4 py-3 md:py-8 pb-[env(safe-area-inset-bottom,0px)] min-h-screen relative ambient-grain"
     >
       {/* Pattern activity log (floating, desktop only) */}
       {game.result === "playing" && <PatternLog entries={roundPatternLog} />}
@@ -2237,7 +2237,7 @@ export default function GameBoard({ onGameOver, isDaily = false, isEndless = fal
       />
 
       {/* Header */}
-      <div className="flex items-center gap-3 w-full">
+      <div className="flex flex-wrap items-center gap-2 w-full min-w-0">
         <h1 className="font-display font-black text-xl tracking-tight bg-gradient-to-b from-white via-white/80 to-accent-silver/40 bg-clip-text text-transparent">
           DOMINIX
         </h1>
@@ -2285,7 +2285,7 @@ export default function GameBoard({ onGameOver, isDaily = false, isEndless = fal
         <button
           onClick={() => { navigator.clipboard.writeText(seedToString(runSeed)); }}
           title={`Seed: ${seedToString(runSeed)} (click para copiar)`}
-          className="px-2 py-0.5 rounded-md text-[8px] font-mono text-accent-silver/20 hover:text-accent-silver/40 transition-colors"
+          className="hidden xs:block px-2 py-0.5 rounded-md text-[8px] font-mono text-accent-silver/20 hover:text-accent-silver/40 transition-colors truncate max-w-[80px]"
         >
           {seedToString(runSeed)}
         </button>
@@ -2562,7 +2562,7 @@ export default function GameBoard({ onGameOver, isDaily = false, isEndless = fal
       )}
 
       {/* Chain area */}
-      <div className="relative w-full rounded-2xl border border-surface-600/40 chain-surface p-5 min-h-[10rem] overflow-hidden">
+      <div className="relative w-full rounded-2xl border border-surface-600/40 chain-surface p-4 sm:p-5 min-h-[8rem] sm:min-h-[10rem] overflow-hidden">
         <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,_rgba(212,168,83,0.04)_0%,_transparent_60%)] pointer-events-none" />
         <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-accent-gold/10 to-transparent" />
         <div className="absolute bottom-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-surface-600/20 to-transparent" />
@@ -2720,7 +2720,7 @@ export default function GameBoard({ onGameOver, isDaily = false, isEndless = fal
           onClick={handleEndChain}
           whileHover={{ scale: 1.03 }}
           whileTap={{ scale: 0.97 }}
-          className="px-8 py-2.5 rounded-xl border border-accent-silver/15 bg-surface-800/50 text-accent-silver/60 font-medium text-sm tracking-wide hover:border-accent-gold/30 hover:text-accent-gold/80 transition-all backdrop-blur-sm"
+          className="w-full sm:w-auto px-8 py-3 sm:py-2.5 rounded-xl border border-accent-silver/15 bg-surface-800/50 text-accent-silver/60 font-medium text-sm tracking-wide hover:border-accent-gold/30 hover:text-accent-gold/80 transition-all backdrop-blur-sm"
         >
           Cerrar cadena
         </motion.button>
@@ -2728,7 +2728,7 @@ export default function GameBoard({ onGameOver, isDaily = false, isEndless = fal
 
       {/* Actions bar */}
       {game.result === "playing" && game.actions && (
-        <div className="flex items-center justify-center gap-3 w-full max-w-md">
+        <div className="flex flex-wrap items-center justify-center gap-2 sm:gap-3 w-full max-w-md">
           <div className="flex items-center gap-3 px-4 py-2 rounded-xl glass-panel">
             <div className="flex items-center gap-1.5">
               <div className={`w-1.5 h-1.5 rounded-full ${getActionsRemaining(game.actions) <= 3 ? "bg-red-400 animate-pulse" : "bg-accent-gold/60"}`} />

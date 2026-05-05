@@ -26,6 +26,7 @@ export default {
         mono: ['"JetBrains Mono"', "monospace"],
       },
       screens: {
+        xs: "475px",
         portrait: { raw: "(orientation: portrait)" },
         landscape: { raw: "(orientation: landscape)" },
       },

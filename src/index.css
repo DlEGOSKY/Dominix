@@ -296,6 +296,18 @@ body {
   }
 }
 
+/* Safe-area bottom padding for iOS home indicator */
+.pb-safe {
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+}
+
+/* Tiny-screen score breakdown: hide some chips */
+@media (max-width: 360px) {
+  .score-breakdown-extra {
+    display: none;
+  }
+}
+
 /* Tap-target reinforcement: any explicit button-like element gets a comfy min size on touch screens */
 @media (hover: none) and (pointer: coarse) {
   button, [role="button"] {
