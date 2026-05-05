@@ -152,6 +152,8 @@ const STRINGS: Record<string, Record<Language, string>> = {
   "boss.defeated": { es: "Jefe Derrotado", en: "Boss Defeated" },
   "boss.rewardGold": { es: "Oro de recompensa", en: "Reward gold" },
   "boss.label": { es: "Jefe", en: "Boss" },
+  "boss.warning": { es: "— advertencia —", en: "— warning —" },
+  "boss.prepare": { es: "prepárate", en: "prepare yourself" },
 
   // Boss restrictions (shown in BossIntro / GameBoard HUD)
   "restriction.no_doubles": { es: "Restriccion: No puedes jugar fichas dobles", en: "Restriction: No double tiles allowed" },

@@ -185,31 +185,46 @@ export default function ScoreReveal({ breakdown, finalScore, target, won, extras
         <div className="flex items-center gap-2">
           <motion.span
             initial={{ scale: 0.8 }}
-            animate={{ scale: [0.8, 1.12, 1] }}
-            transition={{ delay: totalDelay + 0.05, duration: 0.45, ease: "easeOut" }}
-            className={`font-mono font-black text-3xl ${won ? "text-green-400" : "text-red-400"}`}
+            animate={{ scale: [0.8, 1.15, 1] }}
+            transition={{ delay: totalDelay + 0.05, duration: 0.5, ease: "easeOut" }}
+            className={[
+              "font-mono font-black tabular-nums",
+              won
+                ? finalScore >= target * 1.5
+                  ? "text-4xl text-accent-gold"
+                  : "text-4xl text-green-400"
+                : "text-3xl text-red-400",
+            ].join(" ")}
             style={{
               textShadow: won
-                ? "0 0 24px rgba(74,222,128,0.5), 0 0 6px rgba(74,222,128,0.3)"
+                ? finalScore >= target * 1.5
+                  ? "0 0 32px rgba(212,168,83,0.6), 0 0 64px rgba(212,168,83,0.25)"
+                  : "0 0 24px rgba(74,222,128,0.5), 0 0 6px rgba(74,222,128,0.3)"
                 : "0 0 24px rgba(239,68,68,0.5), 0 0 6px rgba(239,68,68,0.3)",
             }}
           >
-            {finalScore}
+            {finalScore.toLocaleString()}
           </motion.span>
-          <div className="flex flex-col items-start">
-            <span className="text-[9px] text-accent-silver/25 font-mono uppercase tracking-widest">{translate("scoreReveal.target")}</span>
-            <span className="text-sm text-accent-silver/35 font-mono">{target}</span>
+          <div className="flex flex-col items-start gap-0.5">
+            <span className="text-[9px] text-accent-silver/25 font-mono uppercase tracking-widest">{translate("scoreReveal.target")} {target}</span>
+            {won ? (
+              <span className="text-[10px] font-mono font-bold text-green-400/70">+{(finalScore - target).toLocaleString()}</span>
+            ) : (
+              <span className="text-[10px] font-mono font-bold text-red-400/70">-{(target - finalScore).toLocaleString()}</span>
+            )}
           </div>
         </div>
       </motion.div>
 
-      {/* Win/lose bar */}
-      <motion.div
-        initial={{ scaleX: 0 }}
-        animate={{ scaleX: 1 }}
-        transition={{ delay: totalDelay + 0.2, duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
-        className={`h-0.5 rounded-full origin-left ${won ? "bg-green-400/50" : "bg-red-400/40"}`}
-      />
+      {/* Win/lose progress bar */}
+      <div className="relative w-full h-1 rounded-full bg-surface-700/60 overflow-hidden">
+        <motion.div
+          initial={{ width: 0 }}
+          animate={{ width: `${Math.min((finalScore / target) * 100, 100)}%` }}
+          transition={{ delay: totalDelay + 0.2, duration: 0.6, ease: [0.22, 1, 0.36, 1] }}
+          className={`h-full rounded-full ${won ? "bg-green-400/60" : "bg-red-400/50"}`}
+        />
+      </div>
     </div>
   );
 }
