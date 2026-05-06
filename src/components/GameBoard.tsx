@@ -28,7 +28,8 @@ import { getBossForRound, ALL_BOSSES } from "@/engine/boss";
 import type { Boss } from "@/engine/boss";
 import { loadProgression, getProgressionBonuses, loadActiveSkin } from "@/engine/progression";
 import { loadSavedData } from "@/engine/storage";
-import { createActionState, canPlay, canDiscard, canDraw, usePlayAction, useDiscardAction, useDrawAction, getActionsRemaining } from "@/engine/actions";
+import { createActionState, canPlay, canDiscard, canDraw, usePlayAction, useDiscardAction, useDrawAction } from "@/engine/actions";
+import ActionHUD from "./ActionHUD";
 import { setGlobalRNG, randomSeed, seedToString } from "@/engine/rng";
 import { ALL_ACTIVE_MUTATIONS, resetMutationUses, canUseMutation, applyShuffleHand, applySwapEnds } from "@/engine/activeMutations";
 import type { ActiveMutationState } from "@/engine/activeMutations";
@@ -2729,22 +2730,7 @@ export default function GameBoard({ onGameOver, isDaily = false, isEndless = fal
       {/* Actions bar */}
       {game.result === "playing" && game.actions && (
         <div className="flex flex-wrap items-center justify-center gap-2 sm:gap-3 w-full max-w-md">
-          <div className="flex items-center gap-3 px-4 py-2 rounded-xl glass-panel">
-            <div className="flex items-center gap-1.5">
-              <div className={`w-1.5 h-1.5 rounded-full ${getActionsRemaining(game.actions) <= 3 ? "bg-red-400 animate-pulse" : "bg-accent-gold/60"}`} />
-              <span className="text-[10px] font-mono font-bold text-accent-silver/50">
-                {getActionsRemaining(game.actions)}<span className="text-accent-silver/25">/{game.actions.maxActions}</span>
-              </span>
-            </div>
-            <div className="w-px h-3 bg-surface-600/40" />
-            <span className="text-[10px] font-mono text-accent-silver/35">
-              Pool {game.tilePool.length}
-            </span>
-            <div className="w-px h-3 bg-surface-600/40" />
-            <span className="text-[10px] font-mono text-accent-silver/35">
-              Desc {game.actions.maxDiscards - game.actions.usedDiscards}
-            </span>
-          </div>
+          <ActionHUD actions={game.actions} poolSize={game.tilePool.length} />
           {canDraw(game.actions) && game.tilePool.length > 0 && (
             <motion.button
               onClick={handleDraw}
