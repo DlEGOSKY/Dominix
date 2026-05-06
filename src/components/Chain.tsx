@@ -79,14 +79,14 @@ export default function Chain({ chain, skin, patternFlash = 0 }: ChainProps) {
               patternFlash > 0
                 ? {
                     opacity: 1,
-                    scale: [1, 1.1, 1],
-                    filter: ["brightness(1)", "brightness(1.8)", "brightness(1)"],
+                    scale: [1, 1.15, 1.05, 1],
+                    filter: ["brightness(1)", "brightness(2.2)", "brightness(1.4)", "brightness(1)"],
                   }
                 : { opacity: 1, scale: 1, x: 0 }
             }
             transition={
               patternFlash > 0
-                ? { delay: i * 0.04, duration: 0.4, ease: "easeInOut" }
+                ? { delay: i * 0.05, duration: 0.55, ease: [0.22, 1, 0.36, 1] }
                 : { type: "spring", stiffness: 400, damping: 30 }
             }
             className="flex items-center gap-1"

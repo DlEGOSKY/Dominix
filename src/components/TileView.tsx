@@ -256,6 +256,14 @@ export default function TileView({
       ].join(" ")}
       style={{ padding: size === "md" ? 8 : 5 }}
     >
+      {/* Highlight pulse for playable tiles */}
+      {highlight && !disabled && !isLocked && (
+        <motion.div
+          className="absolute -inset-0.5 rounded-xl border border-accent-gold/40 pointer-events-none"
+          animate={{ opacity: [0.3, 0.6, 0.3] }}
+          transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}
+        />
+      )}
       {/* Skin texture rendered behind everything else (cosmetic only) */}
       {skinStyle?.pattern}
       {/* Skin corner glyph — suppressed if the pact already owns that slot */}
