@@ -563,6 +563,75 @@ export const ALL_EVENTS: GameEvent[] = [
     },
     minRound: 9,
   },
+  // Nuevos eventos - Expansion
+  {
+    id: "viento_fortuna",
+    name: "Viento de Fortuna",
+    description: "Un viento favorable sopla a tu favor esta ronda",
+    type: "blessing",
+    effect: { type: "bonus_actions", actions: 2, discards: 1, draws: 1 },
+    minRound: 3,
+  },
+  {
+    id: "eclipse_parcial",
+    name: "Eclipse Parcial",
+    description: "La oscuridad parcial dificulta tu vision",
+    type: "curse",
+    effect: { type: "increase_target", percent: 15 },
+    minRound: 5,
+  },
+  {
+    id: "ofrenda_antigua",
+    name: "Ofrenda Antigua",
+    description: "Un altar antiguo te pide un sacrificio",
+    type: "choice",
+    effect: {
+      type: "choice",
+      options: [
+        {
+          label: "Sacrificar",
+          description: "Pierdes 1 ficha, pero la meta baja 20%",
+          effect: { type: "reduce_target", percent: 20 },
+        },
+        {
+          label: "Rechazar",
+          description: "Ganas 2 fichas, pero la meta sube 10%",
+          effect: { type: "add_tiles", count: 2 },
+        },
+      ],
+    },
+    minRound: 4,
+  },
+  {
+    id: "lluvia_dorada",
+    name: "Lluvia Dorada",
+    description: "Fichas doradas caen del cielo",
+    type: "blessing",
+    effect: { type: "add_tiles", count: 3 },
+    minRound: 6,
+  },
+  {
+    id: "pacto_sombrio",
+    name: "Pacto Sombrio",
+    description: "Las sombras te ofrecen un trato peligroso",
+    type: "choice",
+    effect: {
+      type: "choice",
+      options: [
+        {
+          label: "Aceptar",
+          description: "+100 puntos, pero pierdes 2 fichas",
+          effect: { type: "bonus_score", value: 100 },
+        },
+        {
+          label: "Rechazar",
+          description: "Meta -5%, sin consecuencias",
+          effect: { type: "reduce_target", percent: 5 },
+        },
+      ],
+    },
+    minRound: 8,
+  },
 ];
 
 export function getRandomEvent(round: number): GameEvent | null {

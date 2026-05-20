@@ -121,6 +121,18 @@ const RELIC_EN: Record<string, ContentEntry> = {
   espiral_crescendo: { name: "Crescendo Spiral",    description: "Crescendo grants additional x2.0. The climb has no ceiling." },
   nudo_ouroboros:    { name: "Ouroboros Knot",      description: "Ouroboros grants +200 extra. The circle is complete." },
 
+  // ---- Expansion relics ----
+  ritmo_acelerado:    { name: "Accelerated Rhythm",  description: "+15 score per action left when closing" },
+  mano_ligera:        { name: "Light Hand",          description: "If you finish with 3+ tiles in hand, +40 score" },
+  pureza_tactica:     { name: "Tactical Purity",     description: "If you didn't use discards this round, x1.15 score" },
+  colmillo_triple:    { name: "Triple Fang",         description: "Each trio of identical tiles adds +25" },
+  eco_impar:          { name: "Odd Echo",            description: "Odd numbers grant +4 per appearance" },
+  simetria_perfecta:  { name: "Perfect Symmetry",    description: "Espejo grants additional x1.4" },
+  cascada_dorada:     { name: "Golden Cascade",      description: "Escalera grants +60 extra" },
+  nucleo_cero:        { name: "Zero Core",           description: "Each 0 played adds +8 extra" },
+  furia_final:        { name: "Final Fury",          description: "The last 3 tiles played are worth x1.5" },
+  bendicion_ancestral: { name: "Ancestral Blessing", description: "Each pattern activated adds +8 base. Stackable." },
+
   // ---- Per-tile legendary ----
   ampolleta_maestra: { name: "Master Hourglass",    description: "+12 score per tile played (time is power)" },
 };
@@ -505,6 +517,35 @@ const EVENT_EN: Record<string, EventEntry> = {
     options: [
       { label: "Take the crown", description: "+3 tiles to the pool. The crown's weight opens new paths." },
       { label: "Burn the crown", description: "+80 bonus points. Ashes fertilize the ground." },
+    ],
+  },
+  // ---- Expansion events ----
+  viento_fortuna: {
+    name: "Fortune Wind",
+    description: "A favorable wind blows in your favor this round",
+  },
+  eclipse_parcial: {
+    name: "Partial Eclipse",
+    description: "Partial darkness hinders your vision",
+  },
+  ofrenda_antigua: {
+    name: "Ancient Offering",
+    description: "An ancient altar asks for a sacrifice",
+    options: [
+      { label: "Sacrifice", description: "Lose 1 tile, but target drops 20%" },
+      { label: "Refuse", description: "Gain 2 tiles, but target rises 10%" },
+    ],
+  },
+  lluvia_dorada: {
+    name: "Golden Rain",
+    description: "Golden tiles fall from the sky",
+  },
+  pacto_sombrio: {
+    name: "Dark Pact",
+    description: "The shadows offer you a dangerous deal",
+    options: [
+      { label: "Accept", description: "+100 points, but lose 2 tiles" },
+      { label: "Refuse", description: "Target -5%, no consequences" },
     ],
   },
 };
