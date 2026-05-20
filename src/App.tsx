@@ -26,6 +26,7 @@ const CollectionScreen = lazy(() => import("./components/CollectionScreen"));
 const TalentTreeScreen = lazy(() => import("./components/TalentTreeScreen"));
 const SettingsScreen = lazy(() => import("./components/SettingsScreen"));
 const CodexScreen = lazy(() => import("./components/CodexScreen"));
+const ChaosScreen = lazy(() => import("./components/ChaosScreen"));
 import { addRunRecord } from "./engine/runHistory";
 import { addLeaderboardEntry } from "./engine/leaderboard";
 import { addXP, calculateRunXP, loadProgression, getProgressionBonuses } from "./engine/progression";
@@ -52,7 +53,7 @@ const pageVariants = {
   exit: { opacity: 0, y: -8, transition: { duration: 0.15 } },
 };
 
-type AppScreen = "home" | "character_select" | "playing" | "daily" | "endless" | "weekly_intro" | "weekly" | "gameover" | "achievements" | "leaderboard" | "howtoplay" | "stats" | "collection" | "talents" | "settings" | "codex";
+type AppScreen = "home" | "character_select" | "playing" | "daily" | "endless" | "weekly_intro" | "weekly" | "gameover" | "achievements" | "leaderboard" | "howtoplay" | "stats" | "collection" | "talents" | "settings" | "codex" | "chaos";
 
 interface GameOverData {
   stats: RunStats;
@@ -192,6 +193,7 @@ export default function App() {
 
   const handleShowCodex = useCallback(() => setScreen("codex"), []);
   const handleShowCharacters = useCallback(() => setScreen("character_select"), []);
+  const handleShowChaos = useCallback(() => setScreen("chaos"), []);
 
   const handleGameOver = useCallback(
     (stats: RunStats, relicIds: string[], finalRound: number) => {
@@ -386,6 +388,14 @@ export default function App() {
             <CodexScreen onBack={handleHome} />
           </motion.div>
         );
+      case "chaos":
+        return (
+          <motion.div key="chaos" {...pageVariants}>
+            <Suspense fallback={<div className="min-h-screen flex items-center justify-center"><span className="text-accent-silver/40">Cargando...</span></div>}>
+              <ChaosScreen onBack={handleHome} />
+            </Suspense>
+          </motion.div>
+        );
       case "weekly_intro":
         return (
           <motion.div key="weekly_intro" {...pageVariants}>
@@ -413,6 +423,7 @@ export default function App() {
               onShowCharacters={handleShowCharacters}
               onShowSettings={handleShowSettings}
               onShowCodex={handleShowCodex}
+              onShowChaos={handleShowChaos}
             />
           </motion.div>
         );

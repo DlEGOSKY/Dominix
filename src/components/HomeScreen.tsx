@@ -41,9 +41,10 @@ export interface HomeScreenProps {
   onShowCharacters: () => void;
   onShowSettings: () => void;
   onShowCodex: () => void;
+  onShowChaos: () => void;
 }
 
-export default function HomeScreen({ savedData, onStartRun, onStartDaily, onShowWeekly, onStartEndless, onShowAchievements, onShowLeaderboard, onShowHowToPlay, onShowStats, onShowCollection, onShowTalents, onShowCharacters, onShowSettings, onShowCodex }: HomeScreenProps) {
+export default function HomeScreen({ savedData, onStartRun, onStartDaily, onShowWeekly, onStartEndless, onShowAchievements, onShowLeaderboard, onShowHowToPlay, onShowStats, onShowCollection, onShowTalents, onShowCharacters, onShowSettings, onShowCodex, onShowChaos }: HomeScreenProps) {
   const { t } = useTranslation();
   const hasPlayed = savedData.totalRuns > 0;
   const [showModifiers, setShowModifiers] = useState(false);
@@ -91,6 +92,7 @@ export default function HomeScreen({ savedData, onStartRun, onStartDaily, onShow
           {[
             { key: "home.characters",    action: onShowCharacters,  style: "text-cyan-400/70" },
             { key: "home.talents",       action: onShowTalents,     style: "text-blue-400/70" },
+            { key: "home.chaos",         action: onShowChaos,       style: "text-purple-400/70" },
             { key: "home.stats",         action: onShowStats,       style: "text-accent-silver/50" },
             { key: "home.leaderboard",   action: onShowLeaderboard, style: "text-accent-silver/50" },
             { key: "home.collection",    action: onShowCollection,  style: "text-purple-400/60" },

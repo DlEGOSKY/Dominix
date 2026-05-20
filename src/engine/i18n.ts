@@ -35,6 +35,7 @@ const STRINGS: Record<string, Record<Language, string>> = {
   "home.codex": { es: "Codex", en: "Codex" },
   "home.talents": { es: "Talentos", en: "Talents" },
   "home.characters": { es: "Personajes", en: "Characters" },
+  "home.chaos": { es: "Caos", en: "Chaos" },
   "home.settings": { es: "Opciones", en: "Settings" },
   "home.skin": { es: "Skin", en: "Skin" },
   "home.level": { es: "Nivel", en: "Level" },
