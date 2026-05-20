@@ -16,7 +16,11 @@ export type CharacterId =
   | "alchemist"
   | "oracle"
   | "cartographer"
-  | "hermit";
+  | "hermit"
+  | "gambler"
+  | "perfectionist"
+  | "collector"
+  | "speedrunner";
 
 export type CharacterPassive =
   | { type: "bonus_per_pattern"; amount: number }
@@ -28,7 +32,11 @@ export type CharacterPassive =
   | { type: "starting_editions"; count: number } // N tiles start with random edition
   | { type: "celestial_start" } // gets a free celestial at run start
   | { type: "map_bonus"; amount: number } // flat score bonus per round
-  | { type: "auto_pact" }; // auto-marks the highest double as pact
+  | { type: "auto_pact" } // auto-marks the highest double as pact
+  | { type: "reroll_discount"; percent: number } // cheaper rerolls in shop
+  | { type: "perfect_chain_bonus"; amount: number } // bonus if no discards used
+  | { type: "relic_synergy"; multiplier: number } // more relics = more power
+  | { type: "speed_bonus"; perAction: number }; // bonus score per unused action
 
 export interface Character {
   id: CharacterId;
@@ -162,6 +170,62 @@ export const ALL_CHARACTERS: Character[] = [
     passive: { type: "auto_pact" },
     unlockCondition: { type: "reach_round", value: 18 },
   },
+  {
+    id: "gambler",
+    name: "El Apostador",
+    title: "Maestro del azar",
+    description: "Rerolls en tienda cuestan -50%. Empieza con 40 oro y mano -1.",
+    color: "red",
+    icon: "coin",
+    startingHandSize: 6,
+    startingGold: 40,
+    startingRelicIds: [],
+    bonusSpecialTiles: [],
+    passive: { type: "reroll_discount", percent: 50 },
+    unlockCondition: { type: "reach_round", value: 20 },
+  },
+  {
+    id: "perfectionist",
+    name: "La Perfeccionista",
+    title: "Purista absoluta",
+    description: "+50 score si terminas la ronda sin usar descartes. Empieza con 1 descarte menos.",
+    color: "cyan",
+    icon: "eye",
+    startingHandSize: 7,
+    startingGold: 25,
+    startingRelicIds: [],
+    bonusSpecialTiles: [],
+    passive: { type: "perfect_chain_bonus", amount: 50 },
+    unlockCondition: { type: "defeat_boss", value: "apex" },
+  },
+  {
+    id: "collector",
+    name: "El Coleccionista",
+    title: "Acumulador de poder",
+    description: "x1.05 score por cada reliquia que tengas (maximo x2). Empieza sin reliquia.",
+    color: "purple",
+    icon: "flask",
+    startingHandSize: 7,
+    startingGold: 35,
+    startingRelicIds: [],
+    bonusSpecialTiles: [],
+    passive: { type: "relic_synergy", multiplier: 1.05 },
+    unlockCondition: { type: "reach_round", value: 25 },
+  },
+  {
+    id: "speedrunner",
+    name: "El Velocista",
+    title: "Eficiencia maxima",
+    description: "+10 score por cada accion no usada al cerrar. Empieza con +2 acciones.",
+    color: "green",
+    icon: "flame",
+    startingHandSize: 7,
+    startingGold: 20,
+    startingRelicIds: [],
+    bonusSpecialTiles: [],
+    passive: { type: "speed_bonus", perAction: 10 },
+    unlockCondition: { type: "reach_round", value: 22 },
+  },
 ];
 
 export function getCharacter(id: CharacterId): Character {
@@ -197,12 +261,21 @@ export function applyCharacterPassive(params: {
   baseScore: number;
   patternCount: number;
   hasDoubles: boolean;
+  discardsUsed?: number;
+  actionsRemaining?: number;
+  relicCount?: number;
 }): number {
-  const { character, baseScore, patternCount, hasDoubles } = params;
+  const { character, baseScore, patternCount, hasDoubles, discardsUsed = 0, actionsRemaining = 0, relicCount = 0 } = params;
   let total = baseScore;
   const p = character.passive;
   if (p.type === "bonus_per_pattern") total += patternCount * p.amount;
   if (p.type === "double_score_on_doubles" && hasDoubles) total = Math.round(total * 1.15);
+  if (p.type === "perfect_chain_bonus" && discardsUsed === 0) total += p.amount;
+  if (p.type === "speed_bonus") total += actionsRemaining * p.perAction;
+  if (p.type === "relic_synergy") {
+    const mult = Math.min(2, Math.pow(p.multiplier, relicCount));
+    total = Math.round(total * mult);
+  }
   return total;
 }
 

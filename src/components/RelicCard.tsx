@@ -77,6 +77,12 @@ const RARITY_THEME: Record<RelicRarity, { ring: string; badge: string; label: st
     label: "",
     extraClass: "",
   },
+  uncommon: {
+    ring: "ring-1 ring-green-300/30",
+    badge: "bg-green-500/20 border-green-400/40 text-green-100",
+    label: "Poco comun",
+    extraClass: "",
+  },
   rare: {
     ring: "ring-1 ring-blue-300/40",
     badge: "bg-blue-500/30 border-blue-400/50 text-blue-100",

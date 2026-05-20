@@ -5,7 +5,7 @@ export type RelicTrigger =
   | "on_chain_end"
   | "passive";
 
-export type RelicRarity = "common" | "rare" | "legendary";
+export type RelicRarity = "common" | "uncommon" | "rare" | "legendary";
 
 export type RelicFamily = "patron" | "numero" | "fuerza" | "cadena" | "accion";
 
@@ -38,4 +38,12 @@ export type RelicEffect =
   | { type: "bonus_per_discard"; value: number }
   | { type: "bonus_on_draw"; value: number }
   | { type: "multiplier_per_pattern"; value: number }
-  | { type: "celestial_boost"; value: number };
+  | { type: "celestial_boost"; value: number }
+  | { type: "bonus_per_action_left"; value: number }
+  | { type: "bonus_if_tiles_in_hand"; minTiles: number; value: number }
+  | { type: "multiplier_if_no_discards"; value: number }
+  | { type: "bonus_per_triple"; value: number }
+  | { type: "bonus_per_odd"; value: number }
+  | { type: "bonus_per_zero"; value: number }
+  | { type: "multiplier_last_tiles"; count: number; value: number }
+  | { type: "bonus_per_any_pattern"; value: number };
