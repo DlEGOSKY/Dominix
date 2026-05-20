@@ -190,9 +190,8 @@ export default function App() {
     setScreen("settings");
   }, []);
 
-  const handleShowCodex = useCallback(() => {
-    setScreen("codex");
-  }, []);
+  const handleShowCodex = useCallback(() => setScreen("codex"), []);
+  const handleShowCharacters = useCallback(() => setScreen("character_select"), []);
 
   const handleGameOver = useCallback(
     (stats: RunStats, relicIds: string[], finalRound: number) => {
@@ -411,6 +410,7 @@ export default function App() {
               onShowStats={handleShowStats}
               onShowCollection={handleShowCollection}
               onShowTalents={handleShowTalents}
+              onShowCharacters={handleShowCharacters}
               onShowSettings={handleShowSettings}
               onShowCodex={handleShowCodex}
             />

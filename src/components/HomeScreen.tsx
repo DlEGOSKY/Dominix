@@ -38,11 +38,12 @@ export interface HomeScreenProps {
   onShowStats: () => void;
   onShowCollection: () => void;
   onShowTalents: () => void;
+  onShowCharacters: () => void;
   onShowSettings: () => void;
   onShowCodex: () => void;
 }
 
-export default function HomeScreen({ savedData, onStartRun, onStartDaily, onShowWeekly, onStartEndless, onShowAchievements, onShowLeaderboard, onShowHowToPlay, onShowStats, onShowCollection, onShowTalents, onShowSettings, onShowCodex }: HomeScreenProps) {
+export default function HomeScreen({ savedData, onStartRun, onStartDaily, onShowWeekly, onStartEndless, onShowAchievements, onShowLeaderboard, onShowHowToPlay, onShowStats, onShowCollection, onShowTalents, onShowCharacters, onShowSettings, onShowCodex }: HomeScreenProps) {
   const { t } = useTranslation();
   const hasPlayed = savedData.totalRuns > 0;
   const [showModifiers, setShowModifiers] = useState(false);
@@ -88,6 +89,7 @@ export default function HomeScreen({ savedData, onStartRun, onStartDaily, onShow
         </div>
         <div className="flex items-center gap-1.5">
           {[
+            { key: "home.characters",    action: onShowCharacters,  style: "text-cyan-400/70" },
             { key: "home.talents",       action: onShowTalents,     style: "text-blue-400/70" },
             { key: "home.stats",         action: onShowStats,       style: "text-accent-silver/50" },
             { key: "home.leaderboard",   action: onShowLeaderboard, style: "text-accent-silver/50" },
