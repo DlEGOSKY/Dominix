@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { motion, AnimatePresence } from "framer-motion";
+import ResourceSheet from "./ResourceSheet";
 import type { Consumable } from "@/engine/consumables";
 import type { CelestialCard } from "@/engine/celestial";
 import { FIRMAMENT_META } from "@/engine/celestial";
@@ -38,13 +38,14 @@ export default function MobileInfoBar({
   onActivateMutation,
   consumableFlashId,
 }: MobileInfoBarProps) {
+  const { t } = useTranslation();
   const [openTab, setOpenTab] = useState<Tab | null>(null);
 
   const chips: { id: Tab; label: string; count: number; color: string; hidden?: boolean }[] = [
-    { id: "relics", label: "Reliquias", count: relicIds.length, color: "accent-gold" },
-    { id: "consum", label: "Consumibles", count: consumables.length, color: "blue-400" },
-    { id: "celest", label: "Celestes", count: celestials.length, color: "cyan-300" },
-    { id: "mut", label: "Mutaciones", count: mutationStates.length, color: "purple-400", hidden: mutationStates.length === 0 },
+    { id: "relics", label: t("mobile.relics"), count: relicIds.length, color: "accent-gold" },
+    { id: "consum", label: t("mobile.consumables"), count: consumables.length, color: "blue-400" },
+    { id: "celest", label: t("mobile.celestials"), count: celestials.length, color: "cyan-300" },
+    { id: "mut", label: t("mobile.mutations"), count: mutationStates.length, color: "purple-400", hidden: mutationStates.length === 0 },
   ];
 
   const visibleChips = chips.filter((c) => !c.hidden);
@@ -55,49 +56,23 @@ export default function MobileInfoBar({
         {visibleChips.map((chip) => (
           <button
             key={chip.id}
+            aria-haspopup="dialog"
+            aria-expanded={openTab === chip.id}
             onClick={() => setOpenTab(chip.id)}
-            className={`flex flex-col items-center justify-center gap-0.5 py-1.5 px-2 rounded-lg border transition-all ${
+            className={`flex flex-col items-center justify-center gap-0.5 min-h-11 py-1.5 px-2 rounded-lg border transition-all ${
               chip.count > 0
                 ? `border-surface-600/40 bg-surface-800/50 text-${chip.color}`
-                : "border-surface-700/30 bg-surface-800/20 text-accent-silver/25"
+                : "border-surface-700/30 bg-surface-800/20 text-accent-silver/75"
             }`}
           >
-            <span className="text-[8px] uppercase tracking-widest font-bold opacity-70">{chip.label}</span>
+            <span className="text-[9px] uppercase tracking-wider font-bold">{chip.label}</span>
             <span className="text-sm font-black tabular-nums">{chip.count}</span>
           </button>
         ))}
       </div>
 
       {/* Bottom sheet */}
-      <AnimatePresence>
-        {openTab && (
-          <>
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              className="fixed inset-0 bg-black/70 backdrop-blur-sm z-40 sm:hidden"
-              onClick={() => setOpenTab(null)}
-            />
-            <motion.div
-              initial={{ y: "100%" }}
-              animate={{ y: 0 }}
-              exit={{ y: "100%" }}
-              transition={{ type: "spring", stiffness: 300, damping: 30 }}
-              className="fixed bottom-0 left-0 right-0 z-50 bg-surface-900 border-t-2 border-surface-600/40 rounded-t-2xl max-h-[75vh] overflow-y-auto sm:hidden"
-            >
-              <div className="sticky top-0 bg-surface-900 border-b border-surface-700/40 px-4 py-3 flex items-center justify-between">
-                <span className="text-xs font-bold uppercase tracking-widest text-accent-silver/80">
-                  {chips.find((c) => c.id === openTab)?.label}
-                </span>
-                <button
-                  onClick={() => setOpenTab(null)}
-                  className="text-accent-silver/50 hover:text-accent-silver text-xs uppercase tracking-widest"
-                >
-                  Cerrar
-                </button>
-              </div>
-              <div className="p-4">
+      {openTab && <ResourceSheet title={chips.find(c => c.id === openTab)?.label ?? ""} onClose={() => setOpenTab(null)}>
                 {openTab === "relics" && <RelicsContent relicIds={relicIds} />}
                 {openTab === "consum" && (
                   <ConsumablesContent
@@ -120,11 +95,7 @@ export default function MobileInfoBar({
                     }}
                   />
                 )}
-              </div>
-            </motion.div>
-          </>
-        )}
-      </AnimatePresence>
+      </ResourceSheet>}
     </>
   );
 }
@@ -133,7 +104,7 @@ function RelicsContent({ relicIds }: { relicIds: string[] }) {
   // Subscribe to lang changes so localized relic names refresh on switch.
   const { t } = useTranslation();
   if (relicIds.length === 0) {
-    return <p className="text-xs text-accent-silver/40 text-center py-4">{t("mobile.noRelics")}</p>;
+    return <p className="text-xs text-accent-silver/85 text-center py-4">{t("mobile.noRelics")}</p>;
   }
   return (
     <div className="flex flex-col gap-2">
@@ -144,7 +115,7 @@ function RelicsContent({ relicIds }: { relicIds: string[] }) {
         return (
           <div key={id} className="p-3 rounded-xl bg-accent-gold/5 border border-accent-gold/20">
             <div className="text-sm font-bold text-accent-gold">{loc.name}</div>
-            <div className="text-[11px] text-accent-silver/60 mt-1 leading-snug">{loc.description}</div>
+            <div className="text-[11px] text-accent-silver/85 mt-1 leading-snug">{loc.description}</div>
           </div>
         );
       })}
@@ -161,8 +132,9 @@ function ConsumablesContent({
   onUse: (id: string) => void;
   flashId?: string | null;
 }) {
+  const { t } = useTranslation();
   if (consumables.length === 0) {
-    return <p className="text-xs text-accent-silver/40 text-center py-4">Sin consumibles</p>;
+    return <p className="text-xs text-accent-silver/85 text-center py-4">{t("mobile.noConsumables")}</p>;
   }
   return (
     <div className="flex flex-col gap-2">
@@ -176,9 +148,9 @@ function ConsumablesContent({
         >
           <div className="flex items-baseline justify-between gap-2">
             <div className="text-sm font-bold text-blue-300">{c.name}</div>
-            <span className="text-[9px] uppercase tracking-widest text-blue-400/60">Usar</span>
+            <span className="text-[9px] uppercase tracking-widest text-blue-300">{t("mobile.use")}</span>
           </div>
-          <div className="text-[11px] text-accent-silver/60 mt-1 leading-snug">{c.description}</div>
+          <div className="text-[11px] text-accent-silver/85 mt-1 leading-snug">{c.description}</div>
         </button>
       ))}
     </div>
@@ -186,8 +158,9 @@ function ConsumablesContent({
 }
 
 function CelestialsContent({ cards }: { cards: CelestialCard[] }) {
+  const { t } = useTranslation();
   if (cards.length === 0) {
-    return <p className="text-xs text-accent-silver/40 text-center py-4">Sin cartas celestes</p>;
+    return <p className="text-xs text-accent-silver/85 text-center py-4">{t("mobile.noCelestials")}</p>;
   }
   return (
     <div className="flex flex-col gap-2">
@@ -201,7 +174,7 @@ function CelestialsContent({ cards }: { cards: CelestialCard[] }) {
                 {meta.label}
               </span>
             </div>
-            <div className="text-[11px] text-accent-silver/60 mt-1 leading-snug">{c.description}</div>
+            <div className="text-[11px] text-accent-silver/85 mt-1 leading-snug">{c.description}</div>
           </div>
         );
       })}
@@ -218,8 +191,9 @@ function MutationsContent({
   game: GameState;
   onActivate: (id: string) => void;
 }) {
+  const { t } = useTranslation();
   if (states.length === 0) {
-    return <p className="text-xs text-accent-silver/40 text-center py-4">Sin mutaciones activas</p>;
+    return <p className="text-xs text-accent-silver/85 text-center py-4">{t("mobile.noMutations")}</p>;
   }
   return (
     <div className="flex flex-col gap-2">
@@ -243,7 +217,7 @@ function MutationsContent({
                 {costLabel} · {ms.usesLeft}x
               </span>
             </div>
-            <div className="text-[11px] text-accent-silver/60 mt-1 leading-snug">{mut.description}</div>
+            <div className="text-[11px] text-accent-silver/85 mt-1 leading-snug">{mut.description}</div>
           </button>
         );
       })}

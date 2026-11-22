@@ -7,6 +7,7 @@ import { useTranslation } from "@/engine/i18n";
 
 export interface PatternLogEntry {
   id: string;
+  patternId: string;
   name: string;
   bonus: number;
 }
@@ -17,23 +18,23 @@ interface PatternLogProps {
 
 /**
  * Side panel listing patterns activated during the current round.
- * Appears floating at the top-left. Hidden when empty.
+ * Uses the free margin beside the table on wide screens. Hidden when empty.
  */
 export default function PatternLog({ entries }: PatternLogProps) {
   // Subscribe to lang changes so chip names + tooltip refresh on switch.
-  useTranslation();
+  const { t } = useTranslation();
   if (entries.length === 0) return null;
 
   return (
-    <div className="absolute left-3 top-20 z-10 hidden lg:flex flex-col gap-1.5 max-w-[180px]">
-      <span className="pointer-events-none text-[9px] font-bold uppercase tracking-widest text-accent-silver/35 pl-1">
-        Patrones de la ronda
+    <section aria-label={t("log.roundPatterns")} className="absolute right-full top-20 mr-3 z-10 hidden xl:flex flex-col gap-1.5 w-44">
+      <span className="pointer-events-none text-[9px] font-bold uppercase tracking-widest text-accent-silver/75 pl-1">
+        {t("log.roundPatterns")}
       </span>
       <AnimatePresence initial={false}>
         {entries.map((entry, i) => {
-          const def = ALL_PATTERNS.find((d) => d.id === entry.id);
-          const Icon = getPatternIcon(entry.id);
-          const locName = localizePatternById(entry.id, entry.name).name;
+          const def = ALL_PATTERNS.find((d) => d.id === entry.patternId);
+          const Icon = getPatternIcon(entry.patternId);
+          const locName = localizePatternById(entry.patternId, entry.name).name;
           const chip = (
             <motion.div
               key={entry.id}
@@ -70,12 +71,13 @@ export default function PatternLog({ entries }: PatternLogProps) {
               }
               placement="right"
               delay={200}
+              accessibleLabel={locName}
             >
               {chip}
             </Tooltip>
           );
         })}
       </AnimatePresence>
-    </div>
+    </section>
   );
 }

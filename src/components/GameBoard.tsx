@@ -340,7 +340,7 @@ export default function GameBoard({ onGameOver, isDaily = false, isEndless = fal
   const [patternFlash, setPatternFlash] = useState(0);
   const [relicPulseKey, setRelicPulseKey] = useState(0);
   const [relicPulseHighlights, setRelicPulseHighlights] = useState<string[]>([]);
-  const [roundPatternLog, setRoundPatternLog] = useState<Array<{ id: string; name: string; bonus: number }>>([]);
+  const [roundPatternLog, setRoundPatternLog] = useState<Array<{ id: string; patternId: string; name: string; bonus: number }>>([]);
 
   /** Pulse the relic bar, highlighting only the relics that match the filter. */
   const triggerRelicPulse = useCallback(
@@ -488,6 +488,7 @@ export default function GameBoard({ onGameOver, isDaily = false, isEndless = fal
         ...log,
         ...newlyActivated.map((p, i) => ({
           id: `${Date.now()}-${log.length + i}`,
+          patternId: p.id,
           name: p.name,
           bonus: p.bonus,
         })),

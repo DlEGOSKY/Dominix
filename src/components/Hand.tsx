@@ -1,11 +1,17 @@
-import { useMemo } from "react";
+import { useMemo, useState, useEffect } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import type { Tile, PlacementSide, ChainState } from "@/types/domino";
 import { getValidPlacements } from "@/engine/chain";
 import TileView from "./TileView";
 import type { TileSkin } from "./TileView";
-import { useSettings } from "@/hooks/useSettings";
+import { useSettings, useReduceMotion } from "@/hooks/useSettings";
 import Tooltip from "./Tooltip";
+import { t } from "@/engine/i18n";
+import TileDetails from "./TileDetails";
+import type { ScoreExplanation } from "@/engine/scoreExplanation";
+import ResourceSheet from "./ResourceSheet";
+import ScoreExplanationView from "./ScoreExplanationView";
+import type { ActionCue } from "@/engine/actionFeedback";
 
 interface HandProps {
   tiles: Tile[];
@@ -15,24 +21,33 @@ interface HandProps {
   skin?: TileSkin;
   onDiscard?: (tile: Tile) => void;
   canDiscard?: boolean;
-  /** Optional: return the score delta if this tile were played optimally. Null if unplayable. */
-  getScorePreview?: (tile: Tile) => number | null;
+  /** Score delta for the requested end, or the default click (right when both fit). */
+  getPlacements?: (tile: Tile) => PlacementSide[];
+  getScoreExplanation?: (tile: Tile, side?: PlacementSide) => ScoreExplanation | null;
+  getScorePreview?: (tile: Tile, side?: PlacementSide) => number | null;
+  actionCue?: ActionCue | null;
 }
 
-export default function Hand({ tiles, chain, onPlay, disabled, skin, onDiscard, canDiscard: discardAvailable, getScorePreview }: HandProps) {
+export default function Hand({ tiles, chain, onPlay, disabled, skin, onDiscard, canDiscard: discardAvailable, getScorePreview, getPlacements, getScoreExplanation, actionCue }: HandProps) {
+  const [inspection, setInspection] = useState<{id:string;side?:PlacementSide} | null>(null);
+  const inspectedTile = tiles.find(tile => tile.id === inspection?.id);
+  const explanation = inspectedTile && getScoreExplanation ? getScoreExplanation(inspectedTile, inspection?.side) : null;
+  const reducedMotion = useReduceMotion();
   const [settings] = useSettings();
+  useEffect(()=>{if(disabled || !settings.showPreview || !inspectedTile)setInspection(null);},[disabled,settings.showPreview,inspectedTile]);
+  const placements = (tile: Tile) => getPlacements ? getPlacements(tile) : getValidPlacements(chain, tile);
   const sortedTiles = useMemo(() => {
     return [...tiles].sort((a, b) => {
-      const aPlayable = getValidPlacements(chain, a).length > 0 ? 0 : 1;
-      const bPlayable = getValidPlacements(chain, b).length > 0 ? 0 : 1;
+      const aPlayable = placements(a).length > 0 ? 0 : 1;
+      const bPlayable = placements(b).length > 0 ? 0 : 1;
       if (aPlayable !== bPlayable) return aPlayable - bPlayable;
       return (a.top + a.bottom) - (b.top + b.bottom);
     });
-  }, [tiles, chain]);
+  }, [tiles, chain, getPlacements]);
 
   const handleClick = (tile: Tile) => {
     if (disabled) return;
-    const sides = getValidPlacements(chain, tile);
+    const sides = placements(tile);
     if (sides.length === 0) return;
 
     if (sides.length === 1) {
@@ -43,151 +58,103 @@ export default function Hand({ tiles, chain, onPlay, disabled, skin, onDiscard, 
   };
 
   return (
-    <div className="flex flex-col items-center gap-3">
-      <span className="text-[11px] font-bold tracking-widest uppercase text-accent-silver/40">
-        Mano ({tiles.length})
+    <div className="flex flex-col items-center gap-3 hand-panel">
+      {inspection && inspectedTile && explanation && settings.showPreview && !disabled && <ResourceSheet mobileOnly={false} title={t("explain.title", {top:inspectedTile.top,bottom:inspectedTile.bottom})} onClose={() => setInspection(null)}>
+        <div className="flex gap-2 mb-4">{placements(inspectedTile).map(side=><button key={side} className="px-3 min-h-11 border border-surface-600 rounded text-xs" aria-pressed={explanation.side===side} onClick={()=>setInspection({id:inspectedTile.id,side})}>{t(side === "left" ? "board.leftEnd" : "board.rightEnd")}</button>)}</div>
+        <ScoreExplanationView explanation={explanation} />
+      </ResourceSheet>}
+      <span className="hand-caption">
+        {t("hand.label")} ({tiles.length})
       </span>
       <div className="flex flex-wrap justify-center gap-3 min-h-[120px] px-2">
-        <AnimatePresence mode="popLayout">
+        <AnimatePresence mode="popLayout" custom={actionCue}>
           {sortedTiles.map((tile) => {
-            const sides = getValidPlacements(chain, tile);
+            const sides = placements(tile);
             const playable = sides.length > 0 && !disabled;
-            const preview = playable && getScorePreview ? getScorePreview(tile) : null;
+            const preview = settings.showPreview && playable && getScorePreview ? getScorePreview(tile) : null;
+            const blockedReason = playable ? null : disabled ? t("hand.closed")
+              : tile.type === "locked" ? t("hand.locked")
+              : getValidPlacements(chain, tile).length > 0 ? t("hand.bossBlocked")
+              : t("hand.noConnection");
+            const arriving = actionCue?.tile?.id === tile.id && (actionCue.kind === "draw" || actionCue.kind === "undo");
             return (
               <motion.div
                 key={tile.id}
-                layout
-                initial={{ opacity: 0, scale: 0.3, y: 30 }}
-                animate={{ opacity: 1, scale: 1, y: 0 }}
-                exit={{ opacity: 0, scale: 0.5, y: -50 }}
-                transition={{ type: "spring", stiffness: 400, damping: 30 }}
+                data-hand-piece={tile.id}
+                data-hand-arrival={arriving ? actionCue.kind : undefined}
+                layout={!reducedMotion}
+                layoutDependency={tiles}
+                initial={reducedMotion ? false : arriving ? {opacity:0,scale:.94,y:actionCue.kind==="draw"?-22:-16,x:actionCue.kind==="undo"?-8:0} : { opacity: 0, scale: 0.3, y: 30 }}
+                animate={{ opacity: 1, scale: 1, y: 0, x:0, rotate:0 }}
+                variants={{ leaving: (cue: ActionCue | null) => cue?.kind==="discard" && cue.tile?.id===tile.id
+                  ? {opacity:0,x:26,y:10,rotate:5,scale:.9,transition:{duration:settings.fastAnimations ? 0.11 : 0.22,ease:"easeOut"}}
+                  : {opacity:0,scale:.5,y:-50,transition:{duration:settings.fastAnimations ? 0.09 : 0.18}} }}
+                exit={reducedMotion ? undefined : "leaving"}
+                transition={reducedMotion ? { duration: 0 } : arriving ? {duration:settings.fastAnimations ? 0.14 : 0.28,ease:[.22,1,.36,1]} : { type: "spring", stiffness: 400, damping: 30 }}
                 className="relative group"
               >
                 {/* Playable ring — only when chain has tiles and this tile connects */}
-                {playable && chain.placed.length > 0 && (
+                {playable && chain.placed.length > 0 && !reducedMotion && (
                   <motion.div
                     className="absolute -inset-1 rounded-2xl border border-accent-gold/30 pointer-events-none"
                     animate={{ opacity: [0.3, 0.7, 0.3] }}
                     transition={{ duration: 2.2, repeat: Infinity, ease: "easeInOut" }}
                   />
                 )}
-                <TileView
-                  tile={tile}
-                  onClick={() => handleClick(tile)}
-                  disabled={!playable}
-                  highlight={playable}
-                  skin={skin}
-                />
-                {settings.showPreview && preview !== null && preview > 0 && (
-                  <motion.div
-                    initial={{ opacity: 0, y: 4 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    className="absolute -top-2 left-1/2 -translate-x-1/2 px-1.5 py-0.5 rounded-md bg-surface-900/90 border border-accent-gold/40 text-[10px] font-mono font-bold text-accent-gold whitespace-nowrap pointer-events-none opacity-0 group-hover:opacity-100 transition-opacity z-10"
-                  >
-                    +{preview}
-                  </motion.div>
-                )}
-                {settings.showHints && (
-                  // Tooltip overlay sits on top of the TileView to detect hover.
-                  // It must NOT swallow clicks: forward them to the same play
-                  // handler so the underlying tile is still played. Without this,
-                  // showHints (the default) silently broke tile interaction
-                  // because the inner div had pointer-events-auto for hover
-                  // capture but no onClick, so clicks landed on it and stopped.
-                  <div className="absolute inset-0 pointer-events-none">
-                    <Tooltip
-                      content={<TileTooltipContent tile={tile} playable={playable} sides={sides} preview={settings.showPreview ? preview : null} />}
-                      placement="top"
-                      delay={180}
-                      className="absolute inset-0 w-full h-full"
-                    >
-                      <div
-                        className={`w-full h-full pointer-events-auto ${playable ? "cursor-pointer" : ""}`}
-                        onClick={() => handleClick(tile)}
-                        aria-hidden
-                      />
-                    </Tooltip>
+                <Tooltip
+                  content={<TileDetails tile={tile}>
+                    <div className={`mt-0.5 pt-1 border-t border-surface-600/40 text-[10px] ${playable ? "text-green-300" : "text-red-300"}`}>
+                      {blockedReason ?? t(sides.length === 2 ? "hand.fitsBoth" : sides[0] === "left" ? "hand.fitsLeft" : "hand.fitsRight")}
+                      {settings.showPreview && preview !== null && <span className={`${preview < 0 ? "text-red-300" : "text-accent-gold"} font-mono font-bold ml-1`}>{preview >= 0 ? "+" : ""}{preview}</span>}
+                    </div>
+                  </TileDetails>}
+                  placement="top"
+                  delay={180}
+                  disabled={!settings.showHints}
+                  accessibleLabel={settings.showHints && !playable && !disabled ? `${tile.top}|${tile.bottom}: ${blockedReason}` : undefined}
+                >
+                  <TileView
+                    tile={tile}
+                    animate={false}
+                    animateExit={false}
+                    onClick={() => handleClick(tile)}
+                    disabled={!playable}
+                    highlight={playable}
+                    skin={skin}
+                    placementSound={false}
+                  />
+                </Tooltip>
+                {playable && chain.placed.length > 0 && sides.length === 2 && (
+                  <div className="hand-sides" role="group" aria-label={t("hand.chooseEnd")}>
+                    {sides.map((side) => {
+                      const delta = settings.showPreview ? getScorePreview?.(tile, side) : null;
+                      const score = delta == null ? null : `${delta >= 0 ? "+" : ""}${delta}`;
+                      const label = t(side === "left" ? "hand.playLeft" : "hand.playRight", { top: tile.top, bottom: tile.bottom });
+                      return <button key={side} onClick={() => onPlay(tile, side)}
+                        aria-label={score === null ? label : `${label} · ${t("hand.scoreDelta", { n: score })}`} title={label}>
+                        <span aria-hidden="true">{side === "left" ? "←" : "→"}</span>
+                        {score !== null && <span aria-hidden="true" className="hand-side-score" data-negative={delta! < 0}>{score}</span>}
+                      </button>;
+                    })}
                   </div>
+                )}
+                {settings.showPreview && preview !== null && (
+                  <div className="hand-preview" data-negative={preview < 0} title={t("hand.previewExplanation")} aria-label={t("hand.scoreDelta", { n: `${preview >= 0 ? "+" : ""}${preview}` })}>{getScoreExplanation ? <button type="button" className="min-h-11 px-2 rounded border border-accent-gold/30 hover:bg-accent-gold/10" aria-label={t("explain.inspect", {top:tile.top,bottom:tile.bottom})} onClick={() => setInspection({id:tile.id})}>{preview >= 0 ? "+" : ""}{preview} <span aria-hidden="true">?</span></button> : <>{preview >= 0 ? "+" : ""}{preview}</>}</div>
                 )}
                 {onDiscard && discardAvailable && !disabled && (
                   <button
                     onClick={(e) => { e.stopPropagation(); onDiscard(tile); }}
-                    className="absolute -top-2 -right-2 w-5 h-5 rounded-full bg-red-500/80 border border-red-400/50 text-[9px] text-white font-bold opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center hover:bg-red-400"
-                    title="Descartar"
+                    className="absolute -top-2 -right-2 w-5 h-5 rounded-full bg-red-500/80 border border-red-400/50 text-[9px] text-white font-bold opacity-0 group-hover:opacity-100 group-focus-within:opacity-100 transition-opacity flex items-center justify-center hover:bg-red-400 hand-discard"
+                    aria-label={t("hand.discard", { top: tile.top, bottom: tile.bottom })}
+                    title={t("hand.discard", { top: tile.top, bottom: tile.bottom })}
                   >
-                    x
+                    <span aria-hidden="true">×</span><span className="hand-discard-label">{t("hand.discardAction")}</span>
                   </button>
                 )}
               </motion.div>
             );
           })}
         </AnimatePresence>
-      </div>
-    </div>
-  );
-}
-
-const EDITION_DESC: Record<NonNullable<Tile["edition"]>, { label: string; desc: string; color: string }> = {
-  foil: { label: "Foil", desc: "+30 score plano", color: "text-blue-300" },
-  holo: { label: "Holo", desc: "x1.15 multiplicador", color: "text-purple-300" },
-  polychrome: { label: "Polychrome", desc: "x1.30 multiplicador (1 max)", color: "text-pink-300" },
-  negative: { label: "Negative", desc: "+1 accion esta ronda", color: "text-slate-200" },
-};
-
-function TypeLabel(tile: Tile): { label: string; color: string; desc: string } {
-  const t = tile.type ?? "normal";
-  const isDouble = tile.top === tile.bottom;
-  switch (t) {
-    case "wild": return { label: "Comodin", color: "text-purple-300", desc: "Conecta con cualquier numero" };
-    case "golden": return { label: "Dorada", color: "text-amber-300", desc: "Score base x2" };
-    case "mirror": return { label: "Espejo", color: "text-cyan-300", desc: "Refleja el extremo" };
-    case "bomb": return { label: "Bomba", color: "text-red-300", desc: "Detona efectos al jugar" };
-    case "locked": return { label: "Bloqueada", color: "text-slate-400", desc: "Se desbloquea mas adelante" };
-    default:
-      return isDouble
-        ? { label: "Doble", color: "text-accent-gold", desc: "Ambos extremos iguales" }
-        : { label: "Normal", color: "text-accent-silver/70", desc: "Ficha estandar" };
-  }
-}
-
-function TileTooltipContent({ tile, playable, sides, preview }: { tile: Tile; playable: boolean; sides: PlacementSide[]; preview: number | null }) {
-  const sum = tile.top + tile.bottom;
-  const typeInfo = TypeLabel(tile);
-  const edInfo = tile.edition ? EDITION_DESC[tile.edition] : null;
-  const placement =
-    !playable ? "No conecta con los extremos"
-    : sides.length === 2 ? "Encaja en ambos extremos"
-    : sides[0] === "left" ? "Encaja por la izquierda"
-    : "Encaja por la derecha";
-
-  return (
-    <div className="flex flex-col gap-1">
-      <div className="flex items-center justify-between gap-2">
-        <span className={`text-[10px] font-bold uppercase tracking-wider ${typeInfo.color}`}>
-          {typeInfo.label}
-        </span>
-        <span className="text-[9px] font-mono text-accent-silver/50">
-          {tile.top}|{tile.bottom} · {sum}
-        </span>
-      </div>
-      <p className="text-[9px] text-accent-silver/50 leading-tight">{typeInfo.desc}</p>
-      {tile.pact && (
-        <div className="mt-0.5 pt-1 border-t border-surface-600/40">
-          <span className="text-[9px] font-bold uppercase tracking-wider text-amber-300">Pacto Sagrado</span>
-          <p className="text-[9px] text-accent-silver/50 mt-0.5 leading-tight">+100 al jugarla · +100 dentro de patron · +100 con edition</p>
-        </div>
-      )}
-      {edInfo && (
-        <div className="mt-0.5 pt-1 border-t border-surface-600/40">
-          <span className={`text-[9px] font-bold uppercase tracking-wider ${edInfo.color}`}>{edInfo.label}</span>
-          <p className="text-[9px] text-accent-silver/50 mt-0.5 leading-tight">{edInfo.desc}</p>
-        </div>
-      )}
-      <div className={`mt-0.5 pt-1 border-t border-surface-600/40 text-[9px] ${playable ? "text-green-400/80" : "text-red-400/70"}`}>
-        {placement}
-        {preview !== null && preview > 0 && (
-          <span className="text-accent-gold font-mono font-bold ml-1">+{preview}</span>
-        )}
       </div>
     </div>
   );

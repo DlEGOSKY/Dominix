@@ -55,7 +55,7 @@ export default function RelicBar({ relicIds, pulseKey = 0, highlightIds }: Relic
   return (
     <div className="flex flex-col items-center gap-2 w-full">
       <div className="flex items-center gap-3">
-        <span className="text-xs text-accent-silver/40 uppercase tracking-wider">
+        <span className="text-xs text-accent-silver/85 uppercase tracking-wider">
           {translate("relics.label", { n: relics.length })}
         </span>
         {/* Family progress pills */}
