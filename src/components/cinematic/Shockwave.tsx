@@ -1,3 +1,4 @@
+import { useReduceMotion } from "@/hooks/useSettings";
 import { motion } from "framer-motion";
 
 interface ShockwaveProps {
@@ -28,6 +29,8 @@ export default function Shockwave({
   duration = 1.4,
   stagger = 0.15,
 }: ShockwaveProps) {
+  const reducedMotion = useReduceMotion();
+  if (reducedMotion) return null;
   return (
     <div aria-hidden className="absolute inset-0 pointer-events-none flex items-center justify-center overflow-hidden">
       {Array.from({ length: rings }, (_, i) => (

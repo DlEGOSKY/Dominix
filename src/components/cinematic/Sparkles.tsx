@@ -1,3 +1,4 @@
+import { useReduceMotion } from "@/hooks/useSettings";
 import { motion } from "framer-motion";
 import { useMemo } from "react";
 
@@ -30,6 +31,7 @@ export default function Sparkles({
   loop = true,
   seed,
 }: SparklesProps) {
+  const reducedMotion = useReduceMotion();
   const dots = useMemo(() => {
     const baseSeed = seed ?? Math.random() * 1000;
     return Array.from({ length: count }, (_, i) => {
@@ -48,6 +50,7 @@ export default function Sparkles({
     });
   }, [count, spread, sizeRange, seed]);
 
+  if (reducedMotion) return null;
   return (
     <div aria-hidden className="absolute inset-0 pointer-events-none flex items-center justify-center">
       {dots.map((d, i) => (

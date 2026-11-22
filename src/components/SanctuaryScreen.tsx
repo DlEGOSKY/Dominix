@@ -1,5 +1,7 @@
 import { motion } from "framer-motion";
 import { useTranslation } from "@/engine/i18n";
+import { useReduceMotion } from "@/hooks/useSettings";
+import EncounterBackdrop from "./EncounterBackdrop";
 
 export type SanctuaryChoice = "heal_actions" | "remove_tile" | "gold";
 
@@ -11,8 +13,10 @@ interface SanctuaryScreenProps {
 
 export default function SanctuaryScreen({ onSelect, goldReward, extraActions }: SanctuaryScreenProps) {
   const { t } = useTranslation();
+  const reducedMotion = useReduceMotion();
   return (
-    <div className="min-h-screen flex flex-col items-center justify-center p-4">
+    <div className="min-h-screen flex flex-col items-center justify-center p-4 relative isolate">
+      <EncounterBackdrop scene="sanctuary" />
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
@@ -30,17 +34,17 @@ export default function SanctuaryScreen({ onSelect, goldReward, extraActions }: 
               <path d="M16 4a8 8 0 1 0 4 14 7 7 0 0 1-4-14z" stroke="currentColor" strokeWidth="1.6" className="text-green-300" fill="currentColor" fillOpacity="0.15" strokeLinejoin="round" />
             </svg>
           </div>
-          <motion.div
+          {!reducedMotion && <motion.div
             className="absolute inset-0 rounded-full pointer-events-none"
             animate={{ scale: [1, 1.25], opacity: [0.5, 0] }}
             transition={{ duration: 2, repeat: Infinity }}
             style={{ boxShadow: "0 0 40px rgba(74, 222, 128, 0.4)" }}
-          />
+          />}
         </motion.div>
 
         <div className="text-center">
           <h1 className="text-3xl font-bold text-white mb-2">{t("sanctuary.title")}</h1>
-          <p className="text-accent-silver/60 leading-relaxed max-w-md mx-auto">
+          <p className="text-accent-silver/80 leading-relaxed max-w-md mx-auto">
             {t("sanctuary.subtitle")}
           </p>
         </div>
@@ -124,7 +128,7 @@ function ChoiceCard({ title, description, color, onClick, icon }: ChoiceCardProp
     >
       <div className={colorMap.icon}>{icon}</div>
       <h3 className="text-lg font-bold text-white">{title}</h3>
-      <p className="text-xs text-accent-silver/60 text-center leading-relaxed">{description}</p>
+      <p className="text-xs text-accent-silver/80 text-center leading-relaxed">{description}</p>
     </motion.button>
   );
 }

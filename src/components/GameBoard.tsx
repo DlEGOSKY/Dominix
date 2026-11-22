@@ -19,7 +19,7 @@ import { TUTORIAL_STEPS, isTutorialComplete, markTutorialComplete } from "@/engi
 import { getRandomRelics, ALL_RELICS, computeFamilySetBonuses, FAMILY_META } from "@/engine/relics";
 import { localizeRelic, localizePatternById, localizeBoss } from "@/engine/i18nContent";
 import { t as translate } from "@/engine/i18n";
-import { celebrateSetBonus, celebrateAchievement, celebrateLegendaryPattern, celebrateBigEvent } from "@/engine/celebrate";
+import { celebrateSetBonus, celebrateAchievement, celebrateLegendaryPattern } from "@/engine/celebrate";
 import BossDefeatedOverlay from "./BossDefeatedOverlay";
 import type { RelicFamily } from "@/types/relic";
 import { generateShopItems, calculateGoldEarned, getRerollCost } from "@/engine/shop";
@@ -1230,7 +1230,7 @@ export default function GameBoard({ onGameOver, isDaily = false, isEndless = fal
       let bonusRelicId: string | undefined;
       setGold((g) => g + currentBoss.reward.gold);
       // Boss defeated celebration
-      celebrateBigEvent();
+      
       // Cinematic overlay shown on top of the BossRewardScreen
       setBossDefeatedOverlay(currentBoss);
       // Milestone: first boss defeated

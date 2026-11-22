@@ -1,3 +1,4 @@
+import { useReduceMotion } from "@/hooks/useSettings";
 import { motion } from "framer-motion";
 import { useMemo } from "react";
 
@@ -34,6 +35,7 @@ export default function RadialParticles({
   delay = 0.05,
   seed,
 }: RadialParticlesProps) {
+  const reducedMotion = useReduceMotion();
   const particles = useMemo(() => {
     // Deterministic-ish: use seed if provided, otherwise random per-mount
     const baseSeed = seed ?? Math.random() * 1000;
@@ -51,6 +53,7 @@ export default function RadialParticles({
     });
   }, [count, reach, seed]);
 
+  if (reducedMotion) return null;
   return (
     <div aria-hidden className="absolute inset-0 pointer-events-none flex items-center justify-center overflow-hidden">
       {particles.map((p, i) => (

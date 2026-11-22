@@ -1,4 +1,4 @@
-import { useEffect } from "react";
+import { useEffect, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { GiCrossedSwords, GiTrophyCup } from "react-icons/gi";
 import type { Boss } from "@/engine/boss";
@@ -9,6 +9,7 @@ import RadialParticles from "./cinematic/RadialParticles";
 import RadialFlash from "./cinematic/RadialFlash";
 import { useLocalizedBoss } from "@/engine/i18nContent";
 import { useTranslation } from "@/engine/i18n";
+import { useReduceMotion, useSettings } from "@/hooks/useSettings";
 
 interface BossDefeatedOverlayProps {
   boss: Boss | null;
@@ -25,35 +26,56 @@ export default function BossDefeatedOverlay({ boss, visible, onContinue }: BossD
   // Hook order requires unconditional invocation; use a stub when boss is null.
   const loc = useLocalizedBoss(boss ?? ({ id: "", name: "", description: "", targetMultiplier: 1, reward: { gold: 0, extraRelic: false } } as never));
   const { t } = useTranslation();
+  const reduced = useReduceMotion();
+  const [settings] = useSettings();
+  const pace = settings.fastAnimations ? .4 : 1;
+  const announced = useRef<string | null>(null);
+  const completed = useRef(false);
+  const dialogRef = useRef<HTMLDivElement>(null);
+  const continueRef = useRef(onContinue);
+  continueRef.current = onContinue;
+  const finish = () => { if (!completed.current) { completed.current = true; continueRef.current(); } };
   useEffect(() => {
-    if (!visible) return;
+    if (!visible) { announced.current = null; completed.current = false; return; }
+    if (!boss || announced.current === boss.id) return;
+    announced.current = boss.id;
+    completed.current = false;
     celebrateBigEvent();
     audio.play("pattern_mega");
-  }, [visible]);
+  }, [visible, boss]);
 
-  // Auto-advance after 2.6s, or any key/click cuts it short
+  // One acknowledgement per victory; parent renders never restart the timer.
   useEffect(() => {
-    if (!visible) return;
-    const timer = window.setTimeout(onContinue, 2600);
-    const onKey = () => onContinue();
-    window.addEventListener("keydown", onKey);
+    if (!visible || !boss) return;
+    const previousFocus = document.activeElement;
+    dialogRef.current?.focus({ preventScroll: true });
+    const timer = window.setTimeout(finish, reduced ? 0 : settings.fastAnimations ? 1000 : 2200);
+    const onKey = (event: KeyboardEvent) => {
+      event.preventDefault();
+      event.stopImmediatePropagation();
+      finish();
+    };
+    window.addEventListener("keydown", onKey, true);
     return () => {
       window.clearTimeout(timer);
-      window.removeEventListener("keydown", onKey);
+      window.removeEventListener("keydown", onKey, true);
+      if (previousFocus instanceof HTMLElement && previousFocus.isConnected) previousFocus.focus({ preventScroll: true });
     };
-  }, [visible, onContinue]);
+  }, [visible, boss?.id, reduced, settings.fastAnimations]);
 
-  if (!boss) return null;
+  if (!boss || reduced) return null;
 
   return (
     <AnimatePresence>
       {visible && (
         <motion.div
+          ref={dialogRef}
+          tabIndex={-1}
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
           transition={{ duration: 0.35 }}
-          onClick={onContinue}
+          onClick={finish}
           role="dialog"
           aria-modal="true"
           aria-labelledby="boss-defeated-title"
@@ -103,7 +125,7 @@ export default function BossDefeatedOverlay({ boss, visible, onContinue }: BossD
             <motion.div
               initial={{ scale: 0, rotate: -180, opacity: 0 }}
               animate={{ scale: 1, rotate: 0, opacity: 1 }}
-              transition={{ delay: 0.15, type: "spring", stiffness: 220, damping: 16 }}
+              transition={{ delay: 0.15 * pace, type: "spring", stiffness: 220, damping: 16 }}
               className="relative"
             >
               <div
@@ -120,10 +142,10 @@ export default function BossDefeatedOverlay({ boss, visible, onContinue }: BossD
             <motion.span
               initial={{ opacity: 0, y: -6 }}
               animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.5 }}
+              transition={{ delay: 0.5 * pace }}
               className="text-[11px] font-bold uppercase tracking-[0.5em] text-amber-300/80"
             >
-              Jefe derrotado
+              {t("boss.defeated")}
             </motion.span>
 
             {/* Boss name with dramatic typography */}
@@ -131,7 +153,7 @@ export default function BossDefeatedOverlay({ boss, visible, onContinue }: BossD
               id="boss-defeated-title"
               initial={{ opacity: 0, y: 20, scale: 0.9 }}
               animate={{ opacity: 1, y: 0, scale: 1 }}
-              transition={{ delay: 0.55, type: "spring", stiffness: 200, damping: 18 }}
+              transition={{ delay: 0.55 * pace, type: "spring", stiffness: 200, damping: 18 }}
               className="font-display font-black text-5xl sm:text-7xl tracking-tight text-white text-center leading-none"
               style={{
                 textShadow: "0 0 30px rgba(251,191,36,0.5), 0 4px 12px rgba(0,0,0,0.8)",
@@ -144,7 +166,7 @@ export default function BossDefeatedOverlay({ boss, visible, onContinue }: BossD
             <motion.p
               initial={{ opacity: 0 }}
               animate={{ opacity: 0.7 }}
-              transition={{ delay: 0.85 }}
+              transition={{ delay: 0.85 * pace }}
               className="text-sm text-white/70 italic max-w-md text-center"
             >
               {loc.description.split(".")[0]}
@@ -154,7 +176,7 @@ export default function BossDefeatedOverlay({ boss, visible, onContinue }: BossD
             <motion.div
               initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 1.05 }}
+              transition={{ delay: 1.05 * pace }}
               className="flex items-center gap-3 mt-2"
             >
               <div className="flex items-center gap-2 px-4 py-1.5 rounded-lg bg-amber-500/15 border border-amber-400/40">
@@ -172,7 +194,7 @@ export default function BossDefeatedOverlay({ boss, visible, onContinue }: BossD
             <motion.span
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
-              transition={{ delay: 1.6 }}
+              transition={{ delay: 1.6 * pace }}
               className="text-[10px] uppercase tracking-[0.3em] text-white/30 mt-4"
             >
               {t("boss.clickToContinue")}

@@ -1,3 +1,4 @@
+import { useReduceMotion } from "@/hooks/useSettings";
 import { motion, AnimatePresence } from "framer-motion";
 import { useLayoutEffect, useMemo, useRef, useState } from "react";
 import type { RunMap, MapNode, NodeType } from "@/engine/runMap";
@@ -28,6 +29,7 @@ const NODE_DESCRIPTIONS: { type: NodeType; desc: string; color: string }[] = [
 ];
 
 export default function RunMapScreen({ map, onSelectNode, gold, round }: RunMapScreenProps) {
+  const reducedMotion = useReduceMotion();
   const available = useMemo(() => getAvailableNodes(map), [map]);
   const availableIds = useMemo(() => new Set(available.map((n) => n.id)), [available]);
   const currentNode = map.currentNodeId ? findNode(map, map.currentNodeId) : null;
@@ -62,7 +64,8 @@ export default function RunMapScreen({ map, onSelectNode, gold, round }: RunMapS
       if (rect.width <= 0 || rect.height <= 0) return;
       const sx = (rect.width - 16) / boardWidth;
       const sy = (rect.height - 16) / boardHeight;
-      setMapScale(Math.min(sx, sy, 1));
+      // Keep nodes at least 44px wide; a short viewport can scroll the map.
+      setMapScale(Math.max(0.7, Math.min(sx, sy, 1)));
       setIsNarrow(window.innerWidth < 768);
       setScaleReady(true);
     };
@@ -77,18 +80,7 @@ export default function RunMapScreen({ map, onSelectNode, gold, round }: RunMapS
   }, [boardWidth, boardHeight]);
 
   return (
-    <div className="h-screen flex flex-col overflow-hidden">
-      {/* Mobile portrait: rotate overlay */}
-      <div className="fixed inset-0 z-50 hidden flex-col items-center justify-center gap-4 bg-surface-900 portrait:flex">
-        <svg width="48" height="48" viewBox="0 0 24 24" fill="none" className="text-accent-gold animate-spin" style={{ animationDuration: "2s", animationTimingFunction: "ease-in-out", animationIterationCount: 1 }}>
-          <rect x="5" y="2" width="14" height="20" rx="2" stroke="currentColor" strokeWidth="1.6" />
-          <path d="M9 21h6" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" />
-          <path d="M17 8l3 3-3 3" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
-        </svg>
-        <p className="text-white font-bold text-lg">Gira la pantalla</p>
-        <p className="text-accent-silver/50 text-sm text-center px-8">Dominix se juega mejor en modo horizontal</p>
-      </div>
-
+    <div className="h-[100svh] flex flex-col overflow-hidden">
       {/* Header */}
       <div className="shrink-0 w-full flex items-center justify-between px-6 py-3 border-b border-surface-600/20">
         <div className="flex flex-col">
@@ -115,7 +107,7 @@ export default function RunMapScreen({ map, onSelectNode, gold, round }: RunMapS
       <div className="flex-1 flex flex-row gap-3 sm:gap-6 px-3 sm:px-6 py-2 sm:py-4 overflow-hidden min-h-0 relative">
 
       {/* Map area (auto-scales to fit) */}
-      <div ref={mapAreaRef} className="flex-1 min-w-0 min-h-0 flex items-center justify-center overflow-auto">
+      <div ref={mapAreaRef} className="flex-1 min-w-0 min-h-0 flex items-start justify-center overflow-auto pt-2">
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
@@ -124,7 +116,7 @@ export default function RunMapScreen({ map, onSelectNode, gold, round }: RunMapS
           style={{
             width: boardWidth,
             height: boardHeight,
-            transform: `scale(${mapScale})`,
+            scale: mapScale,
             transformOrigin: "center center",
             // Reserve only the scaled footprint in flex layout so it stays centered
             margin: mapScale < 1 ? `${(boardHeight * (mapScale - 1)) / 2}px ${(boardWidth * (mapScale - 1)) / 2}px` : undefined,
@@ -189,6 +181,9 @@ export default function RunMapScreen({ map, onSelectNode, gold, round }: RunMapS
             return (
               <motion.button
                 key={node.id}
+                aria-label={`${nodeLabel(node.type)} · ${node.round}${isVisited ? " · visitado" : isAvailable ? " · disponible" : ""}`}
+                title={nodeLabel(node.type)}
+                aria-current={isCurrent ? "step" : undefined}
                 disabled={!isAvailable}
                 onClick={() => isAvailable && onSelectNode(node)}
                 className={[
@@ -210,7 +205,8 @@ export default function RunMapScreen({ map, onSelectNode, gold, round }: RunMapS
                 whileTap={isAvailable ? { scale: 0.95 } : undefined}
               >
                 <NodeIcon type={node.type} />
-                {isAvailable && (
+                <span className="text-[8px] mt-0.5 font-semibold">{nodeLabel(node.type)}</span>
+                {isAvailable && !reducedMotion && (
                   <motion.div
                     className="absolute inset-0 rounded-full pointer-events-none"
                     style={{
@@ -359,7 +355,7 @@ function NodeIcon({ type, tiny = false }: { type: NodeType; tiny?: boolean }) {
 function nodeBgClass(type: NodeType, isAvailable: boolean, isCurrent: boolean, isVisited: boolean): string {
   if (isVisited && !isCurrent) return "bg-surface-700/30 text-accent-silver/25";
   if (isCurrent) return "bg-accent-gold/25 text-accent-gold";
-  const base = isAvailable ? "" : "opacity-40 ";
+  const base = isAvailable ? "" : "opacity-70 ";
   switch (type) {
     case "normal":
       return base + (isAvailable ? "bg-surface-700/80 text-accent-silver" : "bg-surface-700/30 text-accent-silver/50");

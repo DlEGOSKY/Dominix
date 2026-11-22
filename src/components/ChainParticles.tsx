@@ -1,5 +1,6 @@
 import { motion } from "framer-motion";
 import { useMemo } from "react";
+import { useReduceMotion } from "@/hooks/useSettings";
 
 interface ChainParticlesProps {
   /** Number of tiles currently placed in the chain. */
@@ -17,6 +18,7 @@ interface ChainParticlesProps {
  * the parent so the caller controls layering.
  */
 export default function ChainParticles({ tileCount, enabled = true }: ChainParticlesProps) {
+  const reducedMotion = useReduceMotion();
   const count = useMemo(() => {
     if (!enabled) return 0;
     if (tileCount >= 12) return 18;
@@ -42,7 +44,7 @@ export default function ChainParticles({ tileCount, enabled = true }: ChainParti
     }));
   }, [count]);
 
-  if (count === 0) return null;
+  if (count === 0 || reducedMotion) return null;
 
   return (
     <div className="absolute inset-0 overflow-hidden pointer-events-none">

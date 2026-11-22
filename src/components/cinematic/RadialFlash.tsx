@@ -1,3 +1,4 @@
+import { useReduceMotion } from "@/hooks/useSettings";
 import { motion } from "framer-motion";
 
 interface RadialFlashProps {
@@ -22,6 +23,8 @@ export default function RadialFlash({
   duration = 0.55,
   delay = 0,
 }: RadialFlashProps) {
+  const reducedMotion = useReduceMotion();
+  if (reducedMotion) return null;
   return (
     <motion.div
       aria-hidden

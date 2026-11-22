@@ -1,5 +1,6 @@
 import { motion } from "framer-motion";
 import { useMemo } from "react";
+import { useReduceMotion } from "@/hooks/useSettings";
 import type { ActId } from "@/engine/acts";
 
 interface AmbientParticlesProps {
@@ -12,6 +13,7 @@ interface AmbientParticlesProps {
  * Each act has its own color scheme and particle behavior.
  */
 export default function AmbientParticles({ actId, intensity = "medium" }: AmbientParticlesProps) {
+  const reducedMotion = useReduceMotion();
   const config = useMemo(() => {
     const configs = {
       umbral: {
@@ -67,6 +69,8 @@ export default function AmbientParticles({ actId, intensity = "medium" }: Ambien
       opacity: 0.3 + rand(i + 8) * 0.4,
     }));
   }, [config]);
+
+  if (reducedMotion) return null;
 
   return (
     <div className="fixed inset-0 pointer-events-none overflow-hidden z-0">
