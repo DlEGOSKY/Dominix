@@ -51,18 +51,16 @@ function xpForLevel(level: number): number {
 }
 
 export function getLevelFromXP(xp: number): number {
-  let level = 1;
-  while (xpForLevel(level + 1) <= xp) {
-    level++;
-  }
-  return level;
+  if (!Number.isFinite(xp) || xp < 0) return 1;
+  return Math.max(1, Math.floor((Math.sqrt(1 + xp * 0.16) - 1) / 2));
 }
 
 export function getXPForNextLevel(xp: number): { current: number; needed: number; progress: number } {
   const level = getLevelFromXP(xp);
-  const currentLevelXP = xpForLevel(level);
+  // Keep existing unlock thresholds (level 2 = 150 XP), but level 1 starts at 0.
+  const currentLevelXP = level === 1 ? 0 : xpForLevel(level);
   const nextLevelXP = xpForLevel(level + 1);
-  const progressXP = xp - currentLevelXP;
+  const progressXP = Math.max(0, xp - currentLevelXP);
   const neededXP = nextLevelXP - currentLevelXP;
   return {
     current: progressXP,
@@ -132,7 +130,7 @@ export function getProgressionBonuses(prog: PlayerProgression): {
     startingRelics: [] as string[],
     startingGoldenTiles: 0,
     handSizeBonus: 0,
-    unlockedSkins: [] as string[],
+    unlockedSkins: ["banda_doble", "chatarra_lujo", "invitados_umbral", "diamond", "imperium", "among_us", "hollow_knight", "one_piece", "roma_eterna", "eclipse_glass", "orbital_reactor", "sunken_temple", "dragon_forge", "alchemist_cabinet", "midnight_express"] as string[],
   };
 
   for (const rewardId of prog.unlockedRewards) {

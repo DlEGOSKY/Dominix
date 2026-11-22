@@ -1,3 +1,4 @@
+import { getGlobalRNG } from "./rng";
 /**
  * Interludes — narrative scenes triggered after an act boss is defeated,
  * before the next act's map appears. Each interlude presents 2-3 choices
@@ -192,6 +193,6 @@ export const INTERLUDES: Interlude[] = [
 export function rollInterlude(completedActId: ActId): Interlude | null {
   const pool = INTERLUDES.filter((i) => i.afterActs.includes(completedActId));
   if (pool.length === 0) return null;
-  const idx = Math.floor(Math.random() * pool.length);
+  const idx = Math.floor(getGlobalRNG().next() * pool.length);
   return pool[idx] ?? null;
 }

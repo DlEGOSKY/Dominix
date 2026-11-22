@@ -1,6 +1,6 @@
 import type { ChainState } from "@/types/domino";
 import { analyzePatterns, type PatternAnalysis } from "./patterns";
-import { calculateRelicBonus, ALL_RELICS } from "./relics";
+import { calculateRelicBonus, ALL_RELICS, type RelicScoreContext } from "./relics";
 
 const SCORE_PER_TILE = 10;
 
@@ -50,7 +50,7 @@ export function softCapMultiplier(raw: number): number {
   return KNEE + delta / (1 + delta * STRENGTH);
 }
 
-export function calculateScore(chain: ChainState, relicIds: string[] = [], patternBonusMultiplier: number = 1): ScoreBreakdown {
+export function calculateScore(chain: ChainState, relicIds: string[] = [], patternBonusMultiplier: number = 1, context: RelicScoreContext = {}): ScoreBreakdown {
   const count = chain.placed.length;
   
   // Golden tiles give double base score
@@ -65,8 +65,8 @@ export function calculateScore(chain: ChainState, relicIds: string[] = [], patte
   const lengthBonusValue = lengthBonus(count);
   const patternAnalysis = analyzePatterns(chain);
 
-  const activeRelics = ALL_RELICS.filter((r) => relicIds.includes(r.id));
-  const relicResult = calculateRelicBonus(activeRelics, chain, patternAnalysis);
+  const activeRelics = count === 0 ? [] : ALL_RELICS.filter((r) => relicIds.includes(r.id));
+  const relicResult = calculateRelicBonus(activeRelics, chain, patternAnalysis, context);
 
   const effectivePatternBonus = Math.floor(patternAnalysis.totalBonus * patternBonusMultiplier);
   const subtotal = baseScore + lengthBonusValue + effectivePatternBonus + relicResult.bonus;

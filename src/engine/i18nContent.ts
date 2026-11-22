@@ -182,38 +182,38 @@ const PATTERN_EN: Record<string, ContentEntry> = {
   todo_dobles:    { name: "All Doubles",        description: "Every tile in the chain is a double (3+)" },
 
   // ---- Number / structure ----
-  dominio:        { name: "Dominion",           description: "A number appears in 3+ connections" },
-  cierre_exacto:  { name: "Exact Closure",      description: "The endpoints of the chain match" },
+  dominio:        { name: "Dominion",           description: "A chain of 3+ tiles repeats a number on 4+ effective faces" },
+  cierre_exacto:  { name: "Exact Closure",      description: "A chain of 3+ tiles has matching endpoints" },
   trinidad:       { name: "Trinity",            description: "3+ consecutive tiles share a common number" },
-  simetria:       { name: "Symmetry",           description: "Symmetrical chain with matching endpoints" },
-  espejo:         { name: "Mirror",             description: "3+ consecutive tiles with inverted values" },
-  puente:         { name: "Bridge",             description: "5+ tiles where first and last share a value" },
-  cuna:           { name: "Cradle",             description: "First and last tile share the same total" },
+  simetria:       { name: "Symmetry",           description: "3+ tiles, odd chain length, matching endpoints and a double in the middle" },
+  espejo:         { name: "Mirror",             description: "4+ tiles; 2+ adjacent pairs with reversed printed values (pairs may overlap)" },
+  puente:         { name: "Bridge 0–6",          description: "5+ tiles; effective endpoints are 0 and 6" },
+  cuna:           { name: "Cradle",             description: "3+ tiles; first and last have the same pip sum" },
 
   // ---- Pairs / streaks ----
-  parejas:        { name: "Pairs",              description: "3+ pairs of consecutive tiles with the same sum" },
-  racha_alta:     { name: "High Streak",        description: "3+ consecutive tiles with sum >= 8" },
-  racha_baja:     { name: "Low Streak",         description: "4+ consecutive tiles with sum <= 4" },
+  parejas:        { name: "Pairs",              description: "4+ tiles; 2+ adjacent pairs with the same pip sum (pairs may overlap)" },
+  racha_alta:     { name: "High Streak",        description: "3+ tiles with pip sum >= 9, even when separated" },
+  racha_baja:     { name: "Low Streak",         description: "4+ tiles with pip sum <= 4, even when separated" },
 
   // ---- Sequences ----
-  escalera:       { name: "Stairs",             description: "4+ connections form an ascending sequence" },
-  zigzag:         { name: "Zigzag",             description: "5+ connections alternating up/down" },
-  alternancia:    { name: "Alternation",        description: "4+ tiles alternating even/odd in sum" },
-  avalancha:      { name: "Avalanche",          description: "4+ tiles with growing sums" },
-  diminuendo:     { name: "Diminuendo",         description: "4+ tiles with strictly decreasing sums" },
+  escalera:       { name: "Stairs",             description: "4+ tiles; at least 3 rises or falls between effective faces" },
+  zigzag:         { name: "Zigzag",             description: "5+ tiles; 3+ changes of direction between effective faces" },
+  alternancia:    { name: "Alternation",        description: "4+ tiles; the entire chain alternates doubles and non-doubles" },
+  avalancha:      { name: "Avalanche",          description: "4+ consecutive tiles with strictly increasing pip sums" },
+  diminuendo:     { name: "Diminuendo",         description: "4+ consecutive tiles with strictly decreasing pip sums" },
   crescendo:      { name: "Crescendo",          description: "4+ consecutive tiles with strictly increasing sums" },
 
   // ---- Sums ----
-  suma_exacta:    { name: "Exact Sum",          description: "Total chain sum is a multiple of 10" },
+  suma_exacta:    { name: "Exact Sum",          description: "3+ tiles; total pip sum is exactly 21, 42 or 63" },
   suma_impar:     { name: "Odd Sum",            description: "4+ tiles where every sum is odd" },
-  armonia:        { name: "Harmony",            description: "Total chain sum is a prime number" },
+  armonia:        { name: "Harmony",            description: "3+ tiles; total pip sum is prime and >= 20" },
 
   // ---- Sacred / rare ----
-  fractal:        { name: "Fractal",            description: "Every sum is a power of 2 (1, 2, 4, 8)" },
+  fractal:        { name: "Fractal",            description: "4+ tiles; every pip sum is 1, 2, 4 or 8" },
   constelacion:   { name: "Constellation",      description: "Chain of 5+ tiles with 6+ distinct numbers" },
   corona:         { name: "Crown",              description: "3+ doubles with consecutive values (e.g. 3|3, 4|4, 5|5)" },
   hexagrama:      { name: "Hexagram",           description: "Exactly 6 tiles with 6+ distinct numbers" },
-  triple_filo:    { name: "Triple Edge",        description: "Chain of 6+ with 3 even and 3 odd tiles (balance)" },
+  triple_filo:    { name: "Triple Edge",        description: "3+ tiles with even pip sums and 3+ with odd pip sums, in any order" },
   ouroboros:      { name: "Ouroboros",          description: "Exact closure + chain of 7+ tiles (rare)" },
 };
 
@@ -444,7 +444,7 @@ const EVENT_EN: Record<string, EventEntry> = {
     name: "Wandering Merchant",
     description: "A merchant offers trades. Choose wisely.",
     options: [
-      { label: "Buy tiles",  description: "Lose half your points this round, gain 3 extra tiles" },
+      { label: "Buy tiles",  description: "Chain scoring is halved next combat; gain 3 permanent tiles" },
       { label: "Sell luck",  description: "Lose 1 tile from the pool, gain +60 bonus points" },
     ],
   },
@@ -560,6 +560,21 @@ interface SkinEntry {
 }
 
 const SKIN_EN: Record<string, SkinEntry> = {
+  midnight_express: { name: "Midnight Express", flavor: "Wood, brass and one last destination. Count the lit windows." },
+  eclipse_glass: { name: "Eclipse Stained Glass", flavor: "Night, set in lead. Count the glass stars." },
+  orbital_reactor: { name: "Orbital Reactor", flavor: "A section of the ship. Every lit indicator marks one pip." },
+  sunken_temple: { name: "Sunken Temple", flavor: "Stone beneath the tide. Its pearls retain their value." },
+  dragon_forge: { name: "Dragon Forge", flavor: "Tempered iron. Every rivet holds an ember." },
+  alchemist_cabinet: { name: "Alchemist's Cabinet", flavor: "Brass, glass and an exact measure of light." },
+  among_us: { name: "Among Us · Crew", flavor: "Worn enamel, cyan glass and secrets behind the visor." },
+  hollow_knight: { name: "Hollow Knight · Hallownest", flavor: "Seven echoes of Hallownest. A different mask for each value." },
+  one_piece: { name: "One Piece · Straw Hats", flavor: "Treasure gives the value. The crew sets the course." },
+  roma_eterna: { name: "Eternal Rome", flavor: "The value engraved large. The empire behind it." },
+  banda_doble: { name: "The Double Crew", flavor: "Seven faces. None play fair." },
+  chatarra_lujo: { name: "Luxury Scrap", flavor: "Built from leftovers. Born to connect." },
+  invitados_umbral: { name: "Threshold Guests", flavor: "Seven worlds. One shared table." },
+  diamond: { name: "Diamond", flavor: "Sculpted light. Every pip, an incision." },
+  imperium: { name: "Imperium", flavor: "Stone, laurel and the weight of every decision." },
   default:    { name: "Classic",    flavor: "The basic stone of the ritual." },
   obsidian:   { name: "Obsidian",   flavor: "Cut from the cold echo of the first pact." },
   emerald:    { name: "Emerald",    flavor: "The greenery that precedes every chain." },

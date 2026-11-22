@@ -115,7 +115,7 @@ export function checkQuestCompletion(quest: QuestDefinition, ctx: RoundQuestCont
   switch (quest.id) {
     case "close_with_double": {
       if (placed.length === 0) return false;
-      const last = placed[placed.length - 1]!;
+      const last = placed.reduce((latest, p) => (p.order ?? 0) >= (latest.order ?? 0) ? p : latest);
       return last.tile.top === last.tile.bottom;
     }
     case "activate_2_patterns":

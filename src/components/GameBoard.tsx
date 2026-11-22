@@ -164,6 +164,7 @@ function createInitialRun(
 
   return {
     state: {
+      runTiles: pool,
       hand: pool.slice(0, effectiveHandSize),
       tilePool: pool.slice(effectiveHandSize),
       chain: createEmptyChain(),

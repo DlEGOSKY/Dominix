@@ -1,11 +1,8 @@
 import type { Tile, TileType } from "@/types/domino";
 import { getGlobalRNG } from "@/engine/rng";
 
-let tileCounter = 0;
-
 function makeTile(top: number, bottom: number, type: TileType = "normal"): Tile {
-  tileCounter++;
-  return { id: `t-${tileCounter}-${top}${bottom}`, top, bottom, type };
+  return { id: `t-${top}-${bottom}`, top, bottom, type };
 }
 
 export function generateFullSet(): Tile[] {
@@ -24,7 +21,7 @@ export function addSpecialTiles(tiles: Tile[], round: number): Tile[] {
   // Add wild tile starting from round 3 (10% chance per tile)
   if (round >= 3) {
     for (let i = 0; i < result.length; i++) {
-      if (getGlobalRNG().next() < 0.03) {
+      if (result[i]!.type === "normal" && getGlobalRNG().next() < 0.03) {
         result[i] = { ...result[i]!, type: "wild" };
         break; // Only one wild per round
       }

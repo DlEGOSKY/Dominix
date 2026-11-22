@@ -1,5 +1,9 @@
+import { getGlobalRNG } from "./rng";
 import type { Relic } from "@/types/relic";
 import { getRandomRelics } from "./relics";
+import type { GameState } from "@/types/domino";
+import { checkQuestCompletion, type QuestDefinition } from "./quests";
+import { calculateScore } from "./score";
 
 export interface ShopItem {
   id: string;
@@ -90,7 +94,7 @@ export function generateShopItems(
   }
 
   // Edition forge (from round 4, rare: 30% chance appears)
-  if (round >= 4 && Math.random() < 0.35) {
+  if (round >= 4 && getGlobalRNG().next() < 0.35) {
     items.push({
       id: "shop-forge-edition",
       type: "forge_edition",
@@ -112,4 +116,14 @@ export function calculateGoldEarned(roundScore: number, round: number): number {
   const base = 10 + round * 3;
   const scoreBonus = Math.floor(roundScore / 50) * 5;
   return base + scoreBonus;
+}
+
+/** Forecast and payout use the frozen combat result, before any rewards. */
+export function getRoundPayout(game: GameState, goldMultiplier = 1, quest: QuestDefinition | null = null) {
+  const completed = quest ? checkQuestCompletion(quest, {
+    chain: game.chain, score: game.score, target: game.target,
+    patternsActivated: calculateScore(game.chain).patternAnalysis.patterns.length,
+  }) : false;
+  const questGold = completed && quest?.reward.kind === "gold" ? quest.reward.amount : 0;
+  return { gold: Math.round(calculateGoldEarned(game.score + (game.phaseScore ?? 0), game.round) * goldMultiplier) + questGold, questCompleted: completed };
 }
