@@ -1,5 +1,6 @@
 import { ACTIVE_RUN_KEY, ACTIVE_RUN_BACKUP_KEY, decodeCheckpoint, clearRunCheckpoint, journalCurrentRun } from "./runCheckpoint";
 import { SKIN_FAVORITES_KEY, validSkinFavorites } from "./skinPreferences";
+import { PROFILE_TRANSACTION_KEY, recoverProfileTransaction, withProfileTransaction } from "./profileTransaction";
 /**
  * saveSync — export and import the player's full local progression as a
  * single JSON blob. Useful as a manual cross-device sync (copy-paste the
@@ -100,18 +101,10 @@ export interface ImportResult {
 
 /** Keep terminal run accounting retryable if a profile write fails midway. */
 export function withSaveRollback(action: () => void): boolean {
-  const before = new Map<string, string | null>();
-  try { for (const key of TRACKED_KEYS) before.set(key, localStorage.getItem(key)); }
-  catch { return false; }
-  try { action(); return true; }
-  catch {
-    for (const [key, value] of before) if (value === null) { try { localStorage.removeItem(key); } catch { /* storage revoked */ } }
-    for (const [key, value] of before) if (value !== null) { try { if (localStorage.getItem(key) !== value) localStorage.setItem(key, value); } catch { /* retry remains available */ } }
-    void journalCurrentRun();
-    return false;
-  }
+  return withProfileTransaction(TRACKED_KEYS, action);
 }
 
+export function recoverPendingSave() { return recoverProfileTransaction(TRACKED_KEYS); }
 
 /** Parse a previously-exported save blob and write its keys back. */
 export function importSave(blob: string): ImportResult {
@@ -196,6 +189,8 @@ function validStoredValue(key: string, value: string): boolean {
 /** Wipe everything. Returns the count of keys removed. */
 export function resetAllSaveData(): number {
   let count = 0;
+  // Internal recovery metadata is not part of the public removed-key count.
+  try { localStorage.removeItem(PROFILE_TRANSACTION_KEY); } catch { /* Storage may be blocked. */ }
   // Queue the clear after pending writes and retain fingerprints against crash
   // restoration. Keep the public removed-key count unchanged.
   const activeKeys = [ACTIVE_RUN_KEY, ACTIVE_RUN_BACKUP_KEY];

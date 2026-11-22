@@ -198,7 +198,7 @@ interface GameBoardProps {
   modifierIds?: string[];
   onCheckpoint?: (snapshot: RunCheckpoint) => boolean;
   onSaveExit?: () => void;
-  onGameOver: (stats: RunStats, relicIds: string[], finalRound: number, seed?: number) => void;
+  onGameOver: (stats: RunStats, relicIds: string[], finalRound: number, seed?: number) => void | (() => void);
   isDaily?: boolean;
   isEndless?: boolean;
   isWeekly?: boolean;
@@ -233,11 +233,14 @@ export default function GameBoard({ resume, modifierIds = [], onCheckpoint, onSa
     // AnimatePresence keeps this board mounted during its exit animation.
     // Stop pending writes before App clears the run and records progression.
     finishedRef.current = true;
+    const completion: { reveal?: () => void } = {};
     const saved = withSaveRollback(() => {
       if (legacy && (legacy.celestials.length > 0 || legacy.consumables.length > 0) && !saveLegacy(legacy)) throw new Error("Legacy save failed");
-      onGameOver(stats, relics, round, runSeed);
+      const reveal = onGameOver(stats, relics, round, runSeed);
+      if (typeof reveal === "function") completion.reveal = reveal;
     });
-    if (!saved) { finishedRef.current = false; setCheckpointFailed(true); }
+    if (saved) completion.reveal?.();
+    else { finishedRef.current = false; setCheckpointFailed(true); }
   }, [onGameOver, runSeed]);
   const mapMode = !isDaily && !isEndless && !isWeekly;
   // Mastery action bonus stacks with talents and modifier-driven bonuses per round.

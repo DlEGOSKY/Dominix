@@ -1,6 +1,8 @@
 import { lazy, Suspense, useEffect, useState } from "react";
 import { setLanguage, useTranslation } from "@/engine/i18n";
 import { recoverRunJournal } from "@/engine/runCheckpoint";
+import { recoverPendingSave } from "@/engine/saveSync";
+import { PROFILE_RECOVERY_EVENT } from "@/engine/profileTransaction";
 
 const App = lazy(() => import("../App"));
 export const APP_SESSION_LOCK = "dominix-player-session-v1";
@@ -8,7 +10,7 @@ export const APP_SESSION_LOCK = "dominix-player-session-v1";
 /** One writer for this origin, including progression, imports and new runs. */
 export default function AppAccess() {
   const { t } = useTranslation();
-  const [status, setStatus] = useState<"waiting" | "ready" | "unavailable" | "blocked">("waiting");
+  const [status, setStatus] = useState<"waiting" | "ready" | "unavailable" | "blocked" | "recovery">("waiting");
   const [attempt, setAttempt] = useState(0);
   useEffect(() => {
     try { localStorage.getItem("dominix_lang"); }
@@ -21,7 +23,10 @@ export default function AppAccess() {
     setStatus("waiting");
     void navigator.locks.request(APP_SESSION_LOCK, { signal: controller.signal }, async () => {
       if (!active) return;
-      await recoverRunJournal();
+      const recovery = await recoverPendingSave();
+      if (!active) return;
+      if (!recovery.ok) { setStatus("recovery"); return; }
+      if (!recovery.skipRunJournal) await recoverRunJournal();
       if (!active) return;
       try {
         const language = localStorage.getItem("dominix_lang");
@@ -30,14 +35,16 @@ export default function AppAccess() {
       setStatus("ready");
       await lifetime;
     }).catch(error => { if (active) setStatus(error?.name === "SecurityError" ? "blocked" : "unavailable"); });
+    const onRecoveryRequired = () => { if (active) setStatus("recovery"); };
+    window.addEventListener(PROFILE_RECOVERY_EVENT, onRecoveryRequired);
     // The browser also releases the lock if this document closes or crashes.
     // Do not release on blur: background tabs must keep their save ownership.
-    return () => { active = false; controller.abort(); release(); };
+    return () => { active = false; controller.abort(); release(); window.removeEventListener(PROFILE_RECOVERY_EVENT, onRecoveryRequired); };
   }, [attempt]);
 
   if (status === "ready") return <Suspense fallback={<AccessMessage title={t("session.loading")} />}><App /></Suspense>;
-  return <AccessMessage title={t(status === "waiting" ? "session.waiting" : status === "blocked" ? "session.blocked" : "session.unavailable")}>
-    <p className="text-sm text-accent-silver leading-relaxed">{t(status === "waiting" ? "session.explanation" : status === "blocked" ? "session.blockedHelp" : "session.help")}</p>
+  return <AccessMessage title={t(status === "waiting" ? "session.waiting" : status === "blocked" ? "session.blocked" : status === "recovery" ? "session.recovery" : "session.unavailable")}>
+    <p className="text-sm text-accent-silver leading-relaxed">{t(status === "waiting" ? "session.explanation" : status === "blocked" ? "session.blockedHelp" : status === "recovery" ? "session.recoveryHelp" : "session.help")}</p>
     {status !== "waiting" && <button type="button" onClick={() => setAttempt(n => n + 1)} className="mt-5 min-h-11 px-5 rounded-xl border border-accent-gold/50 text-accent-gold font-bold">{t("session.retry")}</button>}
   </AccessMessage>;
 }

@@ -328,10 +328,7 @@ export default function App() {
 
       // Only retire the active run after all progression writes succeeded.
       if (!clearRunCheckpoint()) throw new Error("Could not retire completed run");
-      setCheckpoint(loadRunCheckpoint());setResumeData(undefined);
-      setSavedData(newSaved);
-      if (newAchievements.length > 0) setPendingAchievements(newAchievements);
-      setGameOverData({
+      const resultData: GameOverData = {
         stats,
         relicIds,
         finalRound,
@@ -348,8 +345,15 @@ export default function App() {
           leveledUp: masteryResult.leveledUp,
           challengesCompleted: newlyCompleted,
         },
-      });
-      setScreen("gameover");
+      };
+      // Reveal only after GameBoard has durably committed the profile receipt.
+      return () => {
+        setCheckpoint(loadRunCheckpoint());setResumeData(undefined);
+        setSavedData(newSaved);
+        if (newAchievements.length > 0) setPendingAchievements(newAchievements);
+        setGameOverData(resultData);
+        setScreen("gameover");
+      };
     },
     [savedData.bestRound, screen, activeModifierIds, selectedCharacter, runAscension]
   );
