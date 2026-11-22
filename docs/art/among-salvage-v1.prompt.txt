@@ -1,0 +1,18 @@
+Use case: stylized-concept. Asset type: production sprite sheet for a premium tactical domino roguelike, a cohesive Among Us crossover skin.
+
+Deliver ONE square image, a perfectly regular 3 by 3 grid of square cells, no gutters. First seven cells in reading order are the seven domino HALF-FACE assets; last two cells are plain dark ink. No typography, letters, numerals, logos or watermark. Orthographic, straight-on, absolutely no perspective, hand, mockup table or interface.
+
+Art direction: "THE SKELD / salvage enamel". Make each domino half feel like a tiny treasured physical spaceship artifact. Bold iconic Among Us astronaut proportions and chunky outline, rich restrained enamel shading, hand-painted highlights, a few deliberate wear marks, almost collectible toy enamel over gunmetal. This is finished expressive game illustration, not a flat generic SVG icon or a pasted character portrait on an app card. Mix graphic clarity with tactile depth; avoid photographic realism, blur, fuzzy bloom, busy micro-detail and clutter. Strong cyan visor glints, deep navy shadows, a single warm highlight. Silhouette must remain clear at just 36 pixels.
+
+Each cell should be a complete square FACE MATERIAL, edge to edge, with a narrow dark rounded engraved rim inset about 5 percent. The crewmate is integrated into the enamel relief of the face, filling about 78 percent of its width and the upper 70 percent of its height. Large full helmet visor and upper body, hint of backpack; no tiny full-body portrait. Keep the bottom 24 percent of EVERY FACE an EMPTY, dark gunmetal enamel field, smoothly part of the object, intended for live domino pips added later in code. That field must contain NO lights, buttons, dots, numbers or symbols. NO character nameplate, no rectangular identification badge, no extra inner app card. One single coherent object per cell, strong polished outline, same scale and lighting throughout.
+
+Seven subjects, reading order:
+1) Zero: an eerie empty navy suit shell with a translucent cyan ghost emerging, clean silhouette, empty lower field.
+2) One: classic red crewmate, charming slight lean, cyan visor, tiny green sprout. Empty lower field.
+3) Two: ice-white scientist crewmate, very simple pair of goggles on top of helmet, cyan visor. Empty lower field.
+4) Three: warm yellow engineer crewmate, compact construction helmet, cyan visor. Empty lower field.
+5) Four: plum-violet detective crewmate, small fedora, cyan visor. Empty lower field.
+6) Five: jade-green guardian crewmate, compact warm halo and very subtle wing relief integrated in the object. Empty lower field.
+7) Six: charcoal-and-crimson impostor, unmistakable jagged grin below visor, mischievous rather than gory. Keep it legible and compact; empty lower field.
+
+Keep shapes iconic and enjoyable, materials consistent, expressive and genuinely desirable as a collectible. Detail should support 36px readability. Do not paint pips: all numeric dots are runtime UI. Every cell must use the exact same edge alignment, rim thickness, camera and clear lower field. This is game sprite artwork for actual integration, not a concept presentation board.
