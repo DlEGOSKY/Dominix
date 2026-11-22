@@ -2,6 +2,7 @@ import { motion } from "framer-motion";
 import type { GameEvent, ChoiceOption, EventEffect } from "@/engine/events";
 import { useLocalizedEvent } from "@/engine/i18nContent";
 import { useTranslation } from "@/engine/i18n";
+import EncounterBackdrop from "./EncounterBackdrop";
 
 interface EventScreenProps {
   event: GameEvent;
@@ -50,10 +51,10 @@ export default function EventScreen({ event, onContinue }: EventScreenProps) {
   };
 
   const typeGlyph = {
-    blessing: "✦",
-    curse: "✸",
-    choice: "◈",
-    shop: "◆",
+    blessing: "M12 2l3 7 7 3-7 3-3 7-3-7-7-3 7-3z",
+    curse: "M12 2l2 6 5-3-3 5 6 2-6 2 3 5-5-3-2 6-2-6-5 3 3-5-6-2 6-2-3-5 5 3z",
+    choice: "M12 2l10 10-10 10L2 12z M12 8l4 4-4 4-4-4z",
+    shop: "M12 3l9 9-9 9-9-9z",
   };
 
   const typeLabel = {
@@ -68,8 +69,9 @@ export default function EventScreen({ event, onContinue }: EventScreenProps) {
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
-      className="min-h-screen flex flex-col items-center justify-center px-6 py-12"
+      className="min-h-screen flex flex-col items-center justify-center px-6 py-12 relative isolate"
     >
+      <EncounterBackdrop scene="event" />
       <motion.div
         initial={{ scale: 0.9, opacity: 0 }}
         animate={{ scale: 1, opacity: 1 }}
@@ -92,7 +94,7 @@ export default function EventScreen({ event, onContinue }: EventScreenProps) {
               "bg-blue-500/10 border-blue-500/30"
             }`}
           >
-            <span className={typeColors[event.type]}>{typeGlyph[event.type]}</span>
+            <svg aria-hidden="true" viewBox="0 0 24 24" width="26" height="26" className={typeColors[event.type]} fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinejoin="round"><path d={typeGlyph[event.type]} /></svg>
           </motion.div>
           <span className={`text-[10px] uppercase tracking-[0.3em] font-bold ${typeColors[event.type]}`}>
             {typeLabel[event.type]}
@@ -100,7 +102,7 @@ export default function EventScreen({ event, onContinue }: EventScreenProps) {
           <h2 className="font-display font-bold text-3xl text-white">
             {loc.name}
           </h2>
-          <p className="text-accent-silver/65 leading-relaxed text-sm max-w-xs">
+          <p className="text-accent-silver/80 leading-relaxed text-sm max-w-xs">
             {loc.description}
           </p>
         </div>
@@ -134,7 +136,7 @@ export default function EventScreen({ event, onContinue }: EventScreenProps) {
                      ""}
                   </span>
                 </div>
-                <span className="text-sm text-accent-silver/55 mt-1 block leading-relaxed">
+                <span className="text-sm text-accent-silver/80 mt-1 block leading-relaxed">
                   {option.description}
                 </span>
               </motion.button>
@@ -154,7 +156,7 @@ export default function EventScreen({ event, onContinue }: EventScreenProps) {
                 ? "bg-green-500/10 border-green-500/30 text-green-300 hover:bg-green-500/20 hover:border-green-400/50"
                 : event.type === "curse"
                 ? "bg-red-500/10 border-red-500/30 text-red-300 hover:bg-red-500/20 hover:border-red-400/50"
-                : "bg-surface-700/60 border-surface-500/50 text-white hover:bg-surface-600/70",
+                : "bg-surface-700/60 border-surface-600 text-white hover:bg-surface-600/70",
             ].join(" ")}
           >
             {t("event.continue")}

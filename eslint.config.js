@@ -23,7 +23,7 @@ export default [
   js.configs.recommended,
   ...tseslint.configs.recommended,
   {
-    files: ["**/*.{ts,tsx,js,jsx}"],
+    files: ["**/*.{ts,tsx,js,jsx,mjs}"],
     languageOptions: {
       globals: { ...globals.browser, ...globals.node },
       parserOptions: {

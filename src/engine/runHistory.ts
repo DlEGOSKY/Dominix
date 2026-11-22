@@ -18,6 +18,7 @@ export interface RunRecord {
   modifier?: string;
   isDaily: boolean;
   roundScores?: number[];
+  roundNumbers?: number[];
 }
 
 export interface AggregateStats {
@@ -82,6 +83,7 @@ export function addRunRecord(
     modifier,
     isDaily,
     roundScores: stats.roundScores ?? [],
+    roundNumbers: stats.roundNumbers,
   };
 
   const history = loadRunHistory();

@@ -1,5 +1,6 @@
+import { useReduceMotion } from "@/hooks/useSettings";
 import { motion, AnimatePresence } from "framer-motion";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import type { RunStats } from "@/types/domino";
 import { ALL_RELICS } from "@/engine/relics";
 import { ALL_PATTERNS } from "@/engine/patterns";
@@ -51,8 +52,10 @@ interface GameOverScreenProps {
   };
 }
 
-function RoundScoreChart({ scores }: { scores: number[] }) {
-  const W = 400;
+function RoundScoreChart({ scores, rounds }: { scores: number[]; rounds?: number[] }) {
+  const reducedMotion = useReduceMotion();
+  const { t } = useTranslation();
+  const W = Math.max(400, scores.length * 12);
   const H = 80;
   const PAD_X = 8;
   const PAD_Y = 8;
@@ -64,8 +67,9 @@ function RoundScoreChart({ scores }: { scores: number[] }) {
   const avgY = PAD_Y + (1 - avg / maxScore) * (H - PAD_Y * 2);
 
   return (
-    <div className="w-full overflow-x-auto">
-      <svg width="100%" viewBox={`0 0 ${W} ${H + 18}`} className="overflow-visible">
+    <div className="w-full min-w-0">
+      <div className="overflow-x-auto">
+      <svg width="100%" style={{ minWidth: scores.length > 32 ? W : undefined }} viewBox={`0 0 ${W} ${H + 18}`} className="overflow-visible" aria-hidden="true">
         {/* Grid lines */}
         {[0.25, 0.5, 0.75, 1].map((frac) => {
           const y = PAD_Y + (1 - frac) * (H - PAD_Y * 2);
@@ -78,8 +82,8 @@ function RoundScoreChart({ scores }: { scores: number[] }) {
         {/* Avg line */}
         <line x1={PAD_X} y1={avgY} x2={W - PAD_X} y2={avgY}
           stroke="rgba(212,168,83,0.35)" strokeWidth="1" strokeDasharray="4 3" />
-        <text x={W - PAD_X - 2} y={avgY - 3} fill="rgba(212,168,83,0.5)"
-          fontSize="7" textAnchor="end" fontFamily="monospace">avg {avg}</text>
+        <text x={W - PAD_X - 2} y={avgY - 3} fill="rgba(212,168,83,0.85)"
+          fontSize="9" textAnchor="end" fontFamily="monospace">{t("gameover.chartAverage", { n: avg })}</text>
 
         {/* Bars */}
         {scores.map((score, i) => {
@@ -90,31 +94,42 @@ function RoundScoreChart({ scores }: { scores: number[] }) {
           return (
             <g key={i}>
               <motion.rect
-                x={x} y={H - PAD_Y} width={barW} height={0}
+                x={x} y={reducedMotion ? y : H - PAD_Y} width={barW} height={reducedMotion ? barH : 0}
                 rx={2}
                 fill={isBest ? "rgba(74,222,128,0.7)" : "rgba(168,178,193,0.25)"}
                 animate={{ y, height: barH }}
-                transition={{ delay: 0.55 + i * 0.06, duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
+                transition={{ delay: reducedMotion ? 0 : 0.15 + Math.min(i * 0.03, 0.45), duration: reducedMotion ? 0 : 0.4, ease: [0.22, 1, 0.36, 1] }}
               />
               {isBest && (
                 <motion.rect
-                  x={x} y={H - PAD_Y} width={barW} height={0}
+                  x={x} y={reducedMotion ? y : H - PAD_Y} width={barW} height={reducedMotion ? barH : 0}
                   rx={2}
                   fill="rgba(74,222,128,0.15)"
                   style={{ filter: "blur(4px)" }}
                   animate={{ y, height: barH }}
-                  transition={{ delay: 0.55 + i * 0.06, duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
+                  transition={{ delay: reducedMotion ? 0 : 0.15 + Math.min(i * 0.03, 0.45), duration: reducedMotion ? 0 : 0.4, ease: [0.22, 1, 0.36, 1] }}
                 />
               )}
               {/* Round label */}
-              <text x={x + barW / 2} y={H + 10} fill="rgba(168,178,193,0.3)"
-                fontSize="7" textAnchor="middle" fontFamily="monospace">
-                {i + 1}
+              <text x={x + barW / 2} y={H + 10} fill="rgba(168,178,193,0.85)"
+                fontSize="9" textAnchor="middle" fontFamily="monospace">
+                {rounds?.[i] ?? i + 1}
               </text>
             </g>
           );
         })}
       </svg>
+      </div>
+      <details className="mt-3 text-xs text-accent-silver/90">
+        <summary className="cursor-pointer py-2 rounded focus-visible:outline focus-visible:outline-2 focus-visible:outline-accent-gold">{t("gameover.roundScoreDetails", { n: scores.length })}</summary>
+        <div className="max-h-64 overflow-y-auto mt-2">
+          <table className="w-full text-left font-mono tabular-nums">
+            <caption className="sr-only">{t("gameover.scorePerRound")}</caption>
+            <thead><tr><th scope="col" className="py-2">{t("gameover.chartRound")}</th><th scope="col" className="py-2 text-right">{t("gameover.stat.score")}</th></tr></thead>
+            <tbody>{scores.map((score, i) => <tr key={i} className="border-t border-surface-600/40"><th scope="row" className="py-2 font-normal">{rounds?.[i] ?? i + 1}</th><td className={`py-2 text-right ${i === bestIdx && score > 0 ? "text-green-300 font-bold" : ""}`}>{score.toLocaleString()}</td></tr>)}</tbody>
+          </table>
+        </div>
+      </details>
     </div>
   );
 }
@@ -124,6 +139,7 @@ function RoundScoreChart({ scores }: { scores: number[] }) {
  * Shows a small TileView preview + name. Hidden if nothing was unlocked.
  */
 function UnlockedSkinsCard({ skinIds }: { skinIds: string[] }) {
+  const reducedMotion = useReduceMotion();
   // Subscribe to lang changes so skin names + flavor refresh on switch.
   useTranslation();
   if (!skinIds || skinIds.length === 0) return null;
@@ -136,7 +152,7 @@ function UnlockedSkinsCard({ skinIds }: { skinIds: string[] }) {
 
   return (
     <motion.div
-      initial={{ opacity: 0, y: 12, scale: 0.96 }}
+      initial={reducedMotion ? false : { opacity: 0, y: 12, scale: 0.96 }}
       animate={{ opacity: 1, y: 0, scale: 1 }}
       transition={{ delay: 0.6, type: "spring", stiffness: 280, damping: 22 }}
       className="w-full max-w-lg px-4 py-4 rounded-xl bg-gradient-to-b from-accent-gold/10 to-accent-gold/5 border border-accent-gold/30"
@@ -152,7 +168,7 @@ function UnlockedSkinsCard({ skinIds }: { skinIds: string[] }) {
               <TileView tile={previewTile} disabled skin={skin.id as TileSkin} size="sm" animate={false} />
               <div className="flex flex-col">
                 <span className="text-sm font-bold text-white leading-tight">{loc.name}</span>
-                <span className="text-[10px] italic text-accent-silver/55 leading-tight max-w-[180px]">{loc.flavor}</span>
+                <span className="text-[10px] italic text-accent-silver/80 leading-tight max-w-[180px]">{loc.flavor}</span>
               </div>
             </div>
           );
@@ -169,6 +185,7 @@ function UnlockedSkinsCard({ skinIds }: { skinIds: string[] }) {
  * the GameOverScreen does not become a wall of chips on long runs.
  */
 function PatternBreakdown({ breakdown }: { breakdown: Record<string, number> }) {
+  const reducedMotion = useReduceMotion();
   // Subscribe to lang changes so chip names refresh when user toggles language.
   const { t } = useTranslation();
   const entries = Object.entries(breakdown ?? {})
@@ -190,12 +207,12 @@ function PatternBreakdown({ breakdown }: { breakdown: Record<string, number> }) 
 
   return (
     <motion.div
-      initial={{ opacity: 0, y: 12 }}
+      initial={reducedMotion ? false : { opacity: 0, y: 12 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ delay: 0.52 }}
       className="w-full max-w-lg px-4 py-4 rounded-xl bg-surface-800/60 border border-surface-600/30"
     >
-      <p className="text-[10px] font-bold text-accent-silver/35 uppercase tracking-widest mb-3">
+      <p className="text-[10px] font-bold text-accent-silver/80 uppercase tracking-widest mb-3">
         {t("gameover.patternsActivated")}
       </p>
       <div className="flex flex-wrap gap-1.5">
@@ -209,7 +226,7 @@ function PatternBreakdown({ breakdown }: { breakdown: Record<string, number> }) 
           </span>
         ))}
         {rest.length > 0 && (
-          <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-surface-700/40 border border-surface-600/30 text-[11px] text-accent-silver/55">
+          <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-surface-700/40 border border-surface-600/30 text-[11px] text-accent-silver/80">
             <span className="font-medium">{t("gameover.others")}</span>
             <span className="font-mono font-bold">x{restSum}</span>
           </span>
@@ -229,20 +246,24 @@ export default function GameOverScreen({
   unlockedSkins,
   mastery,
 }: GameOverScreenProps) {
+  const reducedMotion = useReduceMotion();
   // Subscribe to lang changes so localized relic names update on switch.
   const { t } = useTranslation();
   const relics = ALL_RELICS.filter((r) => relicIds.includes(r.id));
   // Victory cinematic plays first if the player crossed into El Eco (round 16+)
   // — it is the symbolic completion of Dominix's three-act structure.
   const isVictoryRun = finalRound >= 16;
-  const [victoryDone, setVictoryDone] = useState(!isVictoryRun);
-  const [recapDone, setRecapDone] = useState(false);
+  const [victoryDone, setVictoryDone] = useState(reducedMotion || !isVictoryRun);
+  const [recapDone, setRecapDone] = useState(reducedMotion);
   // Skin overlay shows after recap, before the main stats screen
   const hasUnlockedSkins = (unlockedSkins?.length ?? 0) > 0;
   const [skinOverlayDone, setSkinOverlayDone] = useState(!hasUnlockedSkins);
+  const resultsReady = victoryDone && recapDone && skinOverlayDone;
+  const headingRef = useRef<HTMLHeadingElement>(null);
+  useEffect(() => { if (resultsReady) headingRef.current?.focus(); }, [resultsReady]);
 
   const xpData = useMemo(() => {
-    const earned = calculateRunXP(finalRound, stats.totalScore, stats.bossesDefeated, stats.patternsActivated);
+    const earned = calculateRunXP(stats.roundsCompleted, stats.totalScore, stats.bossesDefeated, stats.patternsActivated);
     const prog = loadProgression();
     const xpInfo = getXPForNextLevel(prog.xp);
     return { earned, level: prog.level, ...xpInfo };
@@ -280,21 +301,21 @@ export default function GameOverScreen({
         )}
       </AnimatePresence>
 
-    <motion.div
-      initial={{ opacity: 0 }}
-      animate={{ opacity: recapDone && skinOverlayDone ? 1 : 0 }}
-      transition={{ delay: recapDone && skinOverlayDone ? 0.1 : 0, duration: 0.4 }}
-      className="min-h-screen flex flex-col items-center justify-center gap-8 px-6"
+    {resultsReady && <motion.div
+      initial={reducedMotion ? false : { opacity: 0 }}
+      animate={{ opacity: 1 }}
+      transition={{ duration: 0.3 }}
+      className="min-h-screen flex flex-col items-center justify-center gap-8 px-4 sm:px-6 py-8 sm:py-12"
     >
       <motion.div
-        initial={{ scale: 0.8, opacity: 0 }}
+        initial={reducedMotion ? false : { scale: 0.8, opacity: 0 }}
         animate={{ scale: 1, opacity: 1 }}
         transition={{ delay: 0.1, type: "spring", stiffness: 300, damping: 25 }}
         className="flex flex-col items-center gap-4"
       >
         {isNewBest && (
           <motion.div
-            initial={{ opacity: 0, scale: 0.5 }}
+            initial={reducedMotion ? false : { opacity: 0, scale: 0.5 }}
             animate={{ opacity: 1, scale: 1 }}
             transition={{ delay: 0.2, type: "spring", stiffness: 300, damping: 15 }}
             className="px-5 py-1.5 rounded-full bg-accent-gold/15 border border-accent-gold/30"
@@ -305,37 +326,37 @@ export default function GameOverScreen({
         {(() => {
           const act = getActForRound(Math.max(1, finalRound));
           return (
-            <span className="text-[10px] font-bold uppercase tracking-[0.4em] text-accent-silver/45">
+            <span className="text-[10px] font-bold uppercase tracking-[0.4em] text-accent-silver/80">
               {t(`act.${act.id}.numeral`)} · {t(`act.${act.id}.name`)}
             </span>
           );
         })()}
-        <h2 className="font-display font-black text-4xl bg-gradient-to-b from-white via-white/80 to-accent-silver/40 bg-clip-text text-transparent">
+        <h2 ref={headingRef} tabIndex={-1} style={{ outline: "none" }} className="font-display font-black text-4xl bg-gradient-to-b from-white via-white/80 to-accent-silver/40 bg-clip-text text-transparent outline-none">
           {t("gameover.title")}
         </h2>
-        <p className="italic text-center text-[13px] text-accent-silver/55 max-w-sm leading-relaxed">
+        <p className="italic text-center text-[13px] text-accent-silver/80 max-w-sm leading-relaxed">
           "{t(epilogueKeyFor(finalRound, stats.totalScore))}"
         </p>
       </motion.div>
 
       <motion.div
-        initial={{ opacity: 0, y: 20 }}
+        initial={reducedMotion ? false : { opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.2 }}
-        className="flex items-end justify-center gap-8"
+        className="flex flex-wrap items-end justify-center gap-4 sm:gap-8 max-w-full"
       >
         {/* Total score — hero */}
         <div className="flex flex-col items-center gap-1">
           <motion.span
-            initial={{ scale: 0.7, opacity: 0 }}
+            initial={reducedMotion ? false : { scale: 0.7, opacity: 0 }}
             animate={{ scale: 1, opacity: 1 }}
             transition={{ delay: 0.25, type: "spring", stiffness: 260, damping: 20 }}
-            className="font-mono font-black text-6xl sm:text-7xl tabular-nums tracking-tighter text-accent-gold"
+            className="font-mono font-black text-[clamp(2rem,9vw,4.5rem)] break-all tabular-nums tracking-tighter text-accent-gold"
             style={{ textShadow: "0 0 40px rgba(212,168,83,0.35), 0 0 80px rgba(212,168,83,0.15)" }}
           >
             {stats.totalScore.toLocaleString()}
           </motion.span>
-          <span className="text-[11px] font-bold text-accent-gold/40 uppercase tracking-widest">
+          <span className="text-[11px] font-bold text-accent-gold/80 uppercase tracking-widest">
             {t("gameover.stat.score")}
           </span>
         </div>
@@ -347,16 +368,16 @@ export default function GameOverScreen({
             className="text-4xl sm:text-5xl font-mono font-black text-white tabular-nums tracking-tighter"
             style={{ textShadow: "0 0 20px rgba(255,255,255,0.08)" }}
           >
-            {finalRound}
+            {stats.roundsCompleted}
           </span>
-          <span className="text-[11px] font-bold text-accent-silver/40 uppercase tracking-widest">
+          <span className="text-[11px] font-bold text-accent-silver/80 uppercase tracking-widest">
             {t("gameover.roundsComplete")}
           </span>
         </div>
       </motion.div>
 
       <motion.div
-        initial={{ opacity: 0 }}
+        initial={reducedMotion ? false : { opacity: 0 }}
         animate={{ opacity: 1 }}
         transition={{ delay: 0.3 }}
         className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-center mt-2 max-w-lg w-full"
@@ -372,7 +393,7 @@ export default function GameOverScreen({
         ].filter((s) => s.value > 0).map((stat, i) => (
           <motion.div
             key={stat.label}
-            initial={{ opacity: 0, y: 10 }}
+            initial={reducedMotion ? false : { opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
             whileHover={{ y: -3 }}
             transition={{ delay: 0.35 + i * 0.05 }}
@@ -388,21 +409,21 @@ export default function GameOverScreen({
             <span className={`relative font-mono font-bold text-2xl ${stat.color}`}>
               {stat.value}
             </span>
-            <span className="relative text-[10px] font-bold text-accent-silver/40 uppercase tracking-wider">{stat.label}</span>
+            <span className="relative text-[10px] font-bold text-accent-silver/80 uppercase tracking-wider">{stat.label}</span>
           </motion.div>
         ))}
       </motion.div>
 
       {/* Round score chart */}
-      {stats.roundScores && stats.roundScores.length > 1 && (
+      {stats.roundScores && stats.roundScores.length > 0 && (
         <motion.div
-          initial={{ opacity: 0, y: 12 }}
+          initial={reducedMotion ? false : { opacity: 0, y: 12 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.5 }}
           className="w-full max-w-lg px-4 py-4 rounded-xl bg-surface-800/60 border border-surface-600/30"
         >
-          <p className="text-[10px] font-bold text-accent-silver/35 uppercase tracking-widest mb-3">{t("gameover.scorePerRound")}</p>
-          <RoundScoreChart scores={stats.roundScores} />
+          <p className="text-[10px] font-bold text-accent-silver/80 uppercase tracking-widest mb-3">{t("gameover.scorePerRound")}</p>
+          <RoundScoreChart scores={stats.roundScores} rounds={stats.roundNumbers} />
         </motion.div>
       )}
 
@@ -414,24 +435,24 @@ export default function GameOverScreen({
 
       {/* XP Progress */}
       <motion.div
-        initial={{ opacity: 0, y: 10 }}
+        initial={reducedMotion ? false : { opacity: 0, y: 10 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.55 }}
         className="flex flex-col items-center gap-3 w-full max-w-sm"
       >
         <div className="flex items-center justify-between w-full">
-          <span className="text-[10px] font-bold text-accent-silver/40 uppercase tracking-widest">{t("home.levelN", { n: xpData.level })}</span>
+          <span className="text-[10px] font-bold text-accent-silver/80 uppercase tracking-widest">{t("home.levelN", { n: xpData.level })}</span>
           <span className="text-sm font-mono font-bold text-accent-gold">+{xpData.earned} XP</span>
         </div>
-        <div className="relative w-full h-2.5 rounded-full bg-surface-700 overflow-hidden">
+        <div role="progressbar" aria-label={t("home.levelN", { n: xpData.level })} aria-valuemin={0} aria-valuemax={xpData.needed} aria-valuenow={xpData.current} className="relative w-full h-2.5 rounded-full bg-surface-700 overflow-hidden">
           <motion.div
-            initial={{ width: `${Math.max(0, (xpData.current - xpData.earned) / xpData.needed) * 100}%` }}
+            initial={false}
             animate={{ width: `${Math.min(xpData.progress * 100, 100)}%` }}
             transition={{ delay: 0.7, duration: 1, ease: "easeOut" }}
             className="h-full rounded-full bg-gradient-to-r from-accent-gold to-amber-400"
           />
         </div>
-        <span className="text-[10px] font-mono text-accent-silver/30">{xpData.current}/{xpData.needed} XP</span>
+        <span className="text-[10px] font-mono text-accent-silver/80">{xpData.current}/{xpData.needed} XP</span>
       </motion.div>
 
       {mastery && mastery.xpGained > 0 && (
@@ -440,12 +461,12 @@ export default function GameOverScreen({
 
       {relics.length > 0 && (
         <motion.div
-          initial={{ opacity: 0 }}
+          initial={reducedMotion ? false : { opacity: 0 }}
           animate={{ opacity: 1 }}
           transition={{ delay: 0.5 }}
           className="flex flex-col items-center gap-3 mt-2"
         >
-          <span className="text-[10px] font-bold text-accent-silver/40 uppercase tracking-widest">
+          <span className="text-[10px] font-bold text-accent-silver/80 uppercase tracking-widest">
             {t("gameover.relicsObtained")}
           </span>
           <div className="flex flex-wrap justify-center gap-2">
@@ -466,10 +487,10 @@ export default function GameOverScreen({
       )}
 
       <motion.div
-        initial={{ opacity: 0 }}
+        initial={reducedMotion ? false : { opacity: 0 }}
         animate={{ opacity: 1 }}
         transition={{ delay: 0.6 }}
-        className="flex gap-4 mt-4"
+        className="flex flex-wrap justify-center gap-3 mt-4"
       >
         <button
           onClick={onRestart}
@@ -479,12 +500,12 @@ export default function GameOverScreen({
         </button>
         <button
           onClick={onHome}
-          className="px-8 py-3 rounded-xl border border-surface-600/50 text-accent-silver/50 font-medium text-sm tracking-wide hover:text-accent-silver/80 hover:border-surface-600 transition-all"
+          className="px-8 py-3 rounded-xl border border-surface-600/50 text-accent-silver/80 font-medium text-sm tracking-wide hover:text-accent-silver/80 hover:border-surface-600 transition-all"
         >
           {t("gameover.home")}
         </button>
       </motion.div>
-    </motion.div>
+    </motion.div>}
     </>
   );
 }
@@ -505,13 +526,14 @@ function MasteryBlock({
     challengesCompleted: CharacterChallenge[];
   };
 }) {
+  const reducedMotion = useReduceMotion();
   const character = getCharacter(info.characterId);
   const progress = getMasteryProgress(info.characterId);
   const unlockText = info.leveledUp ? getLevelRewardText(info.newLevel) : "";
 
   return (
     <motion.div
-      initial={{ opacity: 0, y: 10 }}
+      initial={reducedMotion ? false : { opacity: 0, y: 10 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ delay: 0.75 }}
       className={[
@@ -523,7 +545,7 @@ function MasteryBlock({
     >
       {info.leveledUp && (
         <motion.div
-          initial={{ scale: 0.5, opacity: 0 }}
+          initial={reducedMotion ? false : { scale: 0.5, opacity: 0 }}
           animate={{ scale: 1, opacity: 1 }}
           transition={{ delay: 0.85, type: "spring", stiffness: 260, damping: 18 }}
           className="px-3 py-1 rounded-full bg-accent-gold/20 border border-accent-gold/50"
@@ -536,7 +558,7 @@ function MasteryBlock({
 
       <div className="flex items-center justify-between w-full">
         <div className="flex items-center gap-2">
-          <span className="text-[10px] font-bold text-accent-silver/40 uppercase tracking-widest">
+          <span className="text-[10px] font-bold text-accent-silver/80 uppercase tracking-widest">
             {character.name}
           </span>
           <span className="px-1.5 py-0.5 rounded-md bg-surface-900/60 border border-surface-600/40 text-[10px] font-bold text-accent-gold tabular-nums">
@@ -548,7 +570,7 @@ function MasteryBlock({
 
       <div className="relative w-full h-2.5 rounded-full bg-surface-700 overflow-hidden">
         <motion.div
-          initial={{ width: 0 }}
+          initial={reducedMotion ? false : { width: 0 }}
           animate={{ width: `${progress.percent}%` }}
           transition={{ delay: 0.9, duration: 0.9, ease: [0.22, 1, 0.36, 1] }}
           className="h-full rounded-full bg-gradient-to-r from-accent-gold/60 to-accent-gold"
@@ -563,13 +585,13 @@ function MasteryBlock({
 
       {info.challengesCompleted.length > 0 && (
         <div className="w-full flex flex-col gap-1.5 mt-1 pt-2 border-t border-accent-gold/20">
-          <span className="text-[9px] font-bold uppercase tracking-widest text-accent-silver/40 text-center">
+          <span className="text-[9px] font-bold uppercase tracking-widest text-accent-silver/80 text-center">
             {translate("mastery.challenges")}
           </span>
           {info.challengesCompleted.map((c, i) => (
             <motion.div
               key={c.id}
-              initial={{ opacity: 0, x: -8 }}
+              initial={reducedMotion ? false : { opacity: 0, x: -8 }}
               animate={{ opacity: 1, x: 0 }}
               transition={{ delay: 1.0 + i * 0.12 }}
               className="flex items-center justify-between gap-2 text-[11px]"

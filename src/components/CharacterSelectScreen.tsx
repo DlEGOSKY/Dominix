@@ -211,6 +211,7 @@ interface CardProps {
 function CharacterCard({ character, unlocked, selected, isMain, onClick }: CardProps) {
   return (
     <motion.button
+      aria-pressed={selected}
       disabled={!unlocked}
       onClick={onClick}
       whileHover={unlocked ? { scale: 1.03, y: -4 } : undefined}

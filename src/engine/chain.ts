@@ -39,6 +39,7 @@ export function placeTile(
   if (chain.placed.length === 0) {
     const placed: PlacedTile = {
       tile,
+      order: chain.placed.length,
       exposedLeft: tile.top,
       exposedRight: tile.bottom,
     };
@@ -53,14 +54,15 @@ export function placeTile(
     const end = chain.leftEnd!;
     // Mirror: exposed end becomes the connecting end (creates a "bridge")
     if (tile.type === "mirror") {
-      const placed: PlacedTile = { tile, exposedLeft: end, exposedRight: end };
+      const placed: PlacedTile = { tile, order: chain.placed.length, exposedLeft: end, exposedRight: end };
       return { placed: [placed, ...chain.placed], leftEnd: end, rightEnd: chain.rightEnd };
     }
-    const connectingValue = tile.top === end ? tile.top : tile.bottom;
+    const connectingValue = tile.type === "wild" ? end : tile.top === end ? tile.top : tile.bottom;
     const exposedValue = tile.top === end ? tile.bottom : tile.top;
 
     const placed: PlacedTile = {
       tile,
+      order: chain.placed.length,
       exposedLeft: exposedValue,
       exposedRight: connectingValue,
     };
@@ -74,14 +76,15 @@ export function placeTile(
     const end = chain.rightEnd!;
     // Mirror: exposed end becomes the connecting end
     if (tile.type === "mirror") {
-      const placed: PlacedTile = { tile, exposedLeft: end, exposedRight: end };
+      const placed: PlacedTile = { tile, order: chain.placed.length, exposedLeft: end, exposedRight: end };
       return { placed: [...chain.placed, placed], leftEnd: chain.leftEnd, rightEnd: end };
     }
-    const connectingValue = tile.top === end ? tile.top : tile.bottom;
+    const connectingValue = tile.type === "wild" ? end : tile.top === end ? tile.top : tile.bottom;
     const exposedValue = tile.top === end ? tile.bottom : tile.top;
 
     const placed: PlacedTile = {
       tile,
+      order: chain.placed.length,
       exposedLeft: connectingValue,
       exposedRight: exposedValue,
     };

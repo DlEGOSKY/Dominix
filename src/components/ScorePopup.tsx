@@ -1,9 +1,9 @@
+import { useReduceMotion } from "@/hooks/useSettings";
 import { motion, AnimatePresence } from "framer-motion";
 import { useState, useEffect, useRef } from "react";
 
 interface ScorePopupProps {
   score: number;
-  prevScore: number;
 }
 
 interface Popup {
@@ -14,28 +14,35 @@ interface Popup {
 
 let popupId = 0;
 
-export default function ScorePopup({ score, prevScore }: ScorePopupProps) {
+export default function ScorePopup({ score }: ScorePopupProps) {
+  const reducedMotion = useReduceMotion();
+  const timers = useRef(new Set<ReturnType<typeof setTimeout>>());
   const [popups, setPopups] = useState<Popup[]>([]);
-  const isFirst = useRef(true);
+  const previous = useRef(score);
 
   useEffect(() => {
-    if (isFirst.current) {
-      isFirst.current = false;
-      return;
-    }
-    const diff = score - prevScore;
-    if (diff <= 0) return;
+    const diff = score - previous.current;
+    previous.current = score;
+    if (diff <= 0 || reducedMotion) return;
 
     const id = ++popupId;
     const x = Math.random() * 60 - 30;
-    setPopups((prev) => [...prev, { id, value: diff, x }]);
+    setPopups((prev) => [...prev.slice(-3), { id, value: diff, x }]);
 
     const timer = setTimeout(() => {
       setPopups((prev) => prev.filter((p) => p.id !== id));
+      timers.current.delete(timer);
     }, 1400);
 
-    return () => clearTimeout(timer);
-  }, [score, prevScore]);
+    timers.current.add(timer);
+  }, [score, reducedMotion]);
+
+  useEffect(() => {
+    const pending = timers.current;
+    return () => { for (const timer of pending) clearTimeout(timer); };
+  }, []);
+
+  if (reducedMotion) return null;
 
   return (
     <div className="absolute inset-0 pointer-events-none overflow-hidden">

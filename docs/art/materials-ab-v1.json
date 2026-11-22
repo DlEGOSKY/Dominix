@@ -1,0 +1,26 @@
+{
+  "provider": "Higgsfield",
+  "prompt": "materials-ab-v1.prompt.txt",
+  "approved_max_credits": 2.75,
+  "actual_credits": 2.75,
+  "balance_before": 108.75,
+  "balance_after": 106,
+  "selected_for_product": "A",
+  "selection_basis": "Qualitative inspection of the generated swatches and the same real TileView at small and medium sizes; not a universal model benchmark.",
+  "A": {
+    "model": "gpt_image_2_6", "quality": "high", "resolution": "1k", "aspect_ratio": "3:2", "count": 1,
+    "job_id": "ce0a7d67-9e5f-4619-83d0-33574183d88a", "status": "completed", "cost_credits": 1.5,
+    "source_size": [1024, 688], "source_bytes": 1067928,
+    "source_sha256": "57d5c27606a822a48444f15180f8d7a9a879abde35e79f75ec86884a76d976a0",
+    "source_file": "outputs/dominix-review/materials-a-gpt-high-v1.png",
+    "runtime_directory": "src/assets/materials", "runtime_bytes": 7768
+  },
+  "B": {
+    "model": "recraft_v4_1", "model_type": "utility", "resolution": "1k", "aspect_ratio": "3:2", "count": 1,
+    "job_id": "455701ed-1e4f-4bb1-9f24-fd98dc43db20", "status": "completed", "cost_credits": 1.25,
+    "source_size": [1280, 832], "source_bytes": 1770278,
+    "source_sha256": "46b06cc6f3e8879833d64ce0aa0ffd3207575d7a0a36305b1b4dd9150deffab0",
+    "source_file": "outputs/dominix-review/materials-b-recraft-utility-v1.png",
+    "qa_directory": "qa/assets/materials-b", "qa_bytes": 13514
+  }
+}

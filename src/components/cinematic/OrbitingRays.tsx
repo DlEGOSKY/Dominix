@@ -1,3 +1,4 @@
+import { useReduceMotion } from "@/hooks/useSettings";
 import { motion } from "framer-motion";
 
 interface OrbitingRaysProps {
@@ -28,6 +29,8 @@ export default function OrbitingRays({
   duration = 12,
   reverse = false,
 }: OrbitingRaysProps) {
+  const reducedMotion = useReduceMotion();
+  if (reducedMotion) return null;
   return (
     <motion.div
       aria-hidden

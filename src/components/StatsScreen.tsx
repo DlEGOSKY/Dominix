@@ -6,6 +6,7 @@ import { getRelicIcon } from "@/engine/relicIcons";
 import Tooltip from "./Tooltip";
 import { localizeRelic } from "@/engine/i18nContent";
 import { useTranslation, t as translate } from "@/engine/i18n";
+import { useClipboard } from "@/hooks/useClipboard";
 
 interface StatsScreenProps {
   onBack: () => void;
@@ -148,22 +149,11 @@ function HistoryTab() {
   );
 }
 
-function shareRun(run: RunRecord): { ok: boolean; text: string } {
-  const summary = `Dominix · R${run.rounds} · ${run.totalScore.toLocaleString()} pts · ${run.patternsActivated} patrones · ${run.relicsCollected} reliquias${run.modifier ? ` · ${run.modifier}` : ""}${run.isDaily ? " · Daily" : ""} · ${run.date}`;
-  try {
-    if (typeof navigator !== "undefined" && navigator.clipboard) {
-      navigator.clipboard.writeText(summary);
-    }
-    return { ok: true, text: summary };
-  } catch {
-    return { ok: false, text: summary };
-  }
-}
-
 function RunRow({ run, index, isBest }: { run: RunRecord; index: number; isBest: boolean }) {
   const { t } = useTranslation();
   const [expanded, setExpanded] = useState(false);
-  const [shared, setShared] = useState(false);
+  const sharing = useClipboard();
+  const summary = `Dominix · R${run.rounds} · ${run.totalScore.toLocaleString()} pts · ${run.patternsActivated} ${t("copy.patterns")} · ${run.relicsCollected} ${t("copy.relics")}${run.modifier ? ` · ${run.modifier}` : ""}${run.isDaily ? " · Daily" : ""} · ${run.date}`;
 
   return (
     <motion.div
@@ -283,18 +273,18 @@ function RunRow({ run, index, isBest }: { run: RunRecord; index: number; isBest:
             </div>
           )}
 
-          <div className="mt-3 pt-3 border-t border-surface-600/20 flex justify-end">
+          <div className="mt-3 pt-3 border-t border-surface-600/20 flex flex-col items-end gap-2">
             <button
               onClick={(e) => {
                 e.stopPropagation();
-                const result = shareRun(run);
-                setShared(result.ok);
-                setTimeout(() => setShared(false), 1500);
+                void sharing.copy(summary);
               }}
-              className="px-3 py-1 rounded-md text-[10px] font-bold uppercase tracking-widest bg-surface-700/60 hover:bg-surface-700 text-accent-silver/70 hover:text-white transition-colors"
+              disabled={sharing.status === "copying"}
+              className="min-h-11 px-3 py-1 rounded-md text-[10px] font-bold uppercase tracking-widest bg-surface-700/60 hover:bg-surface-700 text-accent-silver/70 hover:text-white transition-colors"
             >
-              {shared ? t("stats.run.copied") : t("stats.run.share")}
+              {t(sharing.status === "copied" ? "stats.run.copied" : sharing.status === "copying" ? "copy.pending" : "stats.run.share")}
             </button>
+            {sharing.status === "error" && <><p role="status" className="text-xs text-amber-200">{t("copy.failed")}</p><textarea readOnly value={summary} aria-label={t("copy.manual")} className="w-full rounded border border-surface-600 bg-surface-900 p-2 text-xs text-accent-silver" /></>}
           </div>
         </motion.div>
       )}

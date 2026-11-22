@@ -1,5 +1,8 @@
+import { loadRunCheckpoint, saveRunCheckpoint, clearRunCheckpoint, type RunCheckpoint } from "./engine/runCheckpoint";
+import { t } from "./engine/i18n";
 import { useState, useCallback, useEffect, lazy, Suspense } from "react";
-import { motion, AnimatePresence } from "framer-motion";
+import { motion, AnimatePresence, MotionConfig } from "framer-motion";
+import { useReduceMotion } from "./hooks/useSettings";
 import type { RunStats, SavedData } from "./types/domino";
 import type { Achievement } from "./engine/achievements";
 import type { ModifierConfig } from "./engine/modifiers";
@@ -31,12 +34,13 @@ import { addRunRecord } from "./engine/runHistory";
 import { addLeaderboardEntry } from "./engine/leaderboard";
 import { addXP, calculateRunXP, loadProgression, getProgressionBonuses } from "./engine/progression";
 import { audio } from "./engine/audio";
-import { addCharacterXP, calculateRunMasteryXP } from "./engine/characterMastery";
-import { resolveRunChallenges, type CharacterChallenge } from "./engine/characterChallenges";
+import { addCharacterXP, calculateRunMasteryXP, getCharacterXP } from "./engine/characterMastery";
+import { resolveRunChallenges, loadCompletedChallenges, type CharacterChallenge } from "./engine/characterChallenges";
 import {
   ALL_CHARACTERS,
   loadSelectedCharacter,
   unlockCharacter,
+  meetsCharacterUnlock,
   loadUnlockedCharacters,
 } from "./engine/characters";
 import type { CharacterId } from "./engine/characters";
@@ -76,7 +80,9 @@ interface GameOverData {
 }
 
 export default function App() {
+  const reducedMotion = useReduceMotion();
   const [screen, setScreen] = useState<AppScreen>("home");
+  const [collectionStartTab, setCollectionStartTab] = useState<"relics" | "skins">("relics");
   const [savedData, setSavedData] = useState<SavedData>(loadSavedData);
   const [gameOverData, setGameOverData] = useState<GameOverData | null>(null);
   const [pendingAchievements, setPendingAchievements] = useState<Achievement[]>([]);
@@ -85,6 +91,29 @@ export default function App() {
   const [activeModifierIds, setActiveModifierIds] = useState<string[]>([]);
   const [selectedCharacter, setSelectedCharacter] = useState<CharacterId>(loadSelectedCharacter);
   const [pendingModifiers, setPendingModifiers] = useState<string[]>([]);
+  const [checkpoint, setCheckpoint] = useState(loadRunCheckpoint);
+  const [resumeData, setResumeData] = useState<RunCheckpoint | undefined>();
+  const [runAscension, setRunAscension] = useState(() => loadAscension().selected);
+  const persistCheckpoint = useCallback((data:RunCheckpoint) => {
+    const ok=saveRunCheckpoint(data);
+    if(ok)setCheckpoint({data,status:"ok"});
+    return ok;
+  }, []);
+  const prepareFresh = useCallback(() => {
+    if(loadRunCheckpoint().data && !window.confirm(t("resume.replace")))return false;
+    clearRunCheckpoint();
+    setCheckpoint(loadRunCheckpoint());
+    setResumeData(undefined);
+    return true;
+  }, []);
+  const continueRun = useCallback(() => {
+    const restored=loadRunCheckpoint();setCheckpoint(restored);
+    if(!restored.data)return;
+    const data=restored.data;
+    setResumeData(data);setSelectedCharacter(data.characterId);setModifierConfig(data.modifierConfig);
+    setActiveModifierIds(data.modifierIds);setRunAscension(data.runtime.ascension.activeLevel);setScreen(data.mode);
+  }, []);
+
 
   useEffect(() => {
     if (pendingAchievements.length > 0 && !currentToast) {
@@ -127,29 +156,41 @@ export default function App() {
   }, []);
 
   const handleConfirmCharacter = useCallback((id: CharacterId, ascensionLevel: number) => {
+    if(!prepareFresh())return;
+    setRunAscension(ascensionLevel);
     setSelectedCharacter(id);
     setSelectedAscension(ascensionLevel);
     const config = applyAscensionToModifier(applyModifiers(pendingModifiers), ascensionLevel);
     setModifierConfig(config);
     setActiveModifierIds(pendingModifiers);
     setScreen("playing");
-  }, [pendingModifiers]);
+  }, [pendingModifiers, prepareFresh]);
 
   const handleStartDaily = useCallback(() => {
+    if(!prepareFresh())return;
+    setRunAscension(0);
+    setSelectedCharacter("architect");
+    setModifierConfig(getDefaultConfig());
+    setActiveModifierIds([]);
     setScreen("daily");
-  }, []);
+  }, [prepareFresh]);
 
   const handleStartEndless = useCallback(() => {
+    if(!prepareFresh())return;
+    setRunAscension(0);
     setModifierConfig(getDefaultConfig());
     setActiveModifierIds([]);
     setScreen("endless");
-  }, []);
+  }, [prepareFresh]);
 
   const handleShowWeekly = useCallback(() => {
     setScreen("weekly_intro");
   }, []);
 
   const handleStartWeekly = useCallback(() => {
+    if(!prepareFresh())return;
+    setRunAscension(0);
+    setSelectedCharacter("architect");
     // Build modifier config from the weekly preset (deterministic for this week).
     const preset = getWeeklyPreset();
     const base = getDefaultConfig();
@@ -161,7 +202,7 @@ export default function App() {
     });
     setActiveModifierIds(["weekly"]);
     setScreen("weekly");
-  }, []);
+  }, [prepareFresh]);
 
   const handleShowAchievements = useCallback(() => {
     setScreen("achievements");
@@ -180,6 +221,11 @@ export default function App() {
   }, []);
 
   const handleShowCollection = useCallback(() => {
+    setCollectionStartTab("relics");
+    setScreen("collection");
+  }, []);
+  const handleShowAppearance = useCallback(() => {
+    setCollectionStartTab("skins");
     setScreen("collection");
   }, []);
 
@@ -196,19 +242,19 @@ export default function App() {
   const handleShowChaos = useCallback(() => setScreen("chaos"), []);
 
   const handleGameOver = useCallback(
-    (stats: RunStats, relicIds: string[], finalRound: number) => {
+    (stats: RunStats, relicIds: string[], finalRound: number, runSeed?: number) => {
       const currentBest = savedData.bestRound;
       const isNewBest = finalRound > currentBest;
       const isDaily = screen === "daily";
       const isEndless = screen === "endless";
       const isWeekly = screen === "weekly";
 
-      saveBestData(finalRound, stats.totalScore);
+      saveBestData(finalRound, stats.totalScore, stats.roundScores.length);
       if (isDaily) {
-        saveDailyProgress(finalRound, true);
+        saveDailyProgress(finalRound, true, runSeed);
       }
       if (isWeekly) {
-        saveWeeklyResult(stats.totalScore, finalRound);
+        saveWeeklyResult(stats.totalScore, finalRound, runSeed);
       }
       if (isEndless) {
         addLeaderboardEntry({
@@ -221,14 +267,10 @@ export default function App() {
       }
       
       const newSaved = loadSavedData();
-      setSavedData(newSaved);
 
       const newAchievements = checkNewAchievements(stats, newSaved);
-      if (newAchievements.length > 0) {
-        setPendingAchievements(newAchievements);
-      }
 
-      const modName = activeModifierIds.length > 0
+      const modName = isWeekly ? "Semanal" : isDaily ? "Diario" : activeModifierIds.length > 0
         ? activeModifierIds.map((id) => ALL_MODIFIERS.find((m) => m.id === id)?.name).filter(Boolean).join(", ")
         : undefined;
       if (!isEndless) {
@@ -246,7 +288,7 @@ export default function App() {
       // Progression XP — capture the skins owned before/after the XP gain so
       // the GameOverScreen can highlight any that were unlocked by this run.
       const skinsBefore = new Set(getProgressionBonuses(loadProgression()).unlockedSkins);
-      const runXP = calculateRunXP(finalRound, stats.totalScore, stats.bossesDefeated, stats.patternsActivated);
+      const runXP = calculateRunXP(stats.roundsCompleted, stats.totalScore, stats.bossesDefeated, stats.patternsActivated);
       addXP(runXP);
       const skinsAfterList = getProgressionBonuses(loadProgression()).unlockedSkins;
       const newlyUnlockedSkins = skinsAfterList.filter((id) => !skinsBefore.has(id));
@@ -254,20 +296,23 @@ export default function App() {
       // Character Mastery XP — favors the character actively played.
       // Resolve one-shot character challenges first so their XP gets rolled
       // into the same level-up reveal instead of being a second, confusing event.
-      const baseMasteryXP = calculateRunMasteryXP(finalRound, stats.bossesDefeated, stats.totalScore);
+      const baseMasteryXP = calculateRunMasteryXP(stats.roundsCompleted, stats.bossesDefeated, stats.totalScore);
       const { newlyCompleted, xpAwarded: challengeXP } = resolveRunChallenges(
         selectedCharacter,
         stats,
         finalRound
       );
       const masteryXP = baseMasteryXP + challengeXP;
+      const previousMasteryXP = getCharacterXP(selectedCharacter);
       const masteryResult = addCharacterXP(selectedCharacter, masteryXP);
+      if (getCharacterXP(selectedCharacter) !== previousMasteryXP + Math.max(0, Math.round(masteryXP)) || newlyCompleted.some(challenge => !loadCompletedChallenges().has(challenge.id))) {
+        throw new Error("Mastery or challenge save failed");
+      }
 
       // Ascension: mark cleared if player defeated any boss on a linear/map run with ascension > 0
-      if (!isDaily && !isEndless && stats.bossesDefeated >= 1) {
-        const st = loadAscension();
-        if (st.selected > 0) {
-          markAscensionCleared(st.selected);
+      if (!isDaily && !isWeekly && !isEndless && stats.bossesDefeated >= 1) {
+        if (runAscension > 0) {
+          markAscensionCleared(runAscension);
         }
       }
 
@@ -275,16 +320,15 @@ export default function App() {
       const alreadyUnlocked = loadUnlockedCharacters();
       for (const char of ALL_CHARACTERS) {
         if (alreadyUnlocked.has(char.id)) continue;
-        const cond = char.unlockCondition;
-        if (!cond) continue;
-        if (cond.type === "reach_round" && typeof cond.value === "number" && finalRound >= cond.value) {
+        if (meetsCharacterUnlock(char, stats, finalRound)) {
           unlockCharacter(char.id);
-        } else if (cond.type === "defeat_boss" && stats.bossesDefeated > 0) {
-          unlockCharacter(char.id);
+          if (!loadUnlockedCharacters().has(char.id)) throw new Error("Character unlock save failed");
         }
       }
 
-      setGameOverData({
+      // Only retire the active run after all progression writes succeeded.
+      if (!clearRunCheckpoint()) throw new Error("Could not retire completed run");
+      const resultData: GameOverData = {
         stats,
         relicIds,
         finalRound,
@@ -301,10 +345,17 @@ export default function App() {
           leveledUp: masteryResult.leveledUp,
           challengesCompleted: newlyCompleted,
         },
-      });
-      setScreen("gameover");
+      };
+      // Reveal only after GameBoard has durably committed the profile receipt.
+      return () => {
+        setCheckpoint(loadRunCheckpoint());setResumeData(undefined);
+        setSavedData(newSaved);
+        if (newAchievements.length > 0) setPendingAchievements(newAchievements);
+        setGameOverData(resultData);
+        setScreen("gameover");
+      };
     },
-    [savedData.bestRound, screen, activeModifierIds, selectedCharacter]
+    [savedData.bestRound, screen, activeModifierIds, selectedCharacter, runAscension]
   );
 
   const handleRestart = useCallback(() => {
@@ -358,7 +409,7 @@ export default function App() {
       case "collection":
         return (
           <motion.div key="collection" {...pageVariants}>
-            <CollectionScreen savedData={savedData} onBack={handleHome} />
+            <CollectionScreen savedData={savedData} onBack={handleHome} initialTab={collectionStartTab} />
           </motion.div>
         );
       case "character_select":
@@ -410,6 +461,9 @@ export default function App() {
           <motion.div key="home" {...pageVariants}>
             <HomeScreen
               savedData={savedData}
+              onContinue={checkpoint.data ? continueRun : undefined}
+              continueRound={checkpoint.data?.states.game.round}
+              recoveryStatus={checkpoint.status}
               onStartRun={handleStartRun}
               onStartDaily={handleStartDaily}
               onShowWeekly={handleShowWeekly}
@@ -419,6 +473,7 @@ export default function App() {
               onShowHowToPlay={handleShowHowToPlay}
               onShowStats={handleShowStats}
               onShowCollection={handleShowCollection}
+              onShowAppearance={handleShowAppearance}
               onShowTalents={handleShowTalents}
               onShowCharacters={handleShowCharacters}
               onShowSettings={handleShowSettings}
@@ -447,6 +502,10 @@ export default function App() {
           <motion.div key="playing" {...pageVariants}>
             <GameBoard
               onGameOver={handleGameOver}
+              resume={resumeData}
+              modifierIds={activeModifierIds}
+              onCheckpoint={persistCheckpoint}
+              onSaveExit={handleHome}
               isDaily={screen === "daily"}
               isEndless={screen === "endless"}
               isWeekly={screen === "weekly"}
@@ -459,7 +518,7 @@ export default function App() {
   };
 
   return (
-    <>
+    <MotionConfig reducedMotion={reducedMotion ? "always" : "user"}>
       <a href="#main-content" className="skip-to-content">
         Saltar al contenido principal
       </a>
@@ -473,7 +532,7 @@ export default function App() {
           </AnimatePresence>
         </Suspense>
       </main>
-    </>
+    </MotionConfig>
   );
 }
 

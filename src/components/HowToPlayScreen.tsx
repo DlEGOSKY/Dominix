@@ -5,6 +5,8 @@ import AnimatedDemo from "./AnimatedDemo";
 import RelicCard from "./RelicCard";
 import type { Tile } from "@/types/domino";
 import { useTranslation } from "@/engine/i18n";
+import TutorialOverlay from "./TutorialOverlay";
+import {getTarget} from "@/engine/round";
 import { getHowToPlayContent } from "@/engine/howToPlayContent";
 
 interface HowToPlayScreenProps {
@@ -28,7 +30,7 @@ const DEMO_TILES: Record<string, Tile> = {
   "golden": { id: "demo-golden", top: 5, bottom: 3, type: "golden" },
   "locked": { id: "demo-locked", top: 2, bottom: 4, type: "locked" },
   "mirror": { id: "demo-mirror", top: 1, bottom: 4, type: "mirror" },
-  "bomb": { id: "demo-bomb", top: 3, bottom: 6, type: "bomb" },
+  "bomb": { id: "demo-bomb", top: 5, bottom: 6, type: "bomb" },
 };
 
 function SectionBasics() {
@@ -81,33 +83,33 @@ function SectionBasics() {
             {
               hand: [DEMO_TILES["3-5"]!, DEMO_TILES["5-2"]!, DEMO_TILES["2-6"]!, DEMO_TILES["1-1"]!],
               chain: [],
-              score: 0,
+
               label: c.demoStart,
               highlight: "demo-3-5",
             },
             {
               hand: [DEMO_TILES["5-2"]!, DEMO_TILES["2-6"]!, DEMO_TILES["1-1"]!],
               chain: [DEMO_TILES["3-5"]!],
-              score: 8,
+
               label: c.demoPlayFirst,
             },
             {
               hand: [DEMO_TILES["2-6"]!, DEMO_TILES["1-1"]!],
               chain: [DEMO_TILES["3-5"]!, DEMO_TILES["5-2"]!],
-              score: 15,
+
               label: c.demoConnectFive,
               highlight: "demo-5-2",
             },
             {
               hand: [DEMO_TILES["1-1"]!],
               chain: [DEMO_TILES["3-5"]!, DEMO_TILES["5-2"]!, DEMO_TILES["2-6"]!],
-              score: 23,
+
               label: c.demoConnectTwo,
             },
             {
               hand: [DEMO_TILES["1-1"]!],
               chain: [DEMO_TILES["3-5"]!, DEMO_TILES["5-2"]!, DEMO_TILES["2-6"]!],
-              score: 38,
+
               label: c.demoPattern,
             },
           ]}
@@ -200,39 +202,39 @@ function SectionGameplay() {
             {
               hand: [DEMO_TILES["3-3"]!, DEMO_TILES["3-5"]!, DEMO_TILES["5-2"]!, DEMO_TILES["2-6"]!, DEMO_TILES["6-6"]!],
               chain: [],
-              score: 0,
+
               label: c.roundDemoStep1,
               highlight: "demo-3-3",
             },
             {
               hand: [DEMO_TILES["3-5"]!, DEMO_TILES["5-2"]!, DEMO_TILES["2-6"]!, DEMO_TILES["6-6"]!],
               chain: [DEMO_TILES["3-3"]!],
-              score: 6,
+
               label: c.roundDemoStep2,
             },
             {
               hand: [DEMO_TILES["5-2"]!, DEMO_TILES["2-6"]!, DEMO_TILES["6-6"]!],
               chain: [DEMO_TILES["3-3"]!, DEMO_TILES["3-5"]!],
-              score: 14,
+
               label: c.roundDemoStep3,
               highlight: "demo-3-5",
             },
             {
               hand: [DEMO_TILES["2-6"]!, DEMO_TILES["6-6"]!],
               chain: [DEMO_TILES["3-3"]!, DEMO_TILES["3-5"]!, DEMO_TILES["5-2"]!],
-              score: 21,
+
               label: c.roundDemoStep4,
             },
             {
               hand: [DEMO_TILES["6-6"]!],
               chain: [DEMO_TILES["3-3"]!, DEMO_TILES["3-5"]!, DEMO_TILES["5-2"]!, DEMO_TILES["2-6"]!],
-              score: 29,
+
               label: c.roundDemoStep5,
             },
             {
               hand: [],
               chain: [DEMO_TILES["3-3"]!, DEMO_TILES["3-5"]!, DEMO_TILES["5-2"]!, DEMO_TILES["2-6"]!, DEMO_TILES["6-6"]!],
-              score: 86,
+
               label: c.roundDemoStep6,
             },
           ]}
@@ -250,9 +252,9 @@ function SectionGameplay() {
         <div className="flex items-center justify-center gap-3 py-4">
           {[
             { round: 1, target: 80, status: "done" },
-            { round: 2, target: 140, status: "done" },
-            { round: 3, target: 220, status: "current" },
-            { round: 4, target: 320, status: "future" },
+            { round: 2, target: getTarget(2), status: "done" },
+            { round: 3, target: getTarget(3), status: "current" },
+            { round: 4, target: getTarget(4), status: "future" },
           ].map((r, i) => (
             <motion.div
               key={r.round}
@@ -288,13 +290,13 @@ function SectionPatterns() {
     {
       name: c.chainSimpleName,
       description: c.chainSimpleDesc,
-      bonus: "+15",
+      bonus: "+20",
       example: ["3-5", "5-2", "2-6"],
     },
     {
       name: c.doubleDoubleName,
       description: c.doubleDoubleDesc,
-      bonus: "+20",
+      bonus: "+30",
       example: ["3-3", "3-5", "5-5"],
     },
     {
@@ -306,8 +308,8 @@ function SectionPatterns() {
     {
       name: c.ladderName,
       description: c.ladderDesc,
-      bonus: "+30",
-      example: ["1-2", "2-3", "3-4"],
+      bonus: "+35",
+      example: ["1-2", "2-3", "3-4", "4-5"],
     },
   ];
 
@@ -388,7 +390,7 @@ function SectionPatterns() {
         <p className="text-sm text-accent-silver/60 leading-relaxed">
           {renderInline(c.comboIntro)}
         </p>
-        <div className="flex items-center gap-3 text-sm">
+        <div className="flex flex-wrap items-center gap-3 text-sm">
           <span className="px-2 py-1 rounded-lg bg-surface-800 text-accent-silver/60">{c.combo2}</span>
           <span className="px-2 py-1 rounded-lg bg-surface-800 text-accent-silver/60">{c.combo3}</span>
           <span className="px-2 py-1 rounded-lg bg-surface-800 text-accent-silver/60">{c.combo4}</span>
@@ -460,26 +462,26 @@ function SectionAdvanced() {
             {
               hand: [DEMO_TILES["mirror"]!, DEMO_TILES["bomb"]!, DEMO_TILES["wild"]!],
               chain: [DEMO_TILES["3-5"]!],
-              score: 8,
+
               label: c.specialDemoStep1,
               highlight: "demo-mirror",
             },
             {
               hand: [DEMO_TILES["bomb"]!, DEMO_TILES["wild"]!],
               chain: [DEMO_TILES["3-5"]!, DEMO_TILES["mirror"]!],
-              score: 16,
+
               label: c.specialDemoStep2,
             },
             {
               hand: [DEMO_TILES["wild"]!],
               chain: [DEMO_TILES["3-5"]!, DEMO_TILES["mirror"]!, DEMO_TILES["bomb"]!],
-              score: 40,
+
               label: c.specialDemoStep3,
             },
             {
               hand: [],
               chain: [DEMO_TILES["3-5"]!, DEMO_TILES["mirror"]!, DEMO_TILES["bomb"]!, DEMO_TILES["wild"]!],
-              score: 48,
+
               label: c.specialDemoStep4,
             },
           ]}
@@ -731,13 +733,15 @@ function SectionMeta() {
 
 export default function HowToPlayScreen({ onBack }: HowToPlayScreenProps) {
   // Subscribe to language changes so all subsections re-render on switch.
-  useTranslation();
   const c = getHowToPlayContent();
   const SECTIONS = c.sections.map((s, i) => ({ ...s, icon: SECTION_ICONS[i]! }));
   const [activeSection, setActiveSection] = useState("basics");
+  const [practice,setPractice]=useState(false);
+  const {t}=useTranslation();
 
   return (
     <div className="min-h-screen flex flex-col">
+      {practice&&<TutorialOverlay onComplete={()=>setPractice(false)} onSkip={()=>setPractice(false)}/>}
       {/* Header */}
       <div className="sticky top-0 z-10 bg-surface-900/95 backdrop-blur-sm border-b border-surface-600/30">
         <div className="max-w-3xl mx-auto px-6 py-4">
@@ -756,6 +760,7 @@ export default function HowToPlayScreen({ onBack }: HowToPlayScreenProps) {
         </div>
       </div>
 
+      <div className="max-w-3xl mx-auto w-full px-6 py-3"><button type="button" className="min-h-11 px-4 rounded-lg border border-accent-gold/50 bg-accent-gold/10 text-accent-gold font-bold text-sm" onClick={()=>setPractice(true)}>{t("training.title")}</button></div>
       {/* Section tabs */}
       <div className="sticky top-[73px] z-10 bg-surface-900/95 backdrop-blur-sm border-b border-surface-600/30">
         <div className="max-w-3xl mx-auto px-6 py-3">

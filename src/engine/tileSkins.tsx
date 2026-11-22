@@ -15,6 +15,13 @@
  */
 
 import type { ReactNode } from "react";
+import type { TileMaterial } from "./materialArt";
+import { BandaPortrait } from "./bandaDobleArt";
+import { ChatarraPortrait } from "./chatarraArt";
+import { InvitadosPortrait } from "./invitadosArt";
+import { CollectionPortrait } from "./collectionPortraits";
+import { NumericCollectionFace } from "./numericCollectionFaces";
+import { WorldSkinFace, WorldSkinSurface, type WorldSkinId } from "./worldSkinArt";
 import {
   GiGhost, GiEyeball, GiCobra, GiWizardFace, GiDragonHead, GiDevilMask, GiCrownedSkull,
   GiAcorn, GiMushroom, GiOakLeaf, GiButterfly, GiTreeBranch, GiWolfHead, GiFlowerHat,
@@ -52,6 +59,14 @@ export interface TileSkinDef {
    * Receives the pip value and must return a ReactNode (SVG recommended).
    */
   valueIcon?: (value: number) => ReactNode;
+  /** Countable playing-face art, separate from gallery character portraits. */
+  valueFace?: (value: number) => ReactNode;
+  /** Full-face art with numeric labels near the separator; survives special types. */
+  valueArtStyle?: "portrait" | "roman";
+  /** Cosmetic numerals; accessible values always remain ordinary numbers. */
+  portraitNumerals?: "roman";
+  /** Crafted surface independent of tactical tile type. */
+  material?: TileMaterial;
 }
 
 // ---------------------------------------------------------------------------
@@ -427,7 +442,110 @@ export const ALL_TILE_SKINS: TileSkinDef[] = [
     unlockLevel: 0,
   },
   {
+    id: "banda_doble",
+    name: "La Banda del Doble",
+    flavor: "Siete caras. Ninguna juega limpio.",
+    bg: "bg-gradient-to-b from-[#21172d] via-[#151020] to-[#0a0811]",
+    border: "border-violet-400/55",
+    dot: "bg-amber-100",
+    separator: "via-amber-200/40",
+    dotShape: "round",
+    accent: "#f5ddb9",
+    pattern: null,
+    glyph: null,
+    unlockLevel: 0,
+    valueArtStyle: "portrait",
+    valueIcon: (value) => <BandaPortrait value={value} />,
+  },
+  {
+    id: "chatarra_lujo",
+    name: "Chatarra de Lujo",
+    flavor: "Hechos de sobras. Nacidos para encajar.",
+    bg: "bg-gradient-to-b from-[#241c24] via-[#15151f] to-[#0a0911]",
+    border: "border-orange-300/55",
+    dot: "bg-amber-100",
+    separator: "via-orange-200/40",
+    dotShape: "square",
+    accent: "#f6cca5",
+    pattern: null,
+    glyph: null,
+    unlockLevel: 0,
+    valueArtStyle: "portrait",
+    valueIcon: (value) => <ChatarraPortrait value={value} />,
+  },
+  {
+    id: "invitados_umbral",
+    name: "Invitados del Umbral",
+    flavor: "Siete mundos. Una misma mesa.",
+    bg: "bg-gradient-to-b from-[#211b30] via-[#15111e] to-[#0a0911]",
+    border: "border-fuchsia-300/50",
+    dot: "bg-amber-100",
+    separator: "via-violet-200/40",
+    dotShape: "round",
+    accent: "#f3deca",
+    pattern: null,
+    glyph: null,
+    unlockLevel: 0,
+    valueArtStyle: "portrait",
+    valueIcon: (value) => <InvitadosPortrait value={value} />,
+  },
+  {
+    id: "among_us",
+    name: "Among Us · Tripulación",
+    flavor: "Esmalte gastado, cristal cian y secretos bajo el visor.",
+    bg: "bg-gradient-to-b from-[#182834] via-[#141c2a] to-[#0b111d]",
+    border: "border-cyan-300/55", dot: "bg-cyan-100", separator: "via-cyan-200/45",
+    dotShape: "round", accent: "#8eedf0", pattern: null, glyph: null, unlockLevel: 0,
+    valueArtStyle: "portrait", valueIcon: value => <CollectionPortrait collection="among_us" value={value} />,
+    valueFace: value => <NumericCollectionFace collection="among_us" value={value}/>,
+  },
+  {
+    id: "hollow_knight",
+    name: "Hollow Knight · Hallownest",
+    flavor: "Siete ecos de Hallownest. Una máscara distinta para cada valor.",
+    bg: "bg-gradient-to-b from-[#24283b] via-[#171a29] to-[#0a0c16]",
+    border: "border-slate-300/55", dot: "bg-slate-100", separator: "via-slate-200/45",
+    dotShape: "round", accent: "#e4e6d5", pattern: null, glyph: null, unlockLevel: 0,
+    valueArtStyle: "portrait", valueIcon: value => <CollectionPortrait collection="hollow_knight" value={value} />,
+    valueFace: value => <NumericCollectionFace collection="hollow_knight" value={value}/>,
+  },
+  {
+    id: "one_piece",
+    name: "One Piece · Sombrero de Paja",
+    flavor: "El tesoro marca el valor. La tripulación pone el rumbo.",
+    bg: "bg-gradient-to-b from-[#30222a] via-[#1d1828] to-[#0e101c]",
+    border: "border-amber-300/55", dot: "bg-amber-100", separator: "via-amber-200/45",
+    dotShape: "round", accent: "#f5ca7c", pattern: null, glyph: null, unlockLevel: 0,
+    valueArtStyle: "portrait", valueIcon: value => <CollectionPortrait collection="one_piece" value={value} />,
+    valueFace: value => <NumericCollectionFace collection="one_piece" value={value}/>,
+  },
+  {
+    id: "roma_eterna",
+    name: "Roma Eterna",
+    flavor: "El valor grabado en grande. El imperio, detrás.",
+    bg: "bg-gradient-to-b from-[#30271e] via-[#201a21] to-[#100e16]",
+    border: "border-accent-gold/60", dot: "bg-amber-100", separator: "via-amber-200/50",
+    dotShape: "round", accent: "#dfc18a", pattern: null, glyph: null, unlockLevel: 0,
+    valueArtStyle: "portrait", portraitNumerals: "roman", valueIcon: value => <CollectionPortrait collection="roma_eterna" value={value} />,
+    valueFace: value => <NumericCollectionFace collection="roma_eterna" value={value}/>,
+  },
+  ...([
+    ["eclipse_glass", "Vitrales del eclipse", "La noche, engastada en plomo. Cuenta las estrellas de cristal.", "#e6cf98", "bg-[#191627]", "border-violet-300/50"],
+    ["orbital_reactor", "Reactor orbital", "Una sección de la nave. Cada indicador encendido marca un punto.", "#a4ebdb", "bg-[#13212b]", "border-teal-300/50"],
+    ["sunken_temple", "Templo sumergido", "Piedra bajo la marea. El valor permanece en sus perlas.", "#e6d6a6", "bg-[#18302f]", "border-teal-200/50"],
+    ["dragon_forge", "Forja del dragón", "Hierro templado. Cada remache conserva una brasa.", "#ffd59a", "bg-[#281c23]", "border-orange-300/50"],
+    ["alchemist_cabinet", "Gabinete de alquimia", "Latón, vidrio y una medida exacta de luz.", "#d9e9a0", "bg-[#252a1e]", "border-lime-200/50"],
+    ["midnight_express", "Expreso de medianoche", "Madera, latón y un último destino. Cuenta las ventanas encendidas.", "#e5c68f", "bg-[#231f20]", "border-amber-200/55"],
+  ] as const).map(([id, name, flavor, accent, bg, border]): TileSkinDef => ({
+    id, name, flavor, accent, bg, border, dot: "bg-amber-100", separator: "via-amber-100/30",
+    dotShape: "round", unlockLevel: 0, valueArtStyle: "portrait", glyph: null,
+    pattern: <WorldSkinSurface world={id as WorldSkinId}/>,
+    valueIcon: value => <WorldSkinFace world={id} value={value}/>,
+    valueFace: value => <WorldSkinFace world={id} value={value}/>,
+  })),
+  {
     id: "obsidian",
+    material: "obsidian",
     name: "Obsidiana",
     flavor: "Cortada del eco frio del primer pacto.",
     bg: "bg-gradient-to-b from-[#1c1c28] to-[#0e0e18]",
@@ -442,45 +560,60 @@ export const ALL_TILE_SKINS: TileSkinDef[] = [
   },
   {
     id: "emerald",
+    material: "emerald",
     name: "Esmeralda",
     flavor: "El verdor que precede a toda cadena.",
     bg: "bg-gradient-to-b from-[#0d2b1f] to-[#071a12]",
     border: "border-emerald-500/50",
-    dot: "bg-emerald-300",
+    dot: "pip-emerald",
     separator: "via-emerald-500/40",
     dotShape: "round",
     accent: "#34d399",
-    pattern: <PatternCrystal stroke="#34d399" opacity={0.32} />,
+    pattern: <PatternCrystal stroke="#34d399" opacity={0.08} />,
     glyph: null,
     unlockLevel: 6,
   },
   {
     id: "ruby",
+    material: "ruby",
     name: "Rubi",
     flavor: "Calor que empuja la siguiente jugada.",
     bg: "bg-gradient-to-b from-[#2a0d10] to-[#180608]",
     border: "border-rose-500/50",
-    dot: "bg-rose-300",
+    dot: "pip-ruby",
     separator: "via-rose-500/40",
     dotShape: "round",
     accent: "#f87171",
-    pattern: <PatternCrystal stroke="#f87171" opacity={0.32} />,
+    pattern: <PatternCrystal stroke="#f87171" opacity={0.08} />,
     glyph: null,
-    unlockLevel: 9,
+    unlockLevel: 10,
   },
   {
     id: "ivory",
+    material: "ivory",
     name: "Marfil",
     flavor: "Tradicion. Marqueteria fina, fuerza de lo clasico.",
     bg: "bg-gradient-to-b from-[#f5f0e8] to-[#e8dcc8]",
     border: "border-stone-400/60",
-    dot: "bg-stone-700",
+    dot: "pip-ivory",
     separator: "via-stone-400/50",
     dotShape: "round",
     accent: "#78716c",
-    pattern: <PatternHeritage stroke="#78716c" opacity={0.4} />,
+    pattern: <PatternHeritage stroke="#78716c" opacity={0.14} />,
     glyph: null,
-    unlockLevel: 11,
+    unlockLevel: 12,
+  },
+  {
+    id: "diamond", name: "Diamante", flavor: "Luz tallada. Cada punto, una incisión.",
+    material: "diamond", bg: "bg-gradient-to-br from-[#c8e8f2] via-[#89aebf] to-[#49647c]",
+    border: "border-sky-100/65", dot: "pip-diamond", separator: "via-slate-700/50", dotShape: "diamond",
+    accent: "#173144", pattern: null, glyph: null, unlockLevel: 0,
+  },
+  {
+    id: "imperium", name: "Imperium", flavor: "Piedra, laurel y el peso de cada decisión.",
+    material: "roman", valueArtStyle: "roman", bg: "bg-gradient-to-b from-[#e4d5b6] via-[#d1bb94] to-[#a98b60]",
+    border: "border-amber-200/60", dot: "pip-ivory", separator: "via-amber-950/40", dotShape: "round",
+    accent: "#412b1b", pattern: null, glyph: null, unlockLevel: 0,
   },
   {
     id: "void",
@@ -494,7 +627,7 @@ export const ALL_TILE_SKINS: TileSkinDef[] = [
     accent: "#a78bfa",
     pattern: <PatternVoid stroke="#a78bfa" fill="#c4b5fd" opacity={0.65} />,
     glyph: null,
-    unlockLevel: 14,
+    unlockLevel: 15,
   },
   {
     id: "neon",
@@ -508,7 +641,7 @@ export const ALL_TILE_SKINS: TileSkinDef[] = [
     accent: "#22d3ee",
     pattern: <PatternCircuit stroke="#22d3ee" opacity={0.4} />,
     glyph: null,
-    unlockLevel: 17,
+    unlockLevel: 18,
   },
   {
     id: "gold",
@@ -627,7 +760,7 @@ export const ALL_TILE_SKINS: TileSkinDef[] = [
     accent: "#d4a234",
     pattern: <PatternRunes stroke="#d4a234" opacity={0.18} />,
     glyph: null,
-    unlockLevel: 21,
+    unlockLevel: 22,
     valueIcon: (v) => <TarotValueIcon value={v} color="#d4a234" />,
   },
   {
@@ -642,7 +775,7 @@ export const ALL_TILE_SKINS: TileSkinDef[] = [
     accent: "#7eb8f7",
     pattern: <PatternStars fill="#93c5fd" opacity={0.75} />,
     glyph: null,
-    unlockLevel: 22,
+    unlockLevel: 23,
     valueIcon: (v) => <AstralValueIcon value={v} color="#7eb8f7" />,
   },
 ];

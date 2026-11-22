@@ -1,0 +1,87 @@
+{
+  "source_sha256": "57d5c27606a822a48444f15180f8d7a9a879abde35e79f75ec86884a76d976a0",
+  "source_size": [
+    1024,
+    688
+  ],
+  "surface_size": [
+    96,
+    192
+  ],
+  "quality": 82,
+  "resampling": "lanczos",
+  "surfaces": [
+    {
+      "material": "ivory",
+      "crop": [
+        0,
+        0,
+        341,
+        344
+      ],
+      "file": "ivory-v1.webp",
+      "bytes": 992,
+      "sha256": "da4b8a9c7d0155fa37363c38a3bb9c1cd3bcc0357faff608e572f2cbcf58b584"
+    },
+    {
+      "material": "emerald",
+      "crop": [
+        341,
+        0,
+        683,
+        344
+      ],
+      "file": "emerald-v1.webp",
+      "bytes": 1136,
+      "sha256": "d4b7ca2889fd82e3c3f27f7ed5623df251d9c98ec33cd20dd86fedd8dee20b75"
+    },
+    {
+      "material": "ruby",
+      "crop": [
+        683,
+        0,
+        1024,
+        344
+      ],
+      "file": "ruby-v1.webp",
+      "bytes": 1124,
+      "sha256": "c4a8683a5cfc6bb1527cb93e7022f2fe338a4a5e9d70de06bd5358bfbfb63e26"
+    },
+    {
+      "material": "diamond",
+      "crop": [
+        0,
+        344,
+        341,
+        688
+      ],
+      "file": "diamond-v1.webp",
+      "bytes": 1724,
+      "sha256": "09eb4ec8233856c87d318bf4571bf61f5b19497750206c8a000cfbf0b2131ffe"
+    },
+    {
+      "material": "obsidian",
+      "crop": [
+        341,
+        344,
+        683,
+        688
+      ],
+      "file": "obsidian-v1.webp",
+      "bytes": 750,
+      "sha256": "996ab29ff520fa1cbb0acf4738380d694cd7f8dabf71fc8b6f0152a255f30237"
+    },
+    {
+      "material": "roman",
+      "crop": [
+        683,
+        344,
+        1024,
+        688
+      ],
+      "file": "roman-v1.webp",
+      "bytes": 2042,
+      "sha256": "f49205ba2e8fea90522d3549ae1226fed3d4505b7a581067a6de486e87abaf55"
+    }
+  ]
+}

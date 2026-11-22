@@ -1,0 +1,107 @@
+import {openHomeMode,waitForHome} from "./homeNavigation.mjs";
+import assert from "node:assert/strict";
+import { writeFile, mkdtemp } from "node:fs/promises";
+import { tmpdir } from "node:os";
+import path from "node:path";
+const {chromium}=await import(process.argv[2]);
+const output=process.argv[4],base=process.argv[5]||"http://127.0.0.1:5176/";
+const suffix=base.includes("/Dominix/")?"subpath":"root";
+const checks=[],errors=[];
+const profile=await mkdtemp(path.join(tmpdir(),"dominix-pwa-"));
+const context=await chromium.launchPersistentContext(profile,{executablePath:process.argv[3],headless:true,viewport:{width:1280,height:900},reducedMotion:"reduce"});
+await context.addInitScript(()=>localStorage.setItem("dominix_lang","es"));
+const watch=page=>{page.on("pageerror",e=>errors.push(String(e)));page.on("console",m=>{if(m.type()==="error")errors.push(m.text());});};
+const saved=async page=>page.evaluate(()=>{const raw=localStorage.getItem("dominix_active_run_v1");return raw?JSON.parse(JSON.parse(raw).body):null;});
+async function settled(page,predicate=()=>true){for(let n=0;n<70;n++){await page.waitForTimeout(100);const data=await saved(page);if(data&&predicate(data))return data;}throw new Error("Checkpoint not settled");}
+async function continueRun(page){await page.getByRole("button",{name:/^Continuar partida/}).click();await page.locator(".hand-panel").waitFor();}
+let page=await context.newPage();watch(page);
+try{
+  await page.goto(base,{waitUntil:"networkidle"});await waitForHome(page);
+  await page.evaluate(async()=>{await navigator.serviceWorker.ready;if(!navigator.serviceWorker.controller)await new Promise(resolve=>navigator.serviceWorker.addEventListener("controllerchange",resolve,{once:true}));});
+  const cdp=await context.newCDPSession(page);
+  const manifest=await cdp.send("Page.getAppManifest");assert.equal(manifest.errors.length,0);
+  const installability=await cdp.send("Page.getInstallabilityErrors");assert.deepEqual(installability.installabilityErrors,[]);
+  const cache=await page.evaluate(async()=>{
+    const keys=await caches.keys(),scope=new URL((await navigator.serviceWorker.ready).scope).pathname;
+    const name=keys.find(key=>key.startsWith("dominix-"+scope+"-static-"));const cache=await caches.open(name);const requests=await cache.keys();
+    let bytes=0;for(const request of requests)bytes+=(await (await cache.match(request)).arrayBuffer()).byteLength;
+    const lazy=requests.find(r=>r.url.includes("CollectionScreen"));
+    return {name,count:requests.length,bytes,files:requests.map(r=>r.url),lazyVary:lazy?(await cache.match(lazy)).headers.get("Vary"):null};
+  });
+  await writeFile(`${output}/pwa-cache-${suffix}-2026-11-14.json`,JSON.stringify(cache,null,2));
+  assert(cache.files.some(f=>/CollectionScreen.*\.js$/.test(f)));assert(cache.files.some(f=>f.endsWith("icon-512.png")));assert(cache.files.filter(f=>f.endsWith(".woff2")).length>=2);
+  assert.equal(await page.evaluate(()=>performance.getEntriesByType("resource").filter(r=>r.name.includes("CollectionScreen")).length),0);
+  checks.push("Installability checks pass; unvisited screens, fonts and installation icons are precached");
+  await openHomeMode(page,"Endless");await page.locator(".hand-panel").waitFor();
+  const intro=page.getByText(/toca para continuar/i);if(await intro.count())await intro.click();
+  const skip=page.getByRole("button",{name:"Saltar",exact:true});if(await skip.count())await skip.click();
+  const tutorial=page.getByRole("dialog").filter({hasText:"Aprende jugando una cadena"});
+  if(await tutorial.count())await tutorial.getByRole("button",{name:"Cerrar",exact:true}).click();
+  await page.locator(".hand-panel button[data-skin]:enabled").first().click();
+  const played=await settled(page,c=>c.states.game.chain.placed.length===1);
+  const second=await context.newPage();watch(second);await second.goto(base,{waitUntil:"networkidle"});
+  await second.getByText("Esperando acceso a tu partida",{exact:true}).waitFor();
+  assert.equal(await second.locator(".hand-panel").count(),0);await second.waitForTimeout(300);
+  assert.deepEqual((await saved(second)).states,played.states);
+  await second.setViewportSize({width:390,height:844});await second.screenshot({path:`${output}/pwa-espera-${suffix}-2026-11-14.jpg`,type:"jpeg",quality:90});
+  checks.push("Second tab cannot mount the game or overwrite the owner's run");
+  await page.locator(".hand-panel button[data-skin]:enabled").first().click();
+  await page.close();page=second;
+  const lastWrite=await saved(page);assert.equal(lastWrite.states.game.chain.placed.length,2);
+  await continueRun(page);const handed=await settled(page);assert.deepEqual(handed.states,lastWrite.states);assert.deepEqual(handed.rng,lastWrite.rng);
+  checks.push("Closing the owner automatically hands the latest checkpoint to the waiting tab");
+  const third=await context.newPage();await third.goto(base,{waitUntil:"networkidle"});await third.getByText("Esperando acceso a tu partida",{exact:true}).waitFor();await third.close();
+  await context.setOffline(true);await page.reload({waitUntil:"networkidle"});await continueRun(page);
+  const offline=await settled(page);assert.deepEqual(offline.states,handed.states);assert.deepEqual(offline.rng,handed.rng);
+  await page.locator(".hand-panel button[data-skin]:enabled").first().click();
+  const offlinePlay=await settled(page,c=>c.states.game.chain.placed.length===handed.states.game.chain.placed.length+1);
+  await page.waitForTimeout(600);await page.screenshot({path:`${output}/pwa-partida-offline-${suffix}-2026-11-14.jpg`,type:"jpeg",quality:90,fullPage:true});
+  if(suffix==="root"){
+    await page.setViewportSize({width:1280,height:900});await page.waitForTimeout(300);
+    const logBox=await page.getByRole("region",{name:"Patrones de la ronda",exact:true}).boundingBox();
+    const titleBox=await page.locator(".tactical-board h1").boundingBox();assert(logBox.x>=0 && logBox.x+logBox.width<titleBox.x);
+    assert(await page.evaluate(()=>document.documentElement.clientWidth===document.documentElement.scrollWidth));
+    await page.screenshot({path:`${output}/pwa-partida-offline-escritorio-2026-11-14.jpg`,type:"jpeg",quality:90,fullPage:true});
+    await page.setViewportSize({width:390,height:844});
+  }
+  await page.getByRole("button",{name:"Guardar y salir",exact:true}).click();
+  await page.getByRole("button",{name:/^Colecci[oó]n$/}).click();await page.getByRole("button",{name:/^Skins/}).click();
+  await page.getByRole("button",{name:/^(Probar )?Imperium$/,exact:true}).click();await page.waitForTimeout(500);
+  assert(await page.evaluate(async()=>{await document.fonts.ready;return document.fonts.check('700 16px "Inter"',"Puntuación ñ")&&document.fonts.check('400 16px "JetBrains Mono"',"123");}));
+  await page.screenshot({path:`${output}/pwa-coleccion-offline-${suffix}-2026-11-14.jpg`,type:"jpeg",quality:90,fullPage:true});
+  checks.push("Offline reload, resume, play and previously unvisited Collection/skins work with local fonts");
+  if(await page.getByRole("dialog").count())await page.getByRole("dialog").getByRole("button",{name:"Cerrar",exact:true}).click();
+  await page.getByRole("button",{name:"Volver",exact:true}).click();await continueRun(page);
+  const beforeUpdate=await settled(page);assert.deepEqual(beforeUpdate.states,offlinePlay.states);
+  await page.evaluate(()=>{
+    window.dispatchEvent(new Event("beforeinstallprompt",{cancelable:true}));
+    window.originalSetItem=Storage.prototype.setItem;
+    Storage.prototype.setItem=function(k,v){if(k.startsWith("dominix_active_run"))throw new DOMException("Full","QuotaExceededError");return window.originalSetItem.call(this,k,v);};
+    navigator.serviceWorker.dispatchEvent(new MessageEvent("message",{data:{type:"sw-update",version:"test"}}));
+  });
+  await page.getByRole("button",{name:"Recargar",exact:true}).click();await page.getByRole("alert").filter({hasText:/No se pudo guardar/}).waitFor();assert.equal(await page.locator(".hand-panel").count(),1);
+  const alertBox=await page.getByRole("alert").boundingBox(),reloadBox=await page.getByRole("button",{name:"Recargar",exact:true}).boundingBox();
+  assert(alertBox.y>=reloadBox.y+reloadBox.height || alertBox.y+alertBox.height<=reloadBox.y);
+  await page.waitForTimeout(700);
+  await page.screenshot({path:`${output}/pwa-avisos-${suffix}-2026-11-14.jpg`,type:"jpeg",quality:90,fullPage:true});
+  await page.waitForTimeout(4200);assert.equal(await page.getByRole("button",{name:"Instalar",exact:true}).count(),0);
+  await page.evaluate(()=>{Storage.prototype.setItem=window.originalSetItem;});
+  await page.getByRole("button",{name:"Recargar",exact:true}).click();await continueRun(page);
+  assert.deepEqual((await settled(page)).states,beforeUpdate.states);
+  checks.push("Update reload is cancelled if saving fails and resumes correctly after storage recovers (synthetic update notice)");
+  await page.getByRole("button",{name:"Cerrar cadena",exact:true}).click();
+  await page.getByRole("button",{name:"Elegir recompensa",exact:true}).click();
+  await page.locator('[data-reward-type="relic"]').first().click();
+  const receipt=page.getByRole("complementary",{name:"Recompensa confirmada",exact:true});await receipt.waitFor();
+  await page.evaluate(()=>navigator.serviceWorker.dispatchEvent(new MessageEvent("message",{data:{type:"sw-update",version:"test"}})));
+  await page.waitForTimeout(700);
+  const receiptBox=await receipt.boundingBox(),updateBox=await page.getByRole("button",{name:"Recargar",exact:true}).boundingBox();
+  assert(receiptBox.y>=updateBox.y+updateBox.height || receiptBox.y+receiptBox.height<=updateBox.y);
+  await page.screenshot({path:`${output}/pwa-recibo-avisos-${suffix}-2026-11-14.jpg`,type:"jpeg",quality:90,fullPage:true});
+  await receipt.getByRole("button",{name:"Cerrar",exact:true}).click();await receipt.waitFor({state:"hidden"});
+  checks.push("A real relic reward receipt and update notice remain separate and clickable offline");
+  assert.deepEqual(errors,[]);
+  const result={checks,errors,cache,installability:installability.installabilityErrors,manifestId:JSON.parse(manifest.data).id,base};
+  await writeFile(`${output}/pwa-verificacion-${suffix}-2026-11-14.json`,JSON.stringify(result,null,2));console.log(JSON.stringify({...result,cache:{name:cache.name,count:cache.count,bytes:cache.bytes}},null,2));
+}catch(e){await page.screenshot({path:`${output}/pwa-fallo-${suffix}-2026-11-14.jpg`,fullPage:true});console.log((await page.locator("body").innerText()).slice(0,2400));console.log("ERRORS",errors);throw e;}
+finally{await context.close();}

@@ -6,7 +6,7 @@
  * the core domino mechanic.
  */
 
-import type { Tile } from "@/types/domino";
+import type { Tile, RunStats } from "@/types/domino";
 
 export type CharacterId =
   | "architect"
@@ -310,6 +310,13 @@ export function unlockCharacter(id: CharacterId): void {
 
 export function isCharacterUnlocked(id: CharacterId): boolean {
   return loadUnlockedCharacters().has(id);
+}
+
+export function meetsCharacterUnlock(character: Character, stats: RunStats, reachedRound: number): boolean {
+  const condition = character.unlockCondition;
+  if (condition?.type === "reach_round") return typeof condition.value === "number" && reachedRound >= condition.value;
+  if (condition?.type === "defeat_boss") return (stats.defeatedBossIds ?? []).includes(String(condition.value));
+  return condition?.type === "default";
 }
 
 // Selected character persistence

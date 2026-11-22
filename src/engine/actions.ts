@@ -32,6 +32,10 @@ export function getRelicActionBonuses(relicIds: string[]): ActionBonuses {
   return { extraActions, extraDiscards, extraDraws };
 }
 
+export function getRelicHandBonus(relicIds: string[]): number {
+  return ALL_RELICS.reduce((sum, relic) => sum + (relicIds.includes(relic.id) && relic.effect.type === "extra_hand_size" ? relic.effect.value : 0), 0);
+}
+
 export function createActionState(round: number, relicIds: string[] = [], modifierBonus: number = 0): ActionState {
   const roundBonus = Math.floor(round / 4);
   const rb = getRelicActionBonuses(relicIds);

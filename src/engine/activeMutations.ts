@@ -1,5 +1,5 @@
 import type { Tile, ChainState, GameState } from "@/types/domino";
-import { getGlobalRNG } from "./rng";
+import { shuffle } from "./tiles";
 
 export interface ActiveMutation {
   id: string;
@@ -77,7 +77,7 @@ export const ALL_ACTIVE_MUTATIONS: ActiveMutation[] = [
 
 export function getRandomActiveMutations(count: number, exclude: string[]): ActiveMutation[] {
   const available = ALL_ACTIVE_MUTATIONS.filter((m) => !exclude.includes(m.id));
-  const shuffled = [...available].sort(() => getGlobalRNG().next() - 0.5);
+  const shuffled = shuffle(available);
   return shuffled.slice(0, count);
 }
 
@@ -117,7 +117,7 @@ export function canUseMutation(
 
 export function applyShuffleHand(hand: Tile[], pool: Tile[], handSize: number): { hand: Tile[]; pool: Tile[] } {
   const combined = [...pool, ...hand];
-  const shuffled = [...combined].sort(() => getGlobalRNG().next() - 0.5);
+  const shuffled = shuffle(combined);
   const newHand = shuffled.slice(0, handSize);
   const newPool = shuffled.slice(handSize);
   return { hand: newHand, pool: newPool };

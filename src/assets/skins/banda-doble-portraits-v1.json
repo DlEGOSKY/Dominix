@@ -1,0 +1,83 @@
+{
+  "source_sha256": "effc86ebd2fd9c69da43e38e8077d8912e8995024852d3f5a299e3deb166c4fd",
+  "size": [
+    672,
+    96
+  ],
+  "frame": 96,
+  "palette_colors": 128,
+  "resampling": "nearest",
+  "bytes": 36594,
+  "portraits": [
+    {
+      "value": 0,
+      "name": "El Ausente",
+      "source_crop": [
+        90,
+        25,
+        240
+      ],
+      "sha256": "a54872ae70f60543783026c180615c5c6d5b8c56765169cb89db700583c8bade"
+    },
+    {
+      "value": 1,
+      "name": "Monóculo",
+      "source_crop": [
+        500,
+        100,
+        260
+      ],
+      "sha256": "c8d4f8ae3767705636f122e55d31a38c3fce7a73ededf858e78af3748d90655c"
+    },
+    {
+      "value": 2,
+      "name": "Los Picos",
+      "source_crop": [
+        870,
+        75,
+        300
+      ],
+      "sha256": "a9474fbdce315dac56842d0c8359b9946c783436329ad1405306cc6f450b70ad"
+    },
+    {
+      "value": 3,
+      "name": "Trébol",
+      "source_crop": [
+        95,
+        470,
+        250
+      ],
+      "sha256": "aaf4ec0d22143718855e5d2705cb99a30b003a3dc8eecac64c5073b5b2112bb6"
+    },
+    {
+      "value": 4,
+      "name": "Cuatro Ojos",
+      "source_crop": [
+        520,
+        480,
+        245
+      ],
+      "sha256": "d513601761c3af4c5d2d2234579f2686aea0b44e10ba52302155d1b24a3afc46"
+    },
+    {
+      "value": 5,
+      "name": "Estrella Invitada",
+      "source_crop": [
+        900,
+        440,
+        260
+      ],
+      "sha256": "24892d9c75e1cf1c1355a81829e37b27a1d0c3e524ed4bb427bec72b7bc25ff1"
+    },
+    {
+      "value": 6,
+      "name": "El Portero",
+      "source_crop": [
+        70,
+        850,
+        260
+      ],
+      "sha256": "a901ac1a117fbf10bd1ac2b5a240eb3925d0448b3b5b70f2fbd5ed6aa3084146"
+    }
+  ]
+}

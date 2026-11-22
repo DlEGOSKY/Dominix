@@ -3,24 +3,20 @@
  * Deterministic random number generator for reproducible runs.
  */
 
+export interface RNGState { seed: number; state: number }
 export interface SeededRNG {
-  next(): number; // 0..1
+  next(): number;
   seed: number;
+  snapshot(): RNGState;
 }
-
-function mulberry32(seed: number): () => number {
-  let s = seed | 0;
-  return () => {
-    s = (s + 0x6d2b79f5) | 0;
-    let t = Math.imul(s ^ (s >>> 15), 1 | s);
+export function createRNG(seed: number, state = seed): SeededRNG {
+  let cursor = state | 0;
+  return { seed, snapshot: () => ({ seed, state: cursor }), next: () => {
+    cursor = (cursor + 0x6d2b79f5) | 0;
+    let t = Math.imul(cursor ^ (cursor >>> 15), 1 | cursor);
     t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
     return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
-  };
-}
-
-export function createRNG(seed: number): SeededRNG {
-  const gen = mulberry32(seed);
-  return { next: gen, seed };
+  }};
 }
 
 export function randomSeed(): number {
@@ -54,4 +50,9 @@ export function getGlobalRNG(): SeededRNG {
 
 export function getGlobalSeed(): number {
   return getGlobalRNG().seed;
+}
+
+export function restoreGlobalRNG(snapshot: RNGState): SeededRNG {
+  globalRNG = createRNG(snapshot.seed, snapshot.state);
+  return globalRNG;
 }

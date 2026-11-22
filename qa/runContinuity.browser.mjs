@@ -1,0 +1,111 @@
+import {openHomeMode,waitForHome} from "./homeNavigation.mjs";
+import assert from "node:assert/strict";
+import { writeFile } from "node:fs/promises";
+const {chromium}=await import(process.argv[2]);
+const browser=await chromium.launch({executablePath:process.argv[3],headless:true});
+const output=process.argv[4];
+const key="dominix_active_run_v1",backup="dominix_active_run_backup_v1";
+const checks=[],errors=[];
+const context=await browser.newContext({viewport:{width:1440,height:1000},reducedMotion:"reduce"});
+const page=await context.newPage();
+page.on("pageerror",e=>errors.push(String(e)));
+page.on("console",m=>{if(m.type()==="error")errors.push(m.text());});
+const saved=async p=>p.evaluate(k=>{try{const raw=localStorage.getItem(k);return raw?JSON.parse(JSON.parse(raw).body):null;}catch{return null;}},key);
+async function settled(p,predicate=()=>true){for(let n=0;n<60;n++){await p.waitForTimeout(100);const data=await saved(p);if(data&&predicate(data))return data;}throw new Error("Checkpoint did not settle");}
+async function resume(p){await p.getByRole("button",{name:/^Continue run/}).click();await p.locator(".hand-panel").waitFor();}
+async function dismissIntro(p){const tap=p.getByText(/tap to continue/i);if(await tap.count())await tap.click();const skip=p.getByRole("button",{name:"Skip",exact:true});if(await skip.count())await skip.click();}
+try{
+  await page.goto("http://127.0.0.1:5176/",{waitUntil:"networkidle"});
+  await openHomeMode(page,"Endless");
+  await page.locator(".hand-panel").waitFor();await dismissIntro(page);
+  const initial=await settled(page);
+  assert(initial.states.game.hand.length>0);assert.equal(initial.states.game.result,"playing");
+  await page.locator(".hand-panel button[data-skin]:enabled").first().click();
+  const played=await settled(page,c=>c.states.game.chain.placed.length===1);
+  await page.getByRole("button",{name:"Save and exit",exact:true}).click();
+  await page.getByRole("button",{name:/^Continue run/}).waitFor();
+  await page.waitForTimeout(1200);
+  await page.screenshot({path:`${output}/continuar-portada-2026-11-14.jpg`,type:"jpeg",quality:90});
+  await resume(page);const restored=await settled(page);
+  assert.deepEqual(restored.states,played.states);assert.deepEqual(restored.rng,played.rng);
+  checks.push("Save and exit restores every mechanical state and RNG cursor after a real play");
+  await page.reload({waitUntil:"networkidle"});await resume(page);
+  const reloaded=await settled(page);assert.deepEqual(reloaded.states,played.states);assert.deepEqual(reloaded.rng,played.rng);
+  checks.push("Browser reload restores the same hand, chain, actions, inventory, score and flags");
+  const undo=page.getByRole("button",{name:/^Undo/});
+  assert.equal(await undo.count(),1);
+  if(await undo.count()){
+    await undo.click();const undone=await settled(page,c=>c.states.game.chain.placed.length===0);
+    assert.deepEqual(undone.states.game.hand,initial.states.game.hand);assert.equal(undone.states.undoUsesLeft,0);
+    checks.push("Undo survives resume and remains limited to one use");
+  }
+  for(let i=0;i<12;i++){
+    const state=await saved(page);if(state.states.game.result!=="playing")break;
+    const available=page.locator(".hand-panel button[data-skin]:enabled");if(!await available.count())break;
+    const candidates=await available.evaluateAll(els=>els.map(el=>({name:el.getAttribute("aria-label"),delta:parseFloat(el.parentElement.parentElement.querySelector(".hand-preview")?.textContent||"0")})));
+    const index=candidates.reduce((best,c,j)=>c.delta>candidates[best].delta?j:best,0);
+    const count=state.states.game.chain.placed.length;await available.nth(index).click();
+    await settled(page,c=>c.states.game.chain.placed.length>count||c.states.game.result!=="playing");
+    const next=await saved(page);if(next.states.game.score>=next.states.game.target)break;
+  }
+  const game=(await saved(page)).states.game;
+  if(game.result==="playing")await page.getByRole("button",{name:"Close chain",exact:true}).click();
+  await page.getByRole("button",{name:"Choose reward",exact:true}).click();
+  const pending=await settled(page,c=>c.states.game.result==="reward");
+  const forkStorage=await page.evaluate(()=>Object.fromEntries(Object.keys(localStorage).map(k=>[k,localStorage.getItem(k)])));
+  await page.reload({waitUntil:"networkidle"});await page.getByRole("button",{name:/^Continue run/}).click();
+  await page.locator("[data-reward-type]").first().waitFor();
+  const pendingRestored=await settled(page);assert.deepEqual(pendingRestored.states,pending.states);assert.deepEqual(pendingRestored.rng,pending.rng);
+  checks.push("Unclaimed reward choices and settled round ledger survive reload without reroll");
+  await page.locator('[data-reward-type="relic"]').first().click();
+  const delivered=await settled(page,c=>c.states.game.round===2&&c.states.game.result==="playing");
+  await writeFile(`${output}/continuidad-fixture-2026-11-14.json`,JSON.stringify(delivered,null,2));
+  await page.locator(".hand-panel").waitFor();
+  assert.equal(delivered.states.game.relics.length,pending.states.game.relics.length+1);
+  assert.equal(delivered.states.game.stats.roundScores.length,1);
+  await page.reload({waitUntil:"networkidle"});await resume(page);
+  const afterReward=await settled(page);assert.deepEqual(afterReward.states,delivered.states);assert.deepEqual(afterReward.rng,delivered.rng);
+  checks.push("Reward, gold and round result are not granted twice on reload");
+  const fork=await browser.newContext({viewport:{width:1280,height:900},reducedMotion:"reduce"});
+  await fork.addInitScript(values=>{if(!sessionStorage.getItem("seeded")){for(const[k,v]of Object.entries(values))localStorage.setItem(k,v);sessionStorage.setItem("seeded","1");}},forkStorage);
+  const twin=await fork.newPage();await twin.goto("http://127.0.0.1:5176/",{waitUntil:"networkidle"});
+  await twin.getByRole("button",{name:/^Continue run/}).click();await twin.locator('[data-reward-type="relic"]').first().click();
+  const forkResult=await settled(twin,c=>c.states.game.round===2);
+  assert.deepEqual(forkResult.states,delivered.states);assert.deepEqual(forkResult.rng,delivered.rng);
+  checks.push("A fork of the same reward checkpoint produces exactly the same next deal, gold, inventory and RNG");await fork.close();
+  await page.setViewportSize({width:390,height:844});
+  await page.waitForTimeout(900);
+  assert(await page.evaluate(()=>document.documentElement.scrollWidth===document.documentElement.clientWidth));
+  await page.screenshot({path:`${output}/continuidad-movil-2026-11-14.jpg`,type:"jpeg",quality:90,fullPage:true});
+  await page.getByRole("button",{name:"Save and exit",exact:true}).click();
+  const beforeCancel=await saved(page);page.once("dialog",d=>d.dismiss());
+  await openHomeMode(page,"Endless");
+  assert.deepEqual((await saved(page)).states,beforeCancel.states);
+  await page.getByRole("button",{name:/^Continue run/}).waitFor();checks.push("Cancelling a new run preserves the active run");
+  const recovery=await page.evaluate(k=>JSON.parse(JSON.parse(localStorage.getItem(k)).body),backup);
+  await page.evaluate(k=>localStorage.setItem(k,"damaged"),key);await page.reload({waitUntil:"networkidle"});
+  await page.getByText(/previous run copy was recovered/).waitFor();
+  await page.waitForTimeout(900);
+  await page.screenshot({path:`${output}/continuidad-recuperacion-2026-11-14.jpg`,type:"jpeg",quality:90,fullPage:true});
+  await resume(page);assert.deepEqual((await settled(page)).states,recovery.states);checks.push("Corrupt primary recovers the previous valid generation with a visible warning");
+  await page.evaluate(()=>{window.originalSetItem=Storage.prototype.setItem;Storage.prototype.setItem=function(k,v){if(k.startsWith("dominix_active_run"))throw new DOMException("Full","QuotaExceededError");return window.originalSetItem.call(this,k,v);};});
+  await page.locator(".hand-panel button[data-skin]:enabled").first().click();
+  await page.getByRole("alert").filter({hasText:/Could not save the run/}).waitFor();
+  await page.getByRole("button",{name:"Save and exit",exact:true}).click();
+  assert.equal(await page.locator(".hand-panel").count(),1);
+  await page.evaluate(()=>{Storage.prototype.setItem=window.originalSetItem;});
+  await page.getByRole("button",{name:"Save and exit",exact:true}).click();await resume(page);
+  checks.push("Storage quota failure is visible and Save and exit keeps the run open until a save succeeds");
+  await page.getByRole("button",{name:"Close chain",exact:true}).click();
+  const resultsButton=page.getByRole("button",{name:/results/i});
+  if(await resultsButton.count())await resultsButton.click();else await page.getByRole("button",{name:/End run/i}).click();
+  await page.waitForTimeout(500);
+  assert.equal(await page.evaluate(k=>localStorage.getItem(k),key),null);
+  assert.equal(await page.evaluate(k=>localStorage.getItem(k),backup),null);
+  await page.reload({waitUntil:"networkidle"});assert.equal(await page.getByRole("button",{name:/^Continue run/}).count(),0);
+  checks.push("Finishing a run clears both checkpoints and does not offer a completed run again");
+  assert.deepEqual(errors,[]);
+  console.log(JSON.stringify({checks,errors,round:delivered.states.game.round,seed:delivered.seed},null,2));
+  await writeFile(`${output}/continuidad-verificacion-2026-11-14.json`,JSON.stringify({checks,errors,round:delivered.states.game.round,seed:delivered.seed},null,2));
+}catch(e){await page.screenshot({path:`${output}/continuidad-fallo-2026-11-14.jpg`,fullPage:true});console.log((await page.locator("body").innerText()).slice(0,3000));console.log("ERRORS",errors);throw e;}
+finally{await browser.close();}

@@ -3,7 +3,7 @@ import { GiSpiralBloom, GiRollingDices, GiPunch, GiPathDistance, GiSprint } from
 import type { Relic, RelicRarity, RelicFamily } from "@/types/relic";
 import type { ChainState } from "@/types/domino";
 import type { PatternAnalysis } from "./patterns";
-import { getGlobalRNG } from "./rng";
+import { shuffle } from "./tiles";
 
 export const ALL_RELICS: Relic[] = [
   {
@@ -654,7 +654,7 @@ export const ALL_RELICS: Relic[] = [
 
 export function getRandomRelics(count: number, exclude: string[] = []): Relic[] {
   const available = ALL_RELICS.filter((r) => !exclude.includes(r.id));
-  const shuffled = [...available].sort(() => getGlobalRNG().next() - 0.5);
+  const shuffled = shuffle(available);
   return shuffled.slice(0, count);
 }
 
@@ -663,10 +663,17 @@ export interface RelicBonus {
   multiplier: number;
 }
 
+export interface RelicScoreContext {
+  actionsRemaining?: number;
+  handSize?: number;
+  discardsUsed?: number;
+}
+
 export function calculateRelicBonus(
   relics: Relic[],
   chain: ChainState,
-  patternAnalysis: PatternAnalysis
+  patternAnalysis: PatternAnalysis,
+  context: RelicScoreContext = {},
 ): RelicBonus {
   let bonus = 0;
   let multiplier = 1;
@@ -742,6 +749,44 @@ export function calculateRelicBonus(
         // Stacks: x(1 + value * patternsCount)
         multiplier *= 1 + effect.value * patternIds.length;
         break;
+
+      case "bonus_per_action_left":
+        bonus += Math.max(0, context.actionsRemaining ?? 0) * effect.value;
+        break;
+      case "bonus_if_tiles_in_hand":
+        if ((context.handSize ?? 0) >= effect.minTiles) bonus += effect.value;
+        break;
+      case "multiplier_if_no_discards":
+        if (context.discardsUsed === 0) multiplier *= effect.value;
+        break;
+      case "bonus_per_triple": {
+        const pairs = new Map<string, number>();
+        for (const { tile } of chain.placed) {
+          const key = `${Math.min(tile.top, tile.bottom)}:${Math.max(tile.top, tile.bottom)}`;
+          pairs.set(key, (pairs.get(key) ?? 0) + 1);
+        }
+        for (const count of pairs.values()) bonus += Math.floor(count / 3) * effect.value;
+        break;
+      }
+      case "bonus_per_odd":
+        bonus += allNumbers.filter((number) => number % 2 === 1).length * effect.value;
+        break;
+      case "bonus_per_zero":
+        bonus += allNumbers.filter((number) => number === 0).length * effect.value;
+        break;
+      case "bonus_per_any_pattern":
+        bonus += patternIds.length * effect.value;
+        break;
+      case "multiplier_last_tiles": {
+        // Only the base contribution of the most recently placed tiles is boosted.
+        const recent = chain.placed.map((p, i) => ({ ...p, order: p.order ?? i }))
+          .sort((a, b) => b.order - a.order).slice(0, effect.count);
+        for (const { tile } of recent) {
+          const base = tile.type === "golden" ? 20 : tile.type === "bomb" ? 25 : 10;
+          bonus += base * (effect.value - 1);
+        }
+        break;
+      }
 
       case "celestial_boost":
         // No-op here; applied directly inside celestialTotalBonus where the
@@ -915,13 +960,7 @@ export interface FamilySetBonus {
  * and return the bonuses to apply. Stackless: one tier only (3+).
  */
 export function computeFamilySetBonuses(ownedRelicIds: string[]): FamilySetBonus {
-  const counts: Record<RelicFamily, number> = {
-    patron: 0, numero: 0, fuerza: 0, cadena: 0, accion: 0,
-  };
-  for (const id of ownedRelicIds) {
-    const family = FAMILY_MAP[id];
-    if (family) counts[family]++;
-  }
+  const counts = getFamilyCounts(ownedRelicIds);
   const activeFamilies: RelicFamily[] = [];
   const result: FamilySetBonus = {
     patronPatternBoost: 0,
@@ -944,8 +983,9 @@ export function getFamilyCounts(ownedRelicIds: string[]): Record<RelicFamily, nu
   const counts: Record<RelicFamily, number> = {
     patron: 0, numero: 0, fuerza: 0, cadena: 0, accion: 0,
   };
-  for (const id of ownedRelicIds) {
-    const family = FAMILY_MAP[id];
+  for (const id of new Set(ownedRelicIds)) {
+    const relic = ALL_RELICS.find((entry) => entry.id === id);
+    const family = relic ? getRelicFamily(relic) : null;
     if (family) counts[family]++;
   }
   return counts;

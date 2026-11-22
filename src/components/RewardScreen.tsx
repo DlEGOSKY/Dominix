@@ -1,7 +1,10 @@
 import { motion } from "framer-motion";
+import { useEffect, useMemo, useRef } from "react";
 import type { RewardOption } from "@/types/reward";
 import { audio } from "@/engine/audio";
-import { getRelicRarity, getRelicFamily, FAMILY_META } from "@/engine/relics";
+import { getRelicRarity, getRelicFamily, getFamilyCounts, FAMILY_META } from "@/engine/relics";
+import { localizeRelic } from "@/engine/i18nContent";
+import { useReduceMotion } from "@/hooks/useSettings";
 import { getConsumable } from "@/engine/consumables";
 import { getCelestial, patternName } from "@/engine/celestial";
 import { useTranslation, t as translate } from "@/engine/i18n";
@@ -11,6 +14,8 @@ interface RewardScreenProps {
   options: RewardOption[];
   onSelect: (option: RewardOption) => void;
   onSkip: () => void;
+  ownedRelicIds?: string[];
+  replacedConsumableName?: string;
 }
 
 // Tier of the card; used both for the visual styling and to pick a translated
@@ -89,20 +94,25 @@ function getCardStyle(option: RewardOption): { border: string; glow: string; bad
   };
 }
 
-export default function RewardScreen({ options, onSelect, onSkip }: RewardScreenProps) {
+export default function RewardScreen({ options, onSelect, onSkip, ownedRelicIds = [], replacedConsumableName }: RewardScreenProps) {
   // Subscribe to language changes so getCardStyle() is re-invoked on switch.
   const { t } = useTranslation();
+  const reducedMotion = useReduceMotion();
+  const headingRef = useRef<HTMLHeadingElement>(null);
+  const familyCounts = useMemo(() => getFamilyCounts(ownedRelicIds), [ownedRelicIds]);
+  useEffect(() => headingRef.current?.focus(), []);
   return (
     <motion.div
-      initial={{ opacity: 0 }}
+      initial={reducedMotion ? false : { opacity: 0 }}
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
       className="fixed inset-0 bg-surface-900/95 backdrop-blur-sm flex items-center justify-center z-50"
+      role="dialog" aria-modal="true" aria-labelledby="reward-heading"
     >
-      <div className="flex flex-col items-center gap-6 w-full max-w-3xl px-4 sm:px-6 max-h-[95vh] overflow-y-auto">
+      <div className="flex flex-col items-center gap-6 w-full max-w-3xl px-4 sm:px-6 py-5 max-h-[95dvh] overflow-y-auto">
         <div className="flex flex-col items-center gap-2">
           <motion.div
-            initial={{ opacity: 0, scale: 0.5 }}
+            initial={reducedMotion ? false : { opacity: 0, scale: 0.5 }}
             animate={{ opacity: 1, scale: 1 }}
             transition={{ delay: 0.05, type: "spring", stiffness: 300, damping: 20 }}
             className="w-12 h-12 rounded-full bg-accent-gold/10 border border-accent-gold/30 flex items-center justify-center mb-2"
@@ -110,18 +120,20 @@ export default function RewardScreen({ options, onSelect, onSkip }: RewardScreen
             <div className="w-5 h-5 rounded-sm bg-accent-gold/60 rotate-45" />
           </motion.div>
           <motion.h2
-            initial={{ opacity: 0, y: -10 }}
+            ref={headingRef} id="reward-heading" tabIndex={-1}
+            style={{ outline: "none" }}
+            initial={reducedMotion ? false : { opacity: 0, y: -10 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.1 }}
-            className="font-display font-black text-3xl text-white tracking-tight"
+            className="font-display font-black text-3xl text-white tracking-tight outline-none"
           >
             {t("reward.title")}
           </motion.h2>
           <motion.p
-            initial={{ opacity: 0 }}
+            initial={reducedMotion ? false : { opacity: 0 }}
             animate={{ opacity: 1 }}
             transition={{ delay: 0.15 }}
-            className="text-sm text-accent-silver/40"
+            className="text-sm text-accent-silver/80 text-center"
           >
             {t("reward.subtitle")}
           </motion.p>
@@ -130,15 +142,16 @@ export default function RewardScreen({ options, onSelect, onSkip }: RewardScreen
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 w-full">
           {options.map((option, i) => {
             const style = getCardStyle(option);
-            const isFeatured = options.length === 3 && i === 1;
+            const content = option.reward.type === "relic" ? localizeRelic(option.reward.relic) : option;
             return (
               <motion.button
                 key={option.id}
-                initial={{ opacity: 0, y: 30, scale: 0.9 }}
-                animate={{ opacity: 1, y: 0, scale: isFeatured ? 1.02 : 1 }}
+                data-reward-type={option.reward.type}
+                initial={reducedMotion ? false : { opacity: 0, y: 30, scale: 0.9 }}
+                animate={{ opacity: 1, y: 0, scale: 1 }}
                 transition={{ delay: 0.2 + i * 0.1, type: "spring", stiffness: 300, damping: 25 }}
-                whileHover={{ scale: isFeatured ? 1.05 : 1.04, y: -6 }}
-                whileTap={{ scale: 0.97 }}
+                whileHover={reducedMotion ? undefined : { scale: 1.04, y: -6 }}
+                whileTap={reducedMotion ? undefined : { scale: 0.97 }}
                 onClick={() => {
                   audio.play("relic_select");
                   onSelect(option);
@@ -148,7 +161,6 @@ export default function RewardScreen({ options, onSelect, onSkip }: RewardScreen
                   "reward-card",
                   style.border,
                   style.glow,
-                  isFeatured ? "shadow-[0_0_0_1px_rgba(255,255,255,0.06)]" : "",
                   "transition-shadow duration-300",
                 ].join(" ")}
               >
@@ -201,13 +213,19 @@ export default function RewardScreen({ options, onSelect, onSkip }: RewardScreen
 
                 {/* Name */}
                 <span className="relative font-display font-bold text-white text-xl leading-tight">
-                  {option.name}
+                  {content.name}
                 </span>
 
                 {/* Description */}
-                <span className="relative text-sm text-accent-silver/60 leading-relaxed flex-1">
-                  {option.description}
+                <span className="relative text-sm text-accent-silver/80 leading-relaxed flex-1">
+                  {content.description}
                 </span>
+
+                {option.reward.type === "consumable" && replacedConsumableName && (
+                  <span className="relative text-xs text-amber-200 leading-relaxed border-t border-amber-300/20 pt-2">
+                    {t("reward.replacesConsumable", { name: replacedConsumableName })}
+                  </span>
+                )}
 
                 {/* Family tag (relic only) */}
                 {option.reward.type === "relic" && (() => {
@@ -221,13 +239,18 @@ export default function RewardScreen({ options, onSelect, onSkip }: RewardScreen
                     fam === "cadena" ? "text-purple-300" :
                     "text-green-300";
                   const FamilyIcon = meta.icon;
+                  const before = Math.min(3, familyCounts[fam]);
+                  const after = Math.min(3, before + (ownedRelicIds.includes(option.reward.relic.id) ? 0 : 1));
                   return (
                     <span
-                      className={`relative inline-flex items-center gap-1 text-[10px] uppercase tracking-widest font-bold ${famTextClass}`}
-                      title={meta.setBonusDescription}
+                      className={`relative flex flex-col gap-1 text-[10px] font-bold ${famTextClass}`}
                     >
-                      <FamilyIcon size={11} />
-                      {t(`family.${fam}`)}
+                      <span className="inline-flex items-center gap-1 uppercase tracking-widest"><FamilyIcon size={11} />
+                        {t(`family.${fam}`)} · {before}/3 → {after}/3
+                      </span>
+                      {after >= 3 && <span className="text-xs font-normal leading-relaxed">
+                        {t(before < 3 ? "reward.activatesSet" : "reward.activeSet")} · {t(`family.bonus.${fam}`)}
+                      </span>}
                     </span>
                   );
                 })()}
@@ -250,11 +273,11 @@ export default function RewardScreen({ options, onSelect, onSkip }: RewardScreen
         </div>
 
         <motion.button
-          initial={{ opacity: 0 }}
+          initial={reducedMotion ? false : { opacity: 0 }}
           animate={{ opacity: 1 }}
           transition={{ delay: 0.6 }}
           onClick={onSkip}
-          className="mt-2 px-6 py-2.5 rounded-xl text-sm text-accent-silver/40 hover:text-accent-silver/70 border border-surface-600/50 hover:border-surface-600 transition-all"
+          className="mt-2 px-6 py-2.5 rounded-xl text-sm text-accent-silver/80 hover:text-accent-silver border border-surface-600/50 hover:border-surface-600 transition-all"
         >
           {t("reward.skip")}
         </motion.button>

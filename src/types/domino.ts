@@ -18,6 +18,8 @@ export type PlacementSide = "left" | "right";
 
 export interface PlacedTile {
   tile: Tile;
+  /** Placement chronology, independent of the spatial order of the chain. */
+  order?: number;
   /** The value exposed on the left end after placement */
   exposedLeft: number;
   /** The value exposed on the right end after placement */
@@ -42,15 +44,41 @@ export interface RunStats {
   tilesPlayed: number;
   highestRoundScore: number;
   bossesDefeated: number;
+  defeatedBossIds?: string[];
   shopPurchases: number;
   bestCombo: number;
   goldEarned: number;
   tilesDiscarded: number;
   tilesDrawn: number;
   roundScores: number[];
+  /** Actual map depth of each scored combat (noncombat nodes leave no entry). */
+  roundNumbers?: number[];
 }
 
 export interface GameState {
+  /** Permanent run inventory, independent of hand, discards and temporary round effects. */
+  runTiles: Tile[];
+  /** One-shot points and costs. Never lost when the chain is recalculated. */
+  roundBonus?: number;
+  roundWinBonus?: number;
+  roundScoreFactor?: number;
+  roundTargetMultiplier?: number;
+  roundSettled?: boolean;
+  /** Combat-start budgets, reused across boss phases without replaying event rewards. */
+  roundStartResources?: { handSize: number; actions: number; discards: number; draws: number };
+  bossRages?: number;
+  phaseScore?: number;
+  phasePatternIds?: string[];
+  pendingRound?: {
+    score?: number;
+    targetMultiplier?: number;
+    hand?: number;
+    actions?: number;
+    discards?: number;
+    draws?: number;
+    winBonus?: number;
+    scoreFactor?: number;
+  };
   hand: Tile[];
   chain: ChainState;
   score: number;

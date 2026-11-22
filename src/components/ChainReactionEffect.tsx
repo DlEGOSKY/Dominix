@@ -1,5 +1,6 @@
 import { motion, AnimatePresence } from "framer-motion";
 import { useEffect, useState } from "react";
+import { useReduceMotion } from "@/hooks/useSettings";
 
 export type ReactionKind = "bomb" | "wild" | "pattern" | "big_score";
 
@@ -15,18 +16,19 @@ interface ChainReactionEffectProps {
 }
 
 export default function ChainReactionEffect({ event, onComplete }: ChainReactionEffectProps) {
+  const reducedMotion = useReduceMotion();
   const [visible, setVisible] = useState(false);
 
   useEffect(() => {
     if (!event) return;
     setVisible(true);
-    const duration = event.kind === "big_score" ? 1600 : 1100;
+    const duration = reducedMotion ? 450 : event.kind === "big_score" ? 850 : 650;
     const t = setTimeout(() => {
       setVisible(false);
-      setTimeout(onComplete, 200);
+      onComplete();
     }, duration);
     return () => clearTimeout(t);
-  }, [event, onComplete]);
+  }, [event, onComplete, reducedMotion]);
 
   if (!event) return null;
 
@@ -44,7 +46,7 @@ export default function ChainReactionEffect({ event, onComplete }: ChainReaction
           exit={{ opacity: 0 }}
           transition={{ duration: 0.2 }}
         >
-          {renderEffect(event)}
+          {reducedMotion ? <span role="status" className="self-start mt-20 px-4 py-2 rounded border border-accent-gold/40 bg-surface-900 text-amber-100 text-sm">{event.label ?? event.kind}</span> : renderEffect(event)}
         </motion.div>
       )}
     </AnimatePresence>

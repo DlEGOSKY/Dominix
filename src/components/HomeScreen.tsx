@@ -1,32 +1,23 @@
 import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import type { SavedData } from "@/types/domino";
-import { audio } from "@/engine/audio";
 import { getDailyDateString, hasDailyBeenPlayed } from "@/engine/daily";
 import { getNextUnlocks } from "@/engine/unlocks";
 import { ALL_RELICS } from "@/engine/relics";
-import { loadProgression, getXPForNextLevel, LEVEL_REWARDS, getProgressionBonuses, saveActiveSkin, loadActiveSkin } from "@/engine/progression";
+import { loadProgression, getXPForNextLevel, LEVEL_REWARDS, loadActiveSkin, type LevelReward } from "@/engine/progression";
 import { loadAscension } from "@/engine/ascension";
 import { useTranslation } from "@/engine/i18n";
-import { useLocalizedRelic } from "@/engine/i18nContent";
+import { localizeRelic, localizeSkin } from "@/engine/i18nContent";
+import { getTileSkin } from "@/engine/tileSkins";
+import { useReduceMotion } from "@/hooks/useSettings";
 import ModifierSelect from "./ModifierSelect";
-
-/**
- * Single "next unlock" row — kept as a subcomponent so we can call
- * `useLocalizedRelic` (a hook) for each relic without violating hook rules.
- */
-function NextUnlockRow({ relicId, description }: { relicId: string; description: string }) {
-  const relic = ALL_RELICS.find((r) => r.id === relicId);
-  const loc = useLocalizedRelic(relic ?? { id: relicId, name: relicId, description: "", trigger: "passive", effect: { type: "bonus_flat", value: 0 } } as never);
-  return (
-    <span className="text-[10px] text-accent-silver/40">
-      <span className="text-accent-gold font-medium">{loc.name}</span>
-      {" — "}{description}
-    </span>
-  );
-}
+import ResourceSheet from "./ResourceSheet";
+import "./HomeScreen.css";
 
 export interface HomeScreenProps {
+  onContinue?: () => void;
+  continueRound?: number;
+  recoveryStatus?: string;
   savedData: SavedData;
   onStartRun: (modifiers: string[]) => void;
   onStartDaily: () => void;
@@ -37,331 +28,87 @@ export interface HomeScreenProps {
   onShowHowToPlay: () => void;
   onShowStats: () => void;
   onShowCollection: () => void;
+  onShowAppearance?: () => void;
   onShowTalents: () => void;
   onShowCharacters: () => void;
   onShowSettings: () => void;
   onShowCodex: () => void;
   onShowChaos: () => void;
 }
-
-export default function HomeScreen({ savedData, onStartRun, onStartDaily, onShowWeekly, onStartEndless, onShowAchievements, onShowLeaderboard, onShowHowToPlay, onShowStats, onShowCollection, onShowTalents, onShowCharacters, onShowSettings, onShowCodex, onShowChaos }: HomeScreenProps) {
+function Chevron() { return <svg aria-hidden="true" width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5"><path d="m6 3 5 5-5 5"/></svg>; }
+function NextUnlockRow({ unlock }: { unlock: ReturnType<typeof getNextUnlocks>[number] }) {
   const { t } = useTranslation();
-  const hasPlayed = savedData.totalRuns > 0;
+  const relic = ALL_RELICS.find(r => r.id === unlock.relicId);
+  if (!relic) return null;
+  return <li><span>{localizeRelic(relic).name}</span><p>{t(`home.unlock.${unlock.condition.type}`, { n: unlock.condition.value })}</p></li>;
+}
+
+/** Keep play on the surface; other content remains one deliberate action away. */
+export default function HomeScreen(props: HomeScreenProps) {
+  const { t } = useTranslation();
+  const reduced = useReduceMotion();
+  const [panel, setPanel] = useState<"menu" | "modes" | "progress" | null>(null);
   const [showModifiers, setShowModifiers] = useState(false);
-  const dailyPlayed = hasDailyBeenPlayed();
-  const nextUnlocks = getNextUnlocks(savedData, 2);
-
   const prog = loadProgression();
-  const bonuses = getProgressionBonuses(prog);
+  const xp = getXPForNextLevel(prog.xp);
+  const nextReward = LEVEL_REWARDS.find(r => r.level > prog.level);
+  const nextUnlocks = getNextUnlocks(props.savedData, 2);
+  const skin = getTileSkin(loadActiveSkin());
   const ascension = loadAscension();
-  const availableSkins = ["default", ...bonuses.unlockedSkins];
-  const [selectedSkin, setSelectedSkin] = useState(loadActiveSkin);
+  const dailyPlayed = hasDailyBeenPlayed();
+  const go = (action: () => void) => { setPanel(null); action(); };
+  const startNew = () => { setPanel(null); setShowModifiers(true); };
+  const rewardName = (reward: LevelReward) => {
+    if (reward.type === "tile_skin") return t("home.reward.skin", { name: localizeSkin(getTileSkin(String(reward.value))).name });
+    if (reward.type === "starting_relic") {
+      const relic = ALL_RELICS.find(r => r.id === reward.value);
+      return t("home.reward.relic", { name: relic ? localizeRelic(relic).name : String(reward.value) });
+    }
+    return t(`home.reward.${reward.type}`, { n: reward.value });
+  };
+  const menuGroups = [
+    { title: "home.group.prepare", items: [{ key: "home.characters", action: props.onShowCharacters }, { key: "home.talents", action: props.onShowTalents }] },
+    { title: "home.group.library", items: [{ key: "home.collection", action: props.onShowCollection }, { key: "home.codex", action: props.onShowCodex }] },
+    { title: "home.group.history", items: [{ key: "home.stats", action: props.onShowStats }, { key: "home.leaderboard", action: props.onShowLeaderboard }, { key: "home.achievements", action: props.onShowAchievements }] },
+  ];
+  const modes = [
+    { key: dailyPlayed ? "home.dailyComplete" : "home.dailyChallenge", detail: "home.mode.dailyDetail", tone: "blue", action: props.onStartDaily, disabled: dailyPlayed },
+    { key: "home.weeklyChallenge", detail: "home.mode.weeklyDetail", tone: "green", action: props.onShowWeekly },
+    { key: "home.endlessRun", detail: "home.mode.endlessDetail", tone: "purple", action: props.onStartEndless },
+    { key: "home.chaos", detail: "home.mode.chaosDetail", tone: "rose", action: props.onShowChaos },
+  ];
 
-  return (
-    <div className="min-h-screen flex flex-col items-center ambient-grain relative">
-      {/* Ambient orbs */}
-      <div className="fixed inset-0 pointer-events-none overflow-hidden">
-        <div className="absolute top-1/4 left-1/6 w-64 h-64 rounded-full bg-accent-gold/[0.03] blur-[80px]" style={{ animation: "ambient-pulse 6s ease-in-out infinite" }} />
-        <div className="absolute bottom-1/3 right-1/5 w-48 h-48 rounded-full bg-purple-500/[0.03] blur-[60px]" style={{ animation: "ambient-pulse 8s ease-in-out 2s infinite" }} />
+  return <div className="home-screen ambient-grain">
+    <div aria-hidden="true" className="home-atmosphere"/>
+    <nav className="home-navigation" aria-label={t("home.navigation")}>
+      <button type="button" className="home-help" onClick={props.onShowHowToPlay}>{t("home.howToPlay")}</button>
+      <div className="home-navigation-right"><button type="button" className="home-nav-link" onClick={props.onShowCollection}>{t("home.collection")}</button><button type="button" className="home-menu-trigger" aria-haspopup="dialog" aria-expanded={panel === "menu"} onClick={() => setPanel("menu")}><svg aria-hidden="true" width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.4"><path d="M2 4h12M2 8h12M2 12h12"/></svg>{t("home.menu")}</button></div>
+    </nav>
+    <div className="home-main">
+      <motion.header className="home-identity" initial={reduced ? false : { opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: .35 }}><h1>DOMINIX</h1><p>{t("home.tagline")}</p></motion.header>
+      <section className="home-play" aria-label={t("home.play")}>
+        <motion.button type="button" data-home-primary={props.onContinue ? "continue" : "new"} aria-label={props.onContinue ? t("resume.continue", { round: props.continueRound ?? 1 }) : t("home.newRun")} className="home-primary btn-premium" whileHover={reduced ? undefined : { y: -2 }} whileTap={reduced ? undefined : { scale: .985 }} onClick={props.onContinue ?? startNew}>{props.onContinue ? <span className="home-continue-copy"><span>{t("home.continueAction")}</span><span className="home-continue-round">{t("score.round", { n: props.continueRound ?? 1 })}</span></span> : t("home.newRun")}<Chevron/></motion.button>
+        {(["recovered", "invalid", "unavailable"].includes(props.recoveryStatus ?? "")) && <p role="status" className="home-recovery">{t(`resume.${props.recoveryStatus}`)}</p>}
+        <div className="home-secondary-actions">{props.onContinue && <button type="button" className="home-secondary" onClick={startNew}>{t("home.newRun")}</button>}<button type="button" className="home-secondary" aria-haspopup="dialog" aria-expanded={panel === "modes"} onClick={() => setPanel("modes")}>{t("home.otherModes")}<Chevron/></button></div>
+      </section>
+      <div className="home-summary">
+        <button type="button" className="home-progress-trigger" aria-haspopup="dialog" aria-expanded={panel === "progress"} onClick={() => setPanel("progress")}><span className="home-level-seal" aria-hidden="true">{prog.level}</span><span className="home-progress-copy"><span className="home-summary-title">{t("home.progress")}</span><span className="home-summary-detail">{t("home.levelN", { n: prog.level })} <span aria-hidden="true">·</span> {xp.current}/{xp.needed} XP</span><span className="home-mini-track" aria-hidden="true"><span style={{ width: `${Math.min(100, Math.max(0, xp.progress * 100))}%` }}/></span></span><Chevron/></button>
+        <button type="button" className="home-appearance" onClick={props.onShowAppearance ?? props.onShowCollection}><span className="home-skin-preview" aria-hidden="true">{skin.valueIcon ? (skin.valueFace ?? skin.valueIcon)(1) : <svg width="22" height="30" viewBox="0 0 22 30" fill="none" stroke="currentColor"><rect x="2" y="1" width="18" height="28" rx="4"/><path d="M5 15h12"/><circle cx="11" cy="8" r="1.5" fill="currentColor"/><circle cx="8" cy="21" r="1.5" fill="currentColor"/><circle cx="14" cy="24" r="1.5" fill="currentColor"/></svg>}</span><span><span className="home-summary-title">{t("home.appearance")}</span><span className="home-summary-detail">{localizeSkin(skin).name}</span></span><Chevron/></button>
       </div>
-
-      {/* Top nav bar */}
-      <motion.nav
-        initial={{ opacity: 0, y: -10 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.3, duration: 0.4 }}
-        className="w-full flex items-center justify-between px-4 sm:px-6 py-3 z-10"
-      >
-        <div className="flex items-center gap-2">
-          <button
-            onClick={onShowHowToPlay}
-            className="px-3 py-1.5 rounded-lg bg-blue-500/10 border border-blue-500/25 text-blue-400 text-xs font-semibold hover:bg-blue-500/20 transition"
-          >
-            {t("home.howToPlay")}
-          </button>
-          {ascension.highestCleared > 0 && (
-            <div
-              title={t("home.ascensionTooltip", { n: ascension.highestCleared })}
-              className="px-2 py-1 rounded-lg bg-red-500/10 border border-red-400/30 text-red-300 text-[10px] font-mono font-bold uppercase tracking-widest"
-            >
-              A{ascension.highestCleared}
-            </div>
-          )}
-        </div>
-        <div className="flex items-center gap-1.5">
-          {[
-            { key: "home.characters",    action: onShowCharacters,  style: "text-cyan-400/70" },
-            { key: "home.talents",       action: onShowTalents,     style: "text-blue-400/70" },
-            { key: "home.chaos",         action: onShowChaos,       style: "text-purple-400/70" },
-            { key: "home.stats",         action: onShowStats,       style: "text-accent-silver/50" },
-            { key: "home.leaderboard",   action: onShowLeaderboard, style: "text-accent-silver/50" },
-            { key: "home.collection",    action: onShowCollection,  style: "text-purple-400/60" },
-            { key: "home.codex",         action: onShowCodex,       style: "text-indigo-400/70" },
-            { key: "home.achievements",  action: onShowAchievements,style: "text-accent-gold/60" },
-          ].map((item) => (
-            <button
-              key={item.key}
-              onClick={item.action}
-              className={`px-2.5 py-1.5 rounded-lg bg-surface-800/60 border border-surface-600/40 text-xs font-medium hover:border-surface-500 transition ${item.style}`}
-            >
-              {t(item.key)}
-            </button>
-          ))}
-          <button
-            onClick={onShowSettings}
-            className="px-2.5 py-1.5 rounded-lg bg-surface-800/60 border border-surface-600/40 text-xs text-accent-silver/40 hover:border-surface-500 transition"
-          >
-            {t("home.settings")}
-          </button>
-        </div>
-      </motion.nav>
-
-      {/* Main content */}
-      <div className="flex-1 flex flex-col items-center justify-center gap-7 px-6 pb-16 w-full max-w-lg">
-        {/* Title */}
-        <motion.div
-          initial={{ opacity: 0, y: -30 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.8, ease: [0.22, 1, 0.36, 1] }}
-          className="flex flex-col items-center gap-3"
-        >
-          <h1 className="font-display font-black text-7xl tracking-tight bg-gradient-to-b from-white via-white/90 to-accent-silver/50 bg-clip-text text-transparent drop-shadow-[0_0_40px_rgba(212,168,83,0.15)]">
-            DOMINIX
-          </h1>
-          <p className="text-accent-silver/40 text-[10px] tracking-[0.3em] uppercase font-medium">
-            {t("home.tagline")}
-          </p>
-        </motion.div>
-
-        {/* Action buttons */}
-        <div className="flex flex-col sm:flex-row gap-3 w-full sm:w-auto">
-          <motion.button
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.3, duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
-            whileHover={{ scale: 1.03 }}
-            whileTap={{ scale: 0.97 }}
-            onClick={() => setShowModifiers(true)}
-            className="flex-1 sm:flex-none px-10 py-3.5 rounded-2xl bg-gradient-to-b from-accent-gold to-amber-600 text-surface-900 font-bold text-base tracking-wide btn-premium"
-          >
-            {t("home.newRun")}
-          </motion.button>
-
-          <motion.button
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.4, duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
-            whileHover={{ scale: 1.03 }}
-            whileTap={{ scale: 0.97 }}
-            onClick={onStartDaily}
-            disabled={dailyPlayed}
-            className={[
-              "flex-1 sm:flex-none px-10 py-3.5 rounded-2xl font-bold text-base tracking-wide btn-premium",
-              dailyPlayed
-                ? "bg-surface-700 text-accent-silver/40 cursor-not-allowed"
-                : "bg-gradient-to-b from-blue-500 to-blue-700 text-white",
-            ].join(" ")}
-          >
-            {dailyPlayed ? t("home.dailyComplete") : t("home.dailyChallenge")}
-          </motion.button>
-
-          <motion.button
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.45, duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
-            whileHover={{ scale: 1.03 }}
-            whileTap={{ scale: 0.97 }}
-            onClick={onShowWeekly}
-            className="flex-1 sm:flex-none px-10 py-3.5 rounded-2xl bg-gradient-to-b from-emerald-500 to-emerald-700 text-white font-bold text-base tracking-wide btn-premium"
-          >
-            {t("home.weeklyChallenge")}
-          </motion.button>
-
-          <motion.button
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.5, duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
-            whileHover={{ scale: 1.03 }}
-            whileTap={{ scale: 0.97 }}
-            onClick={onStartEndless}
-            className="flex-1 sm:flex-none px-10 py-3.5 rounded-2xl bg-gradient-to-b from-purple-500 to-purple-700 text-white font-bold text-base tracking-wide btn-premium"
-          >
-            {t("home.endlessRun")}
-          </motion.button>
-        </div>
-
-        <motion.p
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ delay: 0.45 }}
-          className="text-[10px] text-accent-silver/25 tracking-widest"
-        >
-          {getDailyDateString()}
-        </motion.p>
-
-        {/* Stats + Level combined panel */}
-        {hasPlayed && (
-          <motion.div
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.5 }}
-            className="w-full flex flex-col gap-4 p-5 rounded-2xl bg-surface-800/40 border border-surface-600/25 backdrop-blur-sm"
-          >
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-              {[
-                { value: savedData.bestRound, label: t("home.bestRound"), color: "text-white" },
-                { value: savedData.bestScore.toLocaleString(), label: t("home.bestScore"), color: "text-accent-gold" },
-                { value: savedData.totalRuns, label: t("home.totalRuns"), color: "text-white" },
-                { value: savedData.totalRoundsPlayed, label: t("home.totalRounds"), color: "text-white" },
-              ].map((stat) => (
-                <div key={stat.label} className="flex flex-col items-center gap-1">
-                  <span className={`font-mono font-black text-xl tabular-nums ${stat.color}`}>
-                    {stat.value}
-                  </span>
-                  <span className="text-[8px] text-accent-silver/35 uppercase tracking-widest font-medium">
-                    {stat.label}
-                  </span>
-                </div>
-              ))}
-            </div>
-
-            {/* Level bar inline */}
-            {(() => {
-              const xpInfo = getXPForNextLevel(prog.xp);
-              return (
-                <div className="flex items-center gap-3 pt-3 border-t border-surface-600/20">
-                  <div className="w-8 h-8 rounded-lg bg-accent-gold/12 border border-accent-gold/25 flex items-center justify-center shrink-0">
-                    <span className="font-mono font-black text-sm text-accent-gold">{prog.level}</span>
-                  </div>
-                  <div className="flex-1 flex flex-col gap-1">
-                    <div className="flex items-baseline justify-between">
-                      <span className="text-[9px] font-bold text-accent-silver/35 uppercase tracking-widest">{t("home.levelN", { n: prog.level })}</span>
-                      <span className="text-[9px] font-mono text-accent-silver/25">{xpInfo.current}/{xpInfo.needed} {t("home.xp")}</span>
-                    </div>
-                    <div className="relative w-full h-1.5 rounded-full bg-surface-700 overflow-hidden">
-                      <motion.div
-                        initial={{ width: 0 }}
-                        animate={{ width: `${Math.min(xpInfo.progress * 100, 100)}%` }}
-                        transition={{ delay: 0.6, duration: 0.8 }}
-                        className="h-full rounded-full bg-gradient-to-r from-accent-gold/80 to-amber-400/80"
-                      />
-                    </div>
-                  </div>
-                </div>
-              );
-            })()}
-
-            {/* Next reward hint */}
-            {(() => {
-              const nextReward = LEVEL_REWARDS.find((r) => r.level > prog.level);
-              return nextReward ? (
-                <p className="text-[9px] text-accent-silver/25 text-center">
-                  {t("home.nextLevelReward", { level: nextReward.level, reward: nextReward.name })}
-                </p>
-              ) : null;
-            })()}
-          </motion.div>
-        )}
-
-        {/* Skin picker */}
-        {availableSkins.length > 1 && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ delay: 0.57 }}
-            className="flex items-center gap-3"
-          >
-            <span className="text-[9px] font-bold text-accent-silver/30 uppercase tracking-widest">{t("home.skin")}</span>
-            <div className="flex gap-1.5">
-              {availableSkins.map((skin) => {
-                const isActive = skin === selectedSkin;
-                const colors: Record<string, string> = {
-                  default: "bg-surface-700 border-surface-500",
-                  obsidian: "bg-[#1a1a2e] border-slate-500",
-                  emerald: "bg-emerald-900 border-emerald-500",
-                  ruby: "bg-rose-900 border-rose-500",
-                  ivory: "bg-stone-200 border-stone-400",
-                  void: "bg-[#0a0a14] border-violet-500",
-                  neon: "bg-[#020816] border-cyan-400",
-                  gold: "bg-amber-900 border-amber-400",
-                  pacto: "bg-[#1f0407] border-red-500",
-                  reliquia: "bg-[#241a0f] border-amber-700",
-                  cosmos: "bg-[#070a1d] border-indigo-400",
-                  bestiario: "bg-[#10081c] border-purple-400",
-                  tarot: "bg-[#1c1308] border-amber-500",
-                  astral: "bg-[#030612] border-blue-400",
-                  naturaleza: "bg-[#071510] border-emerald-400",
-                  mecanico: "bg-[#120a04] border-orange-400",
-                };
-                return (
-                  <button
-                    key={skin}
-                    onClick={() => {
-                      setSelectedSkin(skin);
-                      saveActiveSkin(skin);
-                      audio.play("button_click");
-                    }}
-                    className={[
-                      "w-8 h-8 rounded-md border-2 transition-all",
-                      colors[skin] ?? "bg-surface-700 border-surface-500",
-                      isActive ? "ring-2 ring-accent-gold ring-offset-1 ring-offset-surface-900 scale-110" : "opacity-50 hover:opacity-90",
-                    ].join(" ")}
-                    title={skin.charAt(0).toUpperCase() + skin.slice(1)}
-                  />
-                );
-              })}
-            </div>
-          </motion.div>
-        )}
-
-        {/* Unlocks */}
-        {nextUnlocks.length > 0 && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ delay: 0.6 }}
-            className="flex flex-col items-center gap-1.5"
-          >
-            <span className="text-[9px] text-accent-silver/30 uppercase tracking-widest font-bold">
-              {t("home.nextUnlocks")}
-            </span>
-            {nextUnlocks.map((unlock) => (
-              <NextUnlockRow key={unlock.relicId} relicId={unlock.relicId} description={unlock.description} />
-            ))}
-          </motion.div>
-        )}
-      </div>
-
-      {/* Footer — narrative flavor, rotates slowly across runs */}
-      {(() => {
-        // 6 flavor strings, rotated by total runs played. Keys live in i18n.ts
-        // so they translate cleanly per language.
-        const idx = savedData.totalRuns % 6;
-        return (
-          <motion.p
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ delay: 0.7 }}
-            className="absolute bottom-6 italic text-[10px] text-accent-silver/30 tracking-widest font-medium"
-          >
-            {t(`home.flavor.${idx}`)}
-          </motion.p>
-        );
-      })()}
-
-      <AnimatePresence>
-        {showModifiers && (
-          <ModifierSelect
-            bestRound={savedData.bestRound}
-            totalRuns={savedData.totalRuns}
-            onStart={(mods) => {
-              setShowModifiers(false);
-              onStartRun(mods);
-            }}
-            onCancel={() => setShowModifiers(false)}
-          />
-        )}
-      </AnimatePresence>
     </div>
-  );
+    <footer className="home-footer">{t(`home.flavor.${props.savedData.totalRuns % 6}`)}</footer>
+    {panel && <ResourceSheet key={panel} mobileOnly={false} title={t(`home.panel.${panel}`)} onClose={() => setPanel(null)}>
+      {panel === "menu" && <div className="home-menu-content"><div className="home-menu-groups">{menuGroups.map(group => <section key={group.title}><h3>{t(group.title)}</h3>{group.items.map(item => <button key={item.key} type="button" onClick={() => go(item.action)}>{t(item.key)}<Chevron/></button>)}</section>)}</div><div className="home-menu-bottom"><button type="button" onClick={() => setPanel("modes")}>{t("home.otherModes")}<Chevron/></button><button type="button" onClick={() => go(props.onShowSettings)}>{t("home.settings")}<Chevron/></button></div>{ascension.highestCleared > 0 && <p className="home-ascension">{t("home.ascensionTooltip", { n: ascension.highestCleared })}</p>}</div>}
+      {panel === "modes" && <div className="home-modes-content"><p className="home-mode-date">{getDailyDateString()}</p><div className="home-mode-list">{modes.map(mode => <button key={mode.key} type="button" disabled={mode.disabled} aria-label={t(mode.key)} aria-describedby={`home-mode-${mode.tone}`} className="home-mode-card" data-tone={mode.tone} onClick={() => go(mode.action)}><span><strong>{t(mode.key)}</strong><span id={`home-mode-${mode.tone}`}>{t(mode.detail)}</span></span><Chevron/></button>)}</div></div>}
+      {panel === "progress" && <div className="home-progress-content">
+        {props.savedData.totalRuns === 0 && <p className="home-empty-progress">{t("home.emptyProgress")}</p>}
+        <dl className="home-stats">{[{ value: props.savedData.bestRound, label: "home.bestRound" }, { value: props.savedData.bestScore.toLocaleString(), label: "home.bestScore" }, { value: props.savedData.totalRuns, label: "home.totalRuns" }, { value: props.savedData.totalRoundsPlayed, label: "home.totalRounds" }].map(stat => <div key={stat.label}><dt>{t(stat.label)}</dt><dd>{stat.value}</dd></div>)}</dl>
+        <div className="home-level-detail"><span>{t("home.levelN", { n: prog.level })}</span><span>{xp.current}/{xp.needed} XP</span></div><div role="progressbar" aria-label={t("home.xpProgress")} aria-valuemin={0} aria-valuemax={xp.needed} aria-valuenow={xp.current} className="home-xp-track"><span style={{ width: `${Math.min(100, Math.max(0, xp.progress * 100))}%` }}/></div>
+        {nextReward && <p className="home-reward-hint">{t("home.nextLevelReward", { level: nextReward.level, reward: rewardName(nextReward) })}</p>}
+        {nextUnlocks.length > 0 && <section className="home-next-unlocks"><h3>{t("home.nextUnlocks")}</h3><ul>{nextUnlocks.map(unlock => <NextUnlockRow key={unlock.relicId} unlock={unlock}/>)}</ul></section>}
+        <button type="button" className="home-panel-action" onClick={() => go(props.onShowStats)}>{t("home.fullStats")}<Chevron/></button>
+      </div>}
+    </ResourceSheet>}
+    <AnimatePresence>{showModifiers && <ModifierSelect bestRound={props.savedData.bestRound} totalRuns={props.savedData.totalRuns} onStart={mods => { setShowModifiers(false); props.onStartRun(mods); }} onCancel={() => setShowModifiers(false)}/>}</AnimatePresence>
+  </div>;
 }

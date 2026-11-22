@@ -1,3 +1,4 @@
+import { getGlobalRNG } from "./rng";
 /**
  * Celestial Cards — permanent per-run buffs that amplify specific patterns.
  * One card targets one pattern by id. Multiple cards can stack on the same
@@ -171,7 +172,7 @@ export function patternName(patternId: string): string {
 export function rollRandomCelestial(ownedIds: string[] = []): CelestialCard {
   const pool = ALL_CELESTIAL.filter((c) => !ownedIds.includes(c.id));
   const source = pool.length > 0 ? pool : ALL_CELESTIAL;
-  return source[Math.floor(Math.random() * source.length)]!;
+  return source[Math.floor(getGlobalRNG().next() * source.length)]!;
 }
 
 /**

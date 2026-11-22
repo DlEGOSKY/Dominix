@@ -6,6 +6,11 @@
 
 import confetti from "canvas-confetti";
 import type { RelicFamily } from "@/types/relic";
+import { getSettings } from "./settings";
+
+function skipMotion() {
+  return getSettings().reduceMotion || (typeof window !== "undefined" && window.matchMedia("(prefers-reduced-motion: reduce)").matches);
+}
 
 /** Family palette — brighter than the in-UI tints, tuned for confetti contrast. */
 const FAMILY_COLORS: Record<RelicFamily, string[]> = {
@@ -18,6 +23,7 @@ const FAMILY_COLORS: Record<RelicFamily, string[]> = {
 
 /** Set bonus activated — fountain-style confetti from below center. */
 export function celebrateSetBonus(family: RelicFamily) {
+  if (skipMotion()) return;
   const colors = FAMILY_COLORS[family];
   // Two staggered bursts from bottom-left and bottom-right
   confetti({
@@ -44,6 +50,7 @@ export function celebrateSetBonus(family: RelicFamily) {
 
 /** Big event (boss defeated, run completed) — large multi-burst. */
 export function celebrateBigEvent() {
+  if (skipMotion()) return;
   const defaults = {
     spread: 360,
     ticks: 240,
@@ -59,6 +66,7 @@ export function celebrateBigEvent() {
 
 /** Legendary pattern activated — golden focused burst. */
 export function celebrateLegendaryPattern() {
+  if (skipMotion()) return;
   confetti({
     particleCount: 50,
     spread: 100,
@@ -72,6 +80,7 @@ export function celebrateLegendaryPattern() {
 
 /** Achievement / skin unlocked — subtle silver/gold sparkle. */
 export function celebrateAchievement() {
+  if (skipMotion()) return;
   confetti({
     particleCount: 35,
     spread: 50,

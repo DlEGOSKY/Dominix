@@ -1,0 +1,16 @@
+Create a premium illustrated Among Us crossover skin SPRITE SHEET for a tactical domino game. The visual idea is "THE TILE IS THE SPACE SUIT": the face of the domino itself is sculpted coloured spacesuit enamel with an iconic bright cyan visor, not a picture of a little astronaut printed on a generic card.
+
+One square image in an EXACT 3x3 grid with NO gutters. Seven square game face textures in reading order, last two cells empty dark navy. Every cell uses the same square crop and lighting. Camera precisely orthographic/front facing. Strong designed silhouettes and bevelled painted edges; high-end stylized 2.5D game rendering with chunky ink contours, precise broad colour shading, beautiful visor reflections, slight honest paint wear, restrained gunmetal details. No pixel blur and no photorealistic scene. Artwork must read at 36px. Colourful and playful like the iconic original astronaut, while feeling like a desirable physical domino object.
+
+Fill each cell edge to edge with the enamel skin. A large integrated cropped helmet and visor occupy the upper 65% and nearly the full width, with just a hint of backpack to make the Among Us silhouette unmistakable. The lower 28% must be quiet dark enamel matching the suit shadows so runtime white domino pips can be added there. NO painted pips, dots, lights, meters, number values, text or letters. NO nameplates, plaques, ID cards, boxes within boxes, framed pictures, UI screens, mockups or floating stickers. The object itself is the character. Do not render a whole domino with two halves: each cell is ONE square half-face texture.
+
+Seven distinct identities, in reading order:
+0 translucent cyan ghost suit dissolving into navy, almost empty visor.
+1 bright scarlet crewmate with a tiny green sprout, iconic clean visor.
+2 pearl-white scientist suit with compact goggles as part of its helmet.
+3 saturated amber-yellow engineer suit with a compact hardhat.
+4 rich violet detective suit with a small tilted fedora.
+5 deep jade guardian suit, tiny warm halo and restrained wing relief.
+6 charcoal and crimson impostor suit with one expressive toothy grin and cyan visor, cheeky, no gore.
+
+All seven must feel made by the same artist, with the same dimensions, dominant navy shadows, direction of warm rim light, cyan glass, and clean lower space for live numeric pips. No extra characters or symbols. No logos, no watermark. Deliver production artwork, not a presentation board.

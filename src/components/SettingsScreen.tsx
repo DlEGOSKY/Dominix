@@ -158,6 +158,7 @@ function LanguageSection() {
     <Section title={t("settings.language")}>
       <Row label={t("settings.language")} hint={t("settings.languageHint")}>
         <select
+          aria-label={t("settings.language")}
           value={lang}
           onChange={(e) => setLang(e.target.value as Language)}
           className="bg-surface-700 text-white text-sm px-3 py-1.5 rounded-lg border border-surface-600 focus:border-accent-gold focus:outline-none"
@@ -175,6 +176,8 @@ function DataSection() {
   const [status, setStatus] = useState<{ kind: "ok" | "err"; text: string } | null>(null);
   const [importValue, setImportValue] = useState("");
   const [showImport, setShowImport] = useState(false);
+  const [exportValue, setExportValue] = useState("");
+  const [needsReload, setNeedsReload] = useState(false);
   const [confirmReset, setConfirmReset] = useState(false);
   const statusTimer = useRef<number | null>(null);
 
@@ -186,13 +189,14 @@ function DataSection() {
 
   const handleExport = async () => {
     const blob = exportSave();
+    setExportValue(blob);
     try {
       await navigator.clipboard.writeText(blob);
       flash("ok", t("settings.copiedClipboard"));
       audio.play("button_click");
     } catch {
       // Fallback: open a textarea so the user can copy manually
-      window.prompt(t("settings.exportFallbackPrompt"), blob);
+      flash("ok", t("settings.exportVisible"));
     }
   };
 
@@ -202,6 +206,7 @@ function DataSection() {
       flash("ok", t("settings.imported", { n: result.keysImported ?? 0 }));
       setImportValue("");
       setShowImport(false);
+      setNeedsReload(true);
       audio.play("button_click");
     } else {
       flash("err", result.error || t("settings.importErr"));
@@ -215,6 +220,7 @@ function DataSection() {
       return;
     }
     const removed = resetAllSaveData();
+    setNeedsReload(true);
     flash("ok", t("settings.resetDone", { n: removed }));
     setConfirmReset(false);
     audio.play("button_click");
@@ -230,6 +236,18 @@ function DataSection() {
           {t("settings.exportAction")}
         </button>
       </Row>
+      {exportValue && <div className="flex flex-col gap-2">
+        <label className="text-xs text-accent-silver" htmlFor="backup-code">{t("settings.backupCode")}</label>
+        <textarea id="backup-code" readOnly value={exportValue} rows={3} className="bg-surface-900 text-white text-xs font-mono p-3 rounded-lg border border-surface-600" />
+        <button className="self-start text-xs text-accent-gold border border-accent-gold/40 rounded px-3 py-2" onClick={() => {
+          const url = URL.createObjectURL(new Blob([exportValue], { type: "text/plain;charset=utf-8" }));
+          const link = document.createElement("a");
+          link.href = url;
+          link.download = `dominix-backup-${new Date().toISOString().slice(0, 10)}.txt`;
+          link.click();
+          window.setTimeout(() => URL.revokeObjectURL(url), 1000);
+        }}>{t("settings.downloadBackup")}</button>
+      </div>}
       <Row label={t("settings.importSave")} hint={t("settings.importHint")}>
         <button
           onClick={() => setShowImport((v) => !v)}
@@ -241,6 +259,7 @@ function DataSection() {
       {showImport && (
         <div className="flex flex-col gap-2 mt-1">
           <textarea
+            aria-label={t("settings.importSave")}
             value={importValue}
             onChange={(e) => setImportValue(e.target.value)}
             placeholder={t("settings.importPlaceholder")}
@@ -281,6 +300,7 @@ function DataSection() {
           {status.text}
         </div>
       )}
+      {needsReload && <button onClick={() => window.location.reload()} className="text-xs px-4 py-2 border border-accent-gold/40 rounded text-accent-gold">{t("settings.reloadBackup")}</button>}
     </Section>
   );
 }
@@ -319,6 +339,7 @@ function ToggleRow({ label, hint, value, onChange }: { label: string; hint?: str
           "relative w-11 h-6 rounded-full transition-colors border",
           value ? "bg-accent-gold/30 border-accent-gold/60" : "bg-surface-700 border-surface-600/60",
         ].join(" ")}
+        aria-label={label}
         aria-pressed={value}
       >
         <span
@@ -337,6 +358,7 @@ function SliderRow({ label, hint, value, disabled, onChange }: { label: string; 
     <Row label={label} hint={hint}>
       <div className="flex items-center gap-2">
         <input
+          aria-label={label}
           type="range"
           min={0}
           max={1}
@@ -358,6 +380,7 @@ function SelectRow({ label, hint, value, options, onChange }: { label: string; h
   return (
     <Row label={label} hint={hint}>
       <select
+        aria-label={label}
         value={value}
         onChange={(e) => onChange(e.target.value)}
         className="bg-surface-700 text-white text-sm px-3 py-1.5 rounded-lg border border-surface-600 focus:border-accent-gold focus:outline-none"

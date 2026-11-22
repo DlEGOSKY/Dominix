@@ -19,13 +19,13 @@ export function loadSavedData(): SavedData {
   }
 }
 
-export function saveBestData(round: number, score: number): void {
+export function saveBestData(round: number, score: number, roundsPlayed = round): void {
   const current = loadSavedData();
   const updated: SavedData = {
     bestRound: Math.max(current.bestRound, round),
     bestScore: Math.max(current.bestScore, score),
     totalRuns: current.totalRuns + 1,
-    totalRoundsPlayed: current.totalRoundsPlayed + round,
+    totalRoundsPlayed: current.totalRoundsPlayed + roundsPlayed,
   };
   localStorage.setItem(STORAGE_KEY, JSON.stringify(updated));
 }

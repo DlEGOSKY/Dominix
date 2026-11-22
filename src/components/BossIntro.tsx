@@ -3,6 +3,9 @@ import { motion } from "framer-motion";
 import type { Boss } from "@/engine/boss";
 import { useLocalizedBoss } from "@/engine/i18nContent";
 import { useTranslation, t as translate } from "@/engine/i18n";
+import { useReduceMotion } from "@/hooks/useSettings";
+import bossThreshold from "@/assets/boss-threshold-v1.webp";
+import bossThresholdMobile from "@/assets/boss-threshold-mobile-v1.webp";
 
 interface BossIntroProps {
   boss: Boss;
@@ -13,9 +16,11 @@ interface BossIntroProps {
 export default function BossIntro({ boss, round, onStart }: BossIntroProps) {
   const { t } = useTranslation();
   const loc = useLocalizedBoss(boss);
+  const reducedMotion = useReduceMotion();
   // Letter-by-letter name reveal
   const [revealed, setRevealed] = useState(0);
   useEffect(() => {
+    if (reducedMotion) { setRevealed(loc.name.length); return; }
     setRevealed(0);
     const interval = setInterval(() => {
       setRevealed((r) => {
@@ -27,24 +32,30 @@ export default function BossIntro({ boss, round, onStart }: BossIntroProps) {
       });
     }, 65);
     return () => clearInterval(interval);
-  }, [loc.name]);
+  }, [loc.name, reducedMotion]);
 
   const phaseCount = boss.phases?.length ?? 1;
 
   return (
     <div className="min-h-screen flex flex-col items-center justify-center px-6 overflow-hidden relative">
+      <picture className="absolute inset-0 pointer-events-none">
+        <source media="(max-width: 640px)" srcSet={bossThresholdMobile} />
+        <img src={bossThreshold} alt="" width={1280} height={716} decoding="async" className="h-full w-full object-cover" />
+      </picture>
+      <div aria-hidden="true" className="absolute inset-0 pointer-events-none" style={{ background: "linear-gradient(180deg, rgba(10,10,15,0.28), rgba(10,10,15,0.62) 50%, rgba(10,10,15,0.24))" }} />
       {/* Pulsing red vignette */}
       <motion.div
         className="fixed inset-0 pointer-events-none"
         initial={{ opacity: 0 }}
-        animate={{ opacity: [0.15, 0.4, 0.15] }}
-        transition={{ duration: 3.2, repeat: Infinity, ease: "easeInOut" }}
+        animate={reducedMotion ? { opacity: 0.15 } : { opacity: [0.15, 0.4, 0.15] }}
+        transition={reducedMotion ? { duration: 0 } : { duration: 3.2, repeat: Infinity, ease: "easeInOut" }}
         style={{
           background: "radial-gradient(ellipse at center, transparent 30%, rgba(220,38,38,0.22) 100%)",
         }}
       />
 
       {/* Ambient scanning lines */}
+      {!reducedMotion && <>
       <motion.div
         className="fixed left-0 right-0 h-px pointer-events-none"
         style={{ background: "linear-gradient(90deg, transparent, rgba(239,68,68,0.6), transparent)" }}
@@ -59,6 +70,7 @@ export default function BossIntro({ boss, round, onStart }: BossIntroProps) {
         animate={{ top: ["70%", "20%"] }}
         transition={{ duration: 5, repeat: Infinity, ease: "linear", delay: 1 }}
       />
+      </>}
 
       <motion.div
         initial={{ scale: 0.85, opacity: 0 }}
@@ -68,7 +80,7 @@ export default function BossIntro({ boss, round, onStart }: BossIntroProps) {
       >
         {/* Concentric expanding rings icon */}
         <div className="relative w-24 h-24 flex items-center justify-center">
-          {[0, 1, 2].map((i) => (
+          {(reducedMotion ? [] : [0, 1, 2]).map((i) => (
             <motion.div
               key={i}
               className="absolute inset-0 rounded-full border border-red-500/40"
@@ -109,7 +121,7 @@ export default function BossIntro({ boss, round, onStart }: BossIntroProps) {
           className="font-display font-black text-5xl text-center bg-gradient-to-b from-white via-white/90 to-red-200/40 bg-clip-text text-transparent min-h-[60px]"
           aria-label={loc.name}
         >
-          {loc.name.split("").map((ch, i) => (
+          {reducedMotion ? loc.name : loc.name.split("").map((ch, i) => (
             <motion.span
               key={i}
               initial={{ opacity: 0, y: -12, filter: "blur(6px)" }}
@@ -120,7 +132,7 @@ export default function BossIntro({ boss, round, onStart }: BossIntroProps) {
               {ch}
             </motion.span>
           ))}
-          {revealed < loc.name.length && (
+          {!reducedMotion && revealed < loc.name.length && (
             <motion.span
               animate={{ opacity: [0.2, 1, 0.2] }}
               transition={{ duration: 0.8, repeat: Infinity }}
@@ -139,7 +151,7 @@ export default function BossIntro({ boss, round, onStart }: BossIntroProps) {
             {Array.from({ length: phaseCount }).map((_, i) => (
               <div key={i} className="w-6 h-1 rounded-full bg-red-500/40" />
             ))}
-            <span className="text-[9px] text-red-400/60 uppercase tracking-widest ml-2">
+            <span className="text-[9px] text-red-300/90 uppercase tracking-widest ml-2">
               {t("boss.phases", { n: phaseCount })}
             </span>
           </motion.div>
@@ -149,7 +161,7 @@ export default function BossIntro({ boss, round, onStart }: BossIntroProps) {
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           transition={{ delay: 0.7 }}
-          className="text-accent-silver/65 text-center text-base leading-relaxed max-w-sm"
+          className="text-accent-silver/80 text-center text-base leading-relaxed max-w-sm"
         >
           {loc.description}
         </motion.p>
@@ -162,14 +174,14 @@ export default function BossIntro({ boss, round, onStart }: BossIntroProps) {
             className="relative px-5 py-3 rounded-xl bg-yellow-500/10 border border-yellow-500/30 backdrop-blur-sm overflow-hidden"
           >
             {/* Inner shimmer */}
-            <motion.div
+            {!reducedMotion && <motion.div
               className="absolute inset-0 opacity-30"
               style={{
                 background: "linear-gradient(90deg, transparent, rgba(250,204,21,0.3), transparent)",
               }}
               animate={{ x: ["-100%", "200%"] }}
               transition={{ duration: 2.5, repeat: Infinity, ease: "easeInOut" }}
-            />
+            />}
             <span className="relative text-yellow-400/95 text-sm font-medium">
               {getRestrictionText(boss.restriction)}
             </span>
@@ -194,22 +206,22 @@ export default function BossIntro({ boss, round, onStart }: BossIntroProps) {
         </motion.div>
 
         <motion.button
-          initial={{ opacity: 0, y: 20 }}
+          initial={reducedMotion ? false : { opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 1.2 }}
+          transition={reducedMotion ? { duration: 0 } : { delay: 1.2 }}
           whileHover={{ scale: 1.05 }}
           whileTap={{ scale: 0.95 }}
           onClick={onStart}
           className="mt-2 px-10 py-3.5 rounded-xl bg-gradient-to-b from-red-500 to-red-700 text-white font-bold text-lg tracking-wide transition shadow-lg shadow-red-500/40 hover:shadow-red-500/60 relative overflow-hidden"
         >
-          <motion.span
+          {!reducedMotion && <motion.span
             className="absolute inset-0 opacity-30"
             style={{
               background: "linear-gradient(90deg, transparent, rgba(255,255,255,0.5), transparent)",
             }}
             animate={{ x: ["-100%", "200%"] }}
             transition={{ duration: 2.2, repeat: Infinity, ease: "easeInOut", repeatDelay: 1 }}
-          />
+          />}
           <span className="relative">{t("boss.face")}</span>
         </motion.button>
       </motion.div>

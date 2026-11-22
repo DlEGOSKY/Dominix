@@ -1,3 +1,4 @@
+import { getGlobalRNG } from "./rng";
 /**
  * Consumable system: one-shot items that sit in a dedicated 2-slot panel,
  * separate from relics and mutations. Designed to fill the gap of "tactical
@@ -121,7 +122,7 @@ export function rollRandomConsumable(eliteBoost = false): Consumable {
     w: RARITY_WEIGHT[c.rarity] * (eliteBoost && c.rarity === "legendary" ? 2 : 1),
   }));
   const total = pool.reduce((s, p) => s + p.w, 0);
-  let r = Math.random() * total;
+  let r = getGlobalRNG().next() * total;
   for (const p of pool) {
     r -= p.w;
     if (r <= 0) return p.c;

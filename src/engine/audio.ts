@@ -29,6 +29,7 @@ interface SynthSound {
   volume: number;
   decay?: number;
 }
+export type ContactMaterial = "stone" | "metal" | "glass" | "wood";
 
 const SYNTH_SOUNDS: Record<SoundName, SynthSound> = {
   tile_place:       { frequency: 440,  duration: 0.08, type: "sine",     volume: 0.3  },
@@ -60,6 +61,7 @@ class AudioManager {
   private audioContext: AudioContext | null = null;
   private sfxVolume = 0.5;
   private muted = false;
+  private contactNoise: AudioBuffer | null = null;
 
   /**
    * Returns the live AudioContext only if it exists AND is running.
@@ -126,6 +128,31 @@ class AudioManager {
     } catch {
       // Audio not supported or blocked
     }
+  }
+
+  /** Dry contact plus a short material resonance, triggered only on arrival. */
+  playTileContact(material: ContactMaterial = "stone") {
+    if (this.muted || this.sfxVolume <= 0) return;
+    const ctx = this.getRunningContext();
+    if (!ctx) return;
+    try {
+      const now = ctx.currentTime;
+      if (!this.contactNoise) {
+        this.contactNoise = ctx.createBuffer(1, Math.ceil(ctx.sampleRate * .035), ctx.sampleRate);
+        const samples = this.contactNoise.getChannelData(0);
+        for (let i = 0; i < samples.length; i++) { const noise = Math.sin((i + 1) * 78.233) * 43758.5453; samples[i] = (noise - Math.floor(noise)) * 2 - 1; }
+      }
+      const noise = ctx.createBufferSource(), filter = ctx.createBiquadFilter(), tap = ctx.createGain();
+      noise.buffer = this.contactNoise;
+      filter.type = "highpass"; filter.frequency.value = material === "glass" ? 3400 : material === "metal" ? 2400 : material === "wood" ? 900 : 1500;
+      tap.gain.setValueAtTime(.16 * this.sfxVolume, now); tap.gain.exponentialRampToValueAtTime(.0001, now + .035);
+      noise.connect(filter); filter.connect(tap); tap.connect(ctx.destination); noise.start(now); noise.stop(now + .04);
+      const resonance = ctx.createOscillator(), body = ctx.createGain();
+      const frequency = material === "glass" ? 940 : material === "metal" ? 620 : material === "wood" ? 230 : 320;
+      resonance.type = "sine"; resonance.frequency.setValueAtTime(frequency, now); resonance.frequency.exponentialRampToValueAtTime(frequency * .7, now + .07);
+      body.gain.setValueAtTime(.17 * this.sfxVolume, now); body.gain.exponentialRampToValueAtTime(.0001, now + .085);
+      resonance.connect(body); body.connect(ctx.destination); resonance.start(now); resonance.stop(now + .09);
+    } catch { /* Same silent fallback as the other effects. */ }
   }
 
   playChord(notes: number[], duration: number = 0.3) {

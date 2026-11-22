@@ -1,6 +1,7 @@
-import { useState, useRef, useCallback, type ReactNode } from "react";
+import { useState, useRef, useCallback, useEffect, useId, forwardRef, type ReactNode } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import type { IconType } from "react-icons";
+import { useReduceMotion } from "@/hooks/useSettings";
 
 export type TooltipPlacement = "top" | "bottom" | "left" | "right";
 
@@ -11,21 +12,28 @@ interface TooltipProps {
   disabled?: boolean;
   children: ReactNode;
   className?: string;
+  /** Enables keyboard access when the child control itself is disabled. */
+  accessibleLabel?: string;
 }
 
-export default function Tooltip({
+const Tooltip = forwardRef<HTMLDivElement, TooltipProps>(function Tooltip({
   content,
   placement = "top",
   delay = 300,
   disabled = false,
   children,
   className = "",
-}: TooltipProps) {
+  accessibleLabel,
+}: TooltipProps, ref) {
+  const reducedMotion = useReduceMotion();
   const [visible, setVisible] = useState(false);
+  const tooltipId = useId();
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  useEffect(() => () => { if (timerRef.current) clearTimeout(timerRef.current); }, []);
 
   const show = useCallback(() => {
     if (disabled) return;
+    if (timerRef.current) clearTimeout(timerRef.current);
     timerRef.current = setTimeout(() => setVisible(true), delay);
   }, [disabled, delay]);
 
@@ -61,21 +69,29 @@ export default function Tooltip({
 
   return (
     <div
+      ref={ref}
+      tabIndex={accessibleLabel ? 0 : undefined}
+      role={accessibleLabel ? "group" : undefined}
+      aria-label={accessibleLabel}
+      aria-describedby={visible && !disabled ? tooltipId : undefined}
       className={`relative inline-flex ${className}`}
       onMouseEnter={show}
       onMouseLeave={hide}
       onFocus={show}
       onBlur={hide}
+      onKeyDown={(event) => { if (event.key === "Escape") hide(); }}
     >
       {children}
       <AnimatePresence>
-        {visible && (
+        {visible && !disabled && (
           <motion.div
             key="tooltip"
-            initial={ps.initial}
+            id={tooltipId}
+            role="tooltip"
+            initial={reducedMotion ? false : ps.initial}
             animate={{ opacity: 1, y: 0, x: 0, scale: 1 }}
-            exit={ps.initial}
-            transition={{ duration: 0.14, ease: [0.22, 1, 0.36, 1] }}
+            exit={reducedMotion ? undefined : ps.initial}
+            transition={{ duration: reducedMotion ? 0 : 0.14, ease: [0.22, 1, 0.36, 1] }}
             className={`absolute z-[9999] pointer-events-none ${ps.wrapper}`}
           >
             <div className="min-w-[10rem] max-w-[15rem] rounded-xl border border-surface-600/60 bg-surface-900/95 backdrop-blur-md px-3 py-2.5 shadow-2xl">
@@ -86,7 +102,9 @@ export default function Tooltip({
       </AnimatePresence>
     </div>
   );
-}
+});
+
+export default Tooltip;
 
 /* ------------------------------------------------------------------ */
 /*  Convenience: Relic tooltip content                                 */
@@ -152,50 +170,6 @@ export function PatternTooltipContent({ name, description, bonus, multiplier }: 
           <span className="text-[10px] font-mono font-bold text-cyan-400">x{multiplier.toFixed(2)}</span>
         )}
       </div>
-    </div>
-  );
-}
-
-/* ------------------------------------------------------------------ */
-/*  Convenience: Tile tooltip content (special tiles)                  */
-/* ------------------------------------------------------------------ */
-interface TileTooltipContentProps {
-  type: string;
-  typeLabel: string;
-  typeColor: string;
-  typeDesc: string;
-  edition?: string | null;
-  editionLabel?: string;
-  editionDesc?: string;
-  editionColor?: string;
-  sum: number;
-}
-
-export function TileTooltipContent({
-  typeLabel,
-  typeColor,
-  typeDesc,
-  edition,
-  editionLabel,
-  editionDesc,
-  editionColor,
-  sum,
-}: TileTooltipContentProps) {
-  return (
-    <div className="flex flex-col gap-1">
-      <div className="flex items-center justify-between gap-2">
-        <span className={`font-bold text-xs ${typeColor}`}>{typeLabel}</span>
-        <span className="text-[9px] font-mono text-accent-silver/40">suma {sum}</span>
-      </div>
-      <p className="text-[10px] text-accent-silver/70 leading-snug">{typeDesc}</p>
-      {edition && editionLabel && (
-        <div className="mt-0.5 pt-1 border-t border-surface-600/30">
-          <span className={`text-[10px] font-bold ${editionColor ?? "text-pink-300"}`}>{editionLabel}</span>
-          {editionDesc && (
-            <p className="text-[10px] text-accent-silver/60 leading-snug mt-0.5">{editionDesc}</p>
-          )}
-        </div>
-      )}
     </div>
   );
 }

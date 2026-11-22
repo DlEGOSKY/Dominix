@@ -26,24 +26,14 @@ function isDouble(top: number, bottom: number): boolean {
 
 function detectCadenaSimple(chain: ChainState): PatternResult | null {
   if (chain.placed.length >= 3) {
-    return {
-      id: "cadena_simple",
-      name: "Cadena Simple",
-      bonus: 20,
-      multiplier: 1,
-    };
+    return patternResult("cadena_simple");
   }
   return null;
 }
 
 function detectCadenaLarga(chain: ChainState): PatternResult | null {
   if (chain.placed.length >= 5) {
-    return {
-      id: "cadena_larga",
-      name: "Cadena Larga",
-      bonus: 0,
-      multiplier: 1.5,
-    };
+    return patternResult("cadena_larga");
   }
   return null;
 }
@@ -53,12 +43,7 @@ function detectDobleDoble(chain: ChainState): PatternResult | null {
     isDouble(p.tile.top, p.tile.bottom)
   );
   if (doubles.length >= 2) {
-    return {
-      id: "doble_doble",
-      name: "Doble Doble",
-      bonus: 30,
-      multiplier: 1,
-    };
+    return patternResult("doble_doble");
   }
   return null;
 }
@@ -78,12 +63,7 @@ function detectDominio(chain: ChainState): PatternResult | null {
   );
 
   if (dominantNumber) {
-    return {
-      id: "dominio",
-      name: `Dominio del ${dominantNumber[0]}`,
-      bonus: 25,
-      multiplier: 1,
-    };
+    return patternResult("dominio", `Dominio del ${dominantNumber[0]}`);
   }
   return null;
 }
@@ -91,12 +71,7 @@ function detectDominio(chain: ChainState): PatternResult | null {
 function detectCierreExacto(chain: ChainState): PatternResult | null {
   if (chain.placed.length < 3) return null;
   if (chain.leftEnd === chain.rightEnd) {
-    return {
-      id: "cierre_exacto",
-      name: "Cierre Exacto",
-      bonus: 0,
-      multiplier: 2,
-    };
+    return patternResult("cierre_exacto");
   }
   return null;
 }
@@ -120,12 +95,7 @@ function detectEscalera(chain: ChainState): PatternResult | null {
   }
 
   if (ascending >= 3 || descending >= 3) {
-    return {
-      id: "escalera",
-      name: "Escalera",
-      bonus: 35,
-      multiplier: 1,
-    };
+    return patternResult("escalera");
   }
   return null;
 }
@@ -133,12 +103,7 @@ function detectEscalera(chain: ChainState): PatternResult | null {
 function detectTripleDoble(chain: ChainState): PatternResult | null {
   const doubles = chain.placed.filter((p) => isDouble(p.tile.top, p.tile.bottom));
   if (doubles.length >= 3) {
-    return {
-      id: "triple_doble",
-      name: "Triple Doble",
-      bonus: 50,
-      multiplier: 1.2,
-    };
+    return patternResult("triple_doble");
   }
   return null;
 }
@@ -149,12 +114,7 @@ function detectSimetria(chain: ChainState): PatternResult | null {
     const mid = Math.floor(chain.placed.length / 2);
     const midTile = chain.placed[mid];
     if (midTile && isDouble(midTile.tile.top, midTile.tile.bottom)) {
-      return {
-        id: "simetria",
-        name: "Simetria",
-        bonus: 40,
-        multiplier: 1.3,
-      };
+      return patternResult("simetria");
     }
   }
   return null;
@@ -169,12 +129,7 @@ function detectSumaExacta(chain: ChainState): PatternResult | null {
   }
 
   if (sum === 21 || sum === 42 || sum === 63) {
-    return {
-      id: "suma_exacta",
-      name: `Suma ${sum}`,
-      bonus: 0,
-      multiplier: 1.5,
-    };
+    return patternResult("suma_exacta", `Suma ${sum}`);
   }
   return null;
 }
@@ -190,12 +145,7 @@ function detectPuente(chain: ChainState): PatternResult | null {
   const endNum = last.exposedRight;
 
   if (Math.abs(startNum - endNum) === 6) {
-    return {
-      id: "puente",
-      name: "Puente 0-6",
-      bonus: 45,
-      multiplier: 1,
-    };
+    return patternResult("puente");
   }
   return null;
 }
@@ -213,12 +163,7 @@ function detectParejas(chain: ChainState): PatternResult | null {
   }
 
   if (pairs >= 2) {
-    return {
-      id: "parejas",
-      name: "Parejas",
-      bonus: 30,
-      multiplier: 1.15,
-    };
+    return patternResult("parejas");
   }
   return null;
 }
@@ -233,12 +178,7 @@ function detectRachaAlta(chain: ChainState): PatternResult | null {
   }
 
   if (highCount >= 3) {
-    return {
-      id: "racha_alta",
-      name: "Racha Alta",
-      bonus: 40,
-      multiplier: 1,
-    };
+    return patternResult("racha_alta");
   }
   return null;
 }
@@ -253,12 +193,7 @@ function detectRachaBaja(chain: ChainState): PatternResult | null {
   }
 
   if (lowCount >= 4) {
-    return {
-      id: "racha_baja",
-      name: "Racha Baja",
-      bonus: 0,
-      multiplier: 1.4,
-    };
+    return patternResult("racha_baja");
   }
   return null;
 }
@@ -279,24 +214,14 @@ function detectAlternancia(chain: ChainState): PatternResult | null {
   }
 
   if (alternating) {
-    return {
-      id: "alternancia",
-      name: "Alternancia",
-      bonus: 35,
-      multiplier: 1.1,
-    };
+    return patternResult("alternancia");
   }
   return null;
 }
 
 function detectCadenaMaxima(chain: ChainState): PatternResult | null {
   if (chain.placed.length >= 7) {
-    return {
-      id: "cadena_maxima",
-      name: "Cadena Maxima",
-      bonus: 60,
-      multiplier: 1.8,
-    };
+    return patternResult("cadena_maxima");
   }
   return null;
 }
@@ -310,7 +235,7 @@ function detectEspejo(chain: ChainState): PatternResult | null {
     if (a.tile.top === b.tile.bottom && a.tile.bottom === b.tile.top) mirrors++;
   }
   if (mirrors >= 2) {
-    return { id: "espejo", name: "Espejo", bonus: 35, multiplier: 1.2 };
+    return patternResult("espejo");
   }
   return null;
 }
@@ -319,7 +244,7 @@ function detectTodoDobles(chain: ChainState): PatternResult | null {
   if (chain.placed.length < 3) return null;
   const allDoubles = chain.placed.every((p) => isDouble(p.tile.top, p.tile.bottom));
   if (allDoubles) {
-    return { id: "todo_dobles", name: "Todo Dobles", bonus: 0, multiplier: 2.0 };
+    return patternResult("todo_dobles");
   }
   return null;
 }
@@ -337,7 +262,7 @@ function detectZigzag(chain: ChainState): PatternResult | null {
     if ((mid > prev && mid > curr) || (mid < prev && mid < curr)) zigzags++;
   }
   if (zigzags >= 3) {
-    return { id: "zigzag", name: "Zigzag", bonus: 40, multiplier: 1.15 };
+    return patternResult("zigzag");
   }
   return null;
 }
@@ -346,7 +271,7 @@ function detectSumaImpar(chain: ChainState): PatternResult | null {
   if (chain.placed.length < 4) return null;
   const allOdd = chain.placed.every((p) => (p.tile.top + p.tile.bottom) % 2 === 1);
   if (allOdd) {
-    return { id: "suma_impar", name: "Suma Impar", bonus: 30, multiplier: 1.3 };
+    return patternResult("suma_impar");
   }
   return null;
 }
@@ -363,7 +288,7 @@ function detectAvalancha(chain: ChainState): PatternResult | null {
     else currentRun = 1;
   }
   if (bestRun >= 4) {
-    return { id: "avalancha", name: "Avalancha", bonus: 45, multiplier: 1.25 };
+    return patternResult("avalancha");
   }
   return null;
 }
@@ -384,7 +309,7 @@ function detectTrinidad(chain: ChainState): PatternResult | null {
     const vals3 = new Set([t3.top, t3.bottom]);
     const common = [...vals1].filter((v) => vals2.has(v) && vals3.has(v));
     if (common.length > 0) {
-      return { id: "trinidad", name: "Trinidad", bonus: 45, multiplier: 1.15 };
+      return patternResult("trinidad");
     }
   }
   return null;
@@ -399,7 +324,7 @@ function detectFractal(chain: ChainState): PatternResult | null {
   const validSums = new Set([1, 2, 4, 8]);
   const allFractal = chain.placed.every((p) => validSums.has(p.tile.top + p.tile.bottom));
   if (allFractal) {
-    return { id: "fractal", name: "Fractal", bonus: 60, multiplier: 1.2 };
+    return patternResult("fractal");
   }
   return null;
 }
@@ -430,7 +355,7 @@ function detectConstelacion(chain: ChainState): PatternResult | null {
     numbers.add(p.tile.bottom);
   }
   if (numbers.size >= 6) {
-    return { id: "constelacion", name: "Constelacion", bonus: 55, multiplier: 1.25 };
+    return patternResult("constelacion");
   }
   return null;
 }
@@ -451,7 +376,7 @@ function detectDiminuendo(chain: ChainState): PatternResult | null {
     else currentRun = 1;
   }
   if (bestRun >= 4) {
-    return { id: "diminuendo", name: "Diminuendo", bonus: 35, multiplier: 1.3 };
+    return patternResult("diminuendo");
   }
   return null;
 }
@@ -479,7 +404,7 @@ function detectCorona(chain: ChainState): PatternResult | null {
     }
   }
   if (maxRun >= 3) {
-    return { id: "corona", name: "Corona", bonus: 50, multiplier: 1.2 };
+    return patternResult("corona");
   }
   return null;
 }
@@ -498,7 +423,7 @@ function detectHexagrama(chain: ChainState): PatternResult | null {
     numbers.add(p.tile.bottom);
   }
   if (numbers.size >= 6) {
-    return { id: "hexagrama", name: "Hexagrama", bonus: 80, multiplier: 1.5 };
+    return patternResult("hexagrama");
   }
   return null;
 }
@@ -508,7 +433,7 @@ function detectArmonia(chain: ChainState): PatternResult | null {
   const total = chain.placed.reduce((s, p) => s + p.tile.top + p.tile.bottom, 0);
   // Require prime AND meaningful sum (>=20) so trivial short chains don't activate it
   if (total >= 20 && isPrime(total)) {
-    return { id: "armonia", name: "Armonia", bonus: 40, multiplier: 1.35 };
+    return patternResult("armonia");
   }
   return null;
 }
@@ -526,7 +451,7 @@ function detectTripleFilo(chain: ChainState): PatternResult | null {
     else impares++;
   }
   if (pares >= 3 && impares >= 3) {
-    return { id: "triple_filo", name: "Triple Filo", bonus: 45, multiplier: 1.2 };
+    return patternResult("triple_filo");
   }
   return null;
 }
@@ -547,7 +472,7 @@ function detectCrescendo(chain: ChainState): PatternResult | null {
     }
   }
   if (bestRun >= 4) {
-    return { id: "crescendo", name: "Crescendo", bonus: 50, multiplier: 1.35 };
+    return patternResult("crescendo");
   }
   return null;
 }
@@ -560,7 +485,7 @@ function detectCuna(chain: ChainState): PatternResult | null {
   const firstTotal = first.top + first.bottom;
   const lastTotal = last.top + last.bottom;
   if (firstTotal === lastTotal) {
-    return { id: "cuna", name: "Cuna", bonus: 40, multiplier: 1.3 };
+    return patternResult("cuna");
   }
   return null;
 }
@@ -570,7 +495,7 @@ function detectOuroboros(chain: ChainState): PatternResult | null {
   if (chain.placed.length < 7) return null;
   if (chain.leftEnd === null || chain.rightEnd === null) return null;
   if (chain.leftEnd === chain.rightEnd) {
-    return { id: "ouroboros", name: "Ouroboros", bonus: 100, multiplier: 1.6 };
+    return patternResult("ouroboros");
   }
   return null;
 }
@@ -650,38 +575,47 @@ export interface PatternInfo {
 }
 
 export const ALL_PATTERNS: PatternInfo[] = [
-  { id: "cadena_simple", name: "Cadena Simple", description: "Coloca 3+ fichas en la cadena", bonus: 15, multiplier: 1 },
+  { id: "cadena_simple", name: "Cadena Simple", description: "Coloca 3+ fichas en la cadena", bonus: 20, multiplier: 1 },
   { id: "cadena_larga", name: "Cadena Larga", description: "Coloca 5+ fichas en la cadena", bonus: 0, multiplier: 1.5 },
-  { id: "cadena_maxima", name: "Cadena Maxima", description: "Coloca 7+ fichas en la cadena", bonus: 50, multiplier: 2 },
+  { id: "cadena_maxima", name: "Cadena Maxima", description: "Coloca 7+ fichas en la cadena", bonus: 60, multiplier: 1.8 },
   { id: "doble_doble", name: "Doble Doble", description: "Juega 2 dobles en la cadena", bonus: 30, multiplier: 1 },
-  { id: "triple_doble", name: "Triple Doble", description: "Juega 3 dobles en la cadena", bonus: 0, multiplier: 1.4 },
-  { id: "todo_dobles", name: "Todo Dobles", description: "Toda la cadena son dobles (3+)", bonus: 0, multiplier: 2.5 },
-  { id: "dominio", name: "Dominio", description: "Un numero aparece en 3+ conexiones", bonus: 25, multiplier: 1.2 },
-  { id: "cierre_exacto", name: "Cierre Exacto", description: "Los extremos de la cadena coinciden", bonus: 40, multiplier: 1 },
-  { id: "escalera", name: "Escalera", description: "4+ conexiones forman secuencia ascendente", bonus: 35, multiplier: 1.3 },
-  { id: "simetria", name: "Simetria", description: "Cadena simetrica con extremos iguales", bonus: 45, multiplier: 1 },
-  { id: "parejas", name: "Parejas", description: "3+ pares de fichas consecutivas con misma suma", bonus: 30, multiplier: 1.2 },
-  { id: "racha_alta", name: "Racha Alta", description: "3+ fichas consecutivas con suma >= 8", bonus: 25, multiplier: 1.15 },
-  { id: "racha_baja", name: "Racha Baja", description: "4+ fichas consecutivas con suma <= 4", bonus: 35, multiplier: 1.25 },
-  { id: "alternancia", name: "Alternancia", description: "4+ fichas alternando par/impar en suma", bonus: 30, multiplier: 1.2 },
-  { id: "suma_exacta", name: "Suma Exacta", description: "Suma total de la cadena es multiplo de 10", bonus: 50, multiplier: 1 },
-  { id: "puente", name: "Puente", description: "5+ fichas donde primera y ultima comparten un valor", bonus: 35, multiplier: 1.3 },
-  { id: "espejo", name: "Espejo", description: "3+ fichas consecutivas con valores invertidos", bonus: 40, multiplier: 1.2 },
-  { id: "zigzag", name: "Zigzag", description: "5+ conexiones alternando subir/bajar", bonus: 35, multiplier: 1.25 },
-  { id: "suma_impar", name: "Suma Impar", description: "4+ fichas donde todas suman impar", bonus: 30, multiplier: 1.2 },
-  { id: "avalancha", name: "Avalancha", description: "4+ fichas con sumas crecientes", bonus: 35, multiplier: 1.3 },
+  { id: "triple_doble", name: "Triple Doble", description: "Juega 3+ dobles en la cadena", bonus: 50, multiplier: 1.2 },
+  { id: "todo_dobles", name: "Todo Dobles", description: "Toda la cadena son dobles (3+)", bonus: 0, multiplier: 2 },
+  { id: "dominio", name: "Dominio", description: "Cadena de 3+ fichas; un número aparece en 4+ caras efectivas", bonus: 25, multiplier: 1 },
+  { id: "cierre_exacto", name: "Cierre Exacto", description: "Cadena de 3+ fichas con extremos iguales", bonus: 0, multiplier: 2 },
+  { id: "escalera", name: "Escalera", description: "4+ fichas; al menos 3 subidas o bajadas entre caras efectivas", bonus: 35, multiplier: 1 },
+  { id: "simetria", name: "Simetria", description: "3+ fichas, cantidad impar, extremos iguales y doble en el centro", bonus: 40, multiplier: 1.3 },
+  { id: "parejas", name: "Parejas", description: "4+ fichas; 2+ pares adyacentes con la misma suma (pueden solaparse)", bonus: 30, multiplier: 1.15 },
+  { id: "racha_alta", name: "Racha Alta", description: "3+ fichas con suma de puntos >= 9, aunque estén separadas", bonus: 40, multiplier: 1 },
+  { id: "racha_baja", name: "Racha Baja", description: "4+ fichas con suma de puntos <= 4, aunque estén separadas", bonus: 0, multiplier: 1.4 },
+  { id: "alternancia", name: "Alternancia", description: "4+ fichas; toda la cadena alterna doble y no doble", bonus: 35, multiplier: 1.1 },
+  { id: "suma_exacta", name: "Suma Exacta", description: "3+ fichas; la suma total de puntos es exactamente 21, 42 o 63", bonus: 0, multiplier: 1.5 },
+  { id: "puente", name: "Puente 0-6", description: "5+ fichas; los extremos efectivos son 0 y 6", bonus: 45, multiplier: 1 },
+  { id: "espejo", name: "Espejo", description: "4+ fichas; 2+ pares adyacentes con valores impresos invertidos (pueden solaparse)", bonus: 35, multiplier: 1.2 },
+  { id: "zigzag", name: "Zigzag", description: "5+ fichas; 3+ cambios de dirección entre caras efectivas", bonus: 40, multiplier: 1.15 },
+  { id: "suma_impar", name: "Suma Impar", description: "4+ fichas donde todas suman impar", bonus: 30, multiplier: 1.3 },
+  { id: "avalancha", name: "Avalancha", description: "4+ fichas consecutivas con sumas estrictamente crecientes", bonus: 45, multiplier: 1.25 },
   { id: "trinidad", name: "Trinidad", description: "3+ fichas consecutivas con un numero en comun", bonus: 45, multiplier: 1.15 },
-  { id: "fractal", name: "Fractal", description: "Cadena donde todas las sumas son potencia de 2 (1,2,4,8)", bonus: 60, multiplier: 1.2 },
-  { id: "armonia", name: "Armonia", description: "Suma total de la cadena es un numero primo", bonus: 40, multiplier: 1.35 },
+  { id: "fractal", name: "Fractal", description: "4+ fichas; cada suma de puntos es 1, 2, 4 u 8", bonus: 60, multiplier: 1.2 },
+  { id: "armonia", name: "Armonia", description: "3+ fichas; suma total de puntos prima y >= 20", bonus: 40, multiplier: 1.35 },
   { id: "constelacion", name: "Constelacion", description: "Cadena de 5+ fichas con 6+ numeros distintos", bonus: 55, multiplier: 1.25 },
-  { id: "diminuendo", name: "Diminuendo", description: "4+ fichas con sumas estrictamente decrecientes", bonus: 35, multiplier: 1.3 },
+  { id: "diminuendo", name: "Diminuendo", description: "4+ fichas consecutivas con sumas estrictamente decrecientes", bonus: 35, multiplier: 1.3 },
   { id: "corona", name: "Corona", description: "3+ dobles con valores consecutivos (ej 3|3, 4|4, 5|5)", bonus: 50, multiplier: 1.2 },
   { id: "hexagrama", name: "Hexagrama", description: "Cadena exacta de 6 fichas con 6+ numeros distintos", bonus: 80, multiplier: 1.5 },
-  { id: "triple_filo", name: "Triple Filo", description: "Cadena de 6+ con 3 fichas pares y 3 impares (equilibrio)", bonus: 45, multiplier: 1.2 },
+  { id: "triple_filo", name: "Triple Filo", description: "3+ fichas con suma par y 3+ con suma impar, en cualquier orden", bonus: 45, multiplier: 1.2 },
   { id: "crescendo", name: "Crescendo", description: "4+ fichas consecutivas con sumas estrictamente crecientes", bonus: 50, multiplier: 1.35 },
-  { id: "cuna", name: "Cuna", description: "Primera y ultima ficha tienen el mismo total", bonus: 40, multiplier: 1.3 },
+  { id: "cuna", name: "Cuna", description: "3+ fichas; primera y última tienen la misma suma de puntos", bonus: 40, multiplier: 1.3 },
   { id: "ouroboros", name: "Ouroboros", description: "Cierre exacto + cadena de 7+ fichas (raro)", bonus: 100, multiplier: 1.6 },
 ];
+
+// The catalog and the scorer share the same values. Detection predicates stay
+// independent; a dynamic label must never supply different scoring numbers.
+const PATTERN_BY_ID = new Map(ALL_PATTERNS.map(pattern => [pattern.id, pattern]));
+function patternResult(id: string, name?: string): PatternResult {
+  const definition = PATTERN_BY_ID.get(id);
+  if (!definition) throw new Error(`Unknown pattern: ${id}`);
+  return { id, name: name ?? definition.name, bonus: definition.bonus, multiplier: definition.multiplier };
+}
 
 function detectCombo(patterns: PatternResult[]): ComboResult | null {
   const count = patterns.length;

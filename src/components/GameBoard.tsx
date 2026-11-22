@@ -1,51 +1,66 @@
+import { RUN_RULESET, SAVE_BEFORE_RELOAD_EVENT, type RunCheckpoint, type CheckpointStates } from "@/engine/runCheckpoint";
+import { restoreGlobalRNG } from "@/engine/rng";
 import { useState, useCallback, useEffect, useRef, useMemo } from "react";
+import SystemNotice from "./SystemNotice";
 import { motion, AnimatePresence } from "framer-motion";
-import type { Tile, PlacementSide, ChainState, GameState, RunStats } from "@/types/domino";
+import type { Tile, PlacementSide, GameState, RunStats } from "@/types/domino";
+import { useReduceMotion, useSettings } from "@/hooks/useSettings";
+import { useTileFlight } from "@/hooks/useTileFlight";
+import { useActionFeedback } from "@/hooks/useActionFeedback";
+import { boardShortcutsBlocked } from "@/engine/actionFeedback";
+import ActionFeedback from "./ActionFeedback";
 import { audio } from "@/engine/audio";
 import { ambient } from "@/engine/ambient";
+import RewardReceipt, { type Receipt } from "./RewardReceipt";
+import { rewardWasDelivered, type PendingReward } from "@/engine/rewardFeedback";
 import type { RewardOption } from "@/types/reward";
-import { generateFullSet, shuffle, addSpecialTiles } from "@/engine/tiles";
-import { getDailyTilePool } from "@/engine/daily";
-import { getWeeklyTilePool } from "@/engine/weekly";
+import { generateFullSet, shuffle } from "@/engine/tiles";
+import { getDailySeedValue, getDailyTilePool } from "@/engine/daily";
+import { getWeeklySeedValue, getWeeklyTilePool } from "@/engine/weekly";
 import type { ModifierConfig } from "@/engine/modifiers";
 import { getDefaultConfig } from "@/engine/modifiers";
-import { createEmptyChain, placeTile, hasAnyValidMove, getValidPlacements } from "@/engine/chain";
+import { createEmptyChain } from "@/engine/chain";
 import { calculateScore } from "@/engine/score";
 import { getTarget } from "@/engine/round";
+import { startNextRound, startBossPhase, recordRound, editRunTile, removeRunTile, duplicateRunTile } from "@/engine/runState";
+import { explainTileScore } from "@/engine/scoreExplanation";
+import { calculateRunScore, type RunScoreContext } from "@/engine/runScore";
+import { playRoundTile, discardRoundTile, drawRoundTile } from "@/engine/roundActions";
+import { getLegalPlacements, closeRound, resolveExhaustion } from "@/engine/roundRules";
 import { generateRewardOptions } from "@/engine/rewards";
-import { getRandomEvent, applyEventEffect } from "@/engine/events";
-import type { GameEvent, EventEffect } from "@/engine/events"; // EventEffect used in handleEventContinue param type
-import { TUTORIAL_STEPS, isTutorialComplete, markTutorialComplete } from "@/engine/tutorial";
+import { getRandomEvent, applyEventToRun } from "@/engine/events";
+import type { EventEffect } from "@/engine/events"; // EventEffect used in handleEventContinue param type
+import { isTutorialComplete, markTutorialComplete } from "@/engine/tutorial";
 import { getRandomRelics, ALL_RELICS, computeFamilySetBonuses, FAMILY_META } from "@/engine/relics";
 import { localizeRelic, localizePatternById, localizeBoss } from "@/engine/i18nContent";
 import { t as translate } from "@/engine/i18n";
-import { celebrateSetBonus, celebrateAchievement, celebrateLegendaryPattern, celebrateBigEvent } from "@/engine/celebrate";
+import { celebrateSetBonus, celebrateAchievement, celebrateLegendaryPattern } from "@/engine/celebrate";
 import BossDefeatedOverlay from "./BossDefeatedOverlay";
 import type { RelicFamily } from "@/types/relic";
-import { generateShopItems, calculateGoldEarned, getRerollCost } from "@/engine/shop";
+import { generateShopItems, getRoundPayout, getRerollCost } from "@/engine/shop";
 import type { ShopItem } from "@/engine/shop";
 import { getBossForRound, ALL_BOSSES } from "@/engine/boss";
 import type { Boss } from "@/engine/boss";
 import { loadProgression, getProgressionBonuses, loadActiveSkin } from "@/engine/progression";
 import { loadSavedData } from "@/engine/storage";
-import { createActionState, canPlay, canDiscard, canDraw, usePlayAction, useDiscardAction, useDrawAction } from "@/engine/actions";
+import { createActionState, getRelicHandBonus, canPlay, canDiscard, canDraw } from "@/engine/actions";
 import ActionHUD from "./ActionHUD";
-import { setGlobalRNG, randomSeed, seedToString } from "@/engine/rng";
+import { getGlobalRNG, setGlobalRNG, randomSeed, seedToString } from "@/engine/rng";
 import { ALL_ACTIVE_MUTATIONS, resetMutationUses, canUseMutation, applyShuffleHand, applySwapEnds } from "@/engine/activeMutations";
-import type { ActiveMutationState } from "@/engine/activeMutations";
-import { getCharacter, injectCharacterTiles, computeGoldMultiplier, applyCharacterPassive } from "@/engine/characters";
+import { getCharacter, injectCharacterTiles, computeGoldMultiplier } from "@/engine/characters";
 import type { CharacterId } from "@/engine/characters";
 import { getCharacterLevel, getMasteryBonus } from "@/engine/characterMastery";
 import { getTalentBonuses } from "@/engine/talents";
-import { pickRoundQuest, checkQuestCompletion } from "@/engine/quests";
-import type { QuestDefinition } from "@/engine/quests";
+import { pickRoundQuest } from "@/engine/quests";
 import { loadAscension, getAccumulatedAscension } from "@/engine/ascension";
-import { summarizeChainEditions, discoverEdition, rollRandomEdition } from "@/engine/editions";
-import { getConsumable, MAX_CONSUMABLE_SLOTS, rollRandomConsumable, type Consumable } from "@/engine/consumables";
-import { getCelestial, celestialTotalBonus, computeCelestialSetBonus, FIRMAMENT_META, rollRandomCelestial, type CelestialCard, type Firmament } from "@/engine/celestial";
-import { rollChaosTwist, chaosMods, type ChaosTwist } from "@/engine/chaos";
+import { discoverEdition, rollRandomEdition } from "@/engine/editions";
+import { getConsumable, MAX_CONSUMABLE_SLOTS, rollRandomConsumable } from "@/engine/consumables";
+import { getCelestial, computeCelestialSetBonus, FIRMAMENT_META, rollRandomCelestial, type CelestialCard, type Firmament } from "@/engine/celestial";
+import { rollChaosTwist, chaosMods } from "@/engine/chaos";
 import { discoverPattern, discoverBoss, discoverCelestial, discoverChaos } from "@/engine/codex";
-import { saveLegacy, consumeLegacy, resolveLegacy } from "@/engine/legacy";
+import { saveLegacy, loadLegacy, consumeLegacy, resolveLegacy } from "@/engine/legacy";
+import { withSaveRollback } from "@/engine/saveSync";
+import { useClipboard } from "@/hooks/useClipboard";
 import { getActForRound, detectActTransition, type ActDefinition } from "@/engine/acts";
 import { tryReachMilestone } from "@/engine/milestones";
 import MilestoneToast from "./MilestoneToast";
@@ -56,6 +71,7 @@ import Hand from "./Hand";
 import Chain from "./Chain";
 import ChainParticles from "./ChainParticles";
 import ScoreBar from "./ScoreBar";
+import ScoreSummary from "./ScoreSummary";
 import RunModifiersBadge from "./RunModifiersBadge";
 import PatternDisplay from "./PatternDisplay";
 import RelicBar from "./RelicBar";
@@ -65,7 +81,7 @@ import CelestialBar from "./CelestialBar";
 import MobileInfoBar from "./MobileInfoBar";
 import ActTransition from "./ActTransition";
 import InterludeScreen from "./InterludeScreen";
-import { rollInterlude, type Interlude, type InterludeChoice } from "@/engine/interludes";
+import { rollInterlude, type InterludeChoice } from "@/engine/interludes";
 import RewardScreen from "./RewardScreen";
 import TileSelector from "./TileSelector";
 import NumberConverter from "./NumberConverter";
@@ -83,8 +99,8 @@ import RoundTransition from "./RoundTransition";
 import RunMapScreen from "./RunMapScreen";
 import SanctuaryScreen from "./SanctuaryScreen";
 import type { SanctuaryChoice } from "./SanctuaryScreen";
-import { generateRunMap, visitNode } from "@/engine/runMap";
-import type { RunMap, MapNode } from "@/engine/runMap";
+import { generateRunMap, visitNode, getAvailableNodes } from "@/engine/runMap";
+import type { MapNode } from "@/engine/runMap";
 
 const HAND_SIZE = 7;
 
@@ -104,16 +120,6 @@ const INITIAL_STATS: RunStats = {
   tilesDrawn: 0,
   roundScores: [],
 };
-
-/** Pure helper that returns a NEW breakdown record with the given ids added. */
-function mergeBreakdown(prev: Record<string, number>, ids: string[]): Record<string, number> {
-  if (ids.length === 0) return prev;
-  const next: Record<string, number> = { ...prev };
-  for (const id of ids) {
-    next[id] = (next[id] ?? 0) + 1;
-  }
-  return next;
-}
 
 interface ProgressionStartBonuses {
   startingGold: number;
@@ -164,6 +170,9 @@ function createInitialRun(
 
   return {
     state: {
+      runTiles: pool,
+      roundBonus: 0,
+      roundSettled: false,
       hand: pool.slice(0, effectiveHandSize),
       tilePool: pool.slice(effectiveHandSize),
       chain: createEmptyChain(),
@@ -179,61 +188,17 @@ function createInitialRun(
   };
 }
 
-function startNextRound(
-  prev: GameState,
-  roundScore: number,
-  patternsCount: number,
-  targetMultiplier: number = 1,
-  handSize: number = HAND_SIZE,
-  actionBonus: number = 0,
-  preserveCount: number = 0,
-  patternIds: string[] = []
-): GameState {
-  const newRound = prev.round + 1;
-  const basePool = shuffle(generateFullSet());
-  const pool = addSpecialTiles(basePool, newRound);
 
-  // Preserve N random tiles from previous hand (tile_preserve talent)
-  const preserved: typeof prev.hand = [];
-  if (preserveCount > 0 && prev.hand.length > 0) {
-    const copy = [...prev.hand];
-    const keepN = Math.min(preserveCount, copy.length);
-    for (let i = 0; i < keepN; i++) {
-      const idx = Math.floor(Math.random() * copy.length);
-      preserved.push(copy.splice(idx, 1)[0]!);
-    }
-  }
-
-  const needed = Math.max(0, handSize - preserved.length);
-  const newHand = [...preserved, ...pool.slice(0, needed)];
-  const remainingPool = pool.slice(needed);
-
-  return {
-    ...prev,
-    hand: newHand,
-    tilePool: remainingPool,
-    chain: createEmptyChain(),
-    score: 0,
-    round: newRound,
-    target: Math.round(getTarget(newRound) * targetMultiplier),
-    result: "playing",
-    stats: {
-      ...prev.stats,
-      roundsCompleted: prev.stats.roundsCompleted + 1,
-      totalScore: prev.stats.totalScore + roundScore,
-      patternsActivated: prev.stats.patternsActivated + patternsCount,
-      patternBreakdown: mergeBreakdown(prev.stats.patternBreakdown, patternIds),
-      highestRoundScore: Math.max(prev.stats.highestRoundScore, roundScore),
-      roundScores: [...prev.stats.roundScores, roundScore],
-    },
-    actions: createActionState(newRound, prev.relics, actionBonus),
-  };
+function useRunValue<K extends keyof CheckpointStates>(resume: RunCheckpoint | undefined, key: K, fallback: CheckpointStates[K] | (() => CheckpointStates[K])) {
+  return useState<CheckpointStates[K]>(() => resume ? resume.states[key] : typeof fallback === "function" ? (fallback as () => CheckpointStates[K])() : fallback);
 }
 
-type MutationMode = null | "remove" | "duplicate" | "convert";
-
 interface GameBoardProps {
-  onGameOver: (stats: RunStats, relicIds: string[], finalRound: number) => void;
+  resume?: RunCheckpoint;
+  modifierIds?: string[];
+  onCheckpoint?: (snapshot: RunCheckpoint) => boolean;
+  onSaveExit?: () => void;
+  onGameOver: (stats: RunStats, relicIds: string[], finalRound: number, seed?: number) => void | (() => void);
   isDaily?: boolean;
   isEndless?: boolean;
   isWeekly?: boolean;
@@ -241,33 +206,60 @@ interface GameBoardProps {
   characterId?: CharacterId;
 }
 
-export default function GameBoard({ onGameOver, isDaily = false, isEndless = false, isWeekly = false, modifierConfig = getDefaultConfig(), characterId = "architect" }: GameBoardProps) {
+export default function GameBoard({ resume, modifierIds = [], onCheckpoint, onSaveExit, onGameOver, isDaily = false, isEndless = false, isWeekly = false, modifierConfig = getDefaultConfig(), characterId = "architect" }: GameBoardProps) {
+  const seedCopy = useClipboard();
+  const reducedMotion = useReduceMotion();
+  const [presentationSettings] = useSettings();
   const character = getCharacter(characterId);
-  const talentBonuses = getTalentBonuses();
-  const ascension = getAccumulatedAscension(isDaily || isEndless || isWeekly ? 0 : loadAscension().selected);
+  const isChallenge = isDaily || isWeekly;
+  const [runtime] = useState(() => resume?.runtime ?? {
+    talentBonuses: getTalentBonuses(isChallenge ? { ranks: {}, spent: 0 } : undefined),
+    ascension: getAccumulatedAscension(isDaily || isEndless || isWeekly ? 0 : loadAscension().selected),
+    masteryBonus: getMasteryBonus(isChallenge ? 1 : getCharacterLevel(characterId)),
+  });
+  const { talentBonuses, ascension, masteryBonus } = runtime;
   // Character mastery: bonus unlocked by repeatedly playing this character.
   // Applies in all modes so practice feels rewarding regardless of mode.
-  const masteryBonus = getMasteryBonus(getCharacterLevel(characterId));
+
   const [runSeed] = useState(() => {
-    const seed = randomSeed();
+    if (resume) { restoreGlobalRNG(resume.rng); return resume.seed; }
+    const seed = isDaily ? getDailySeedValue() : isWeekly ? getWeeklySeedValue() : randomSeed();
     setGlobalRNG(seed);
     return seed;
   });
+  const finishedRef = useRef(false);
+  const finishRun = useCallback((stats:RunStats, relics:string[], round:number, legacy?: Parameters<typeof saveLegacy>[0]) => {
+    if (finishedRef.current) return;
+    // AnimatePresence keeps this board mounted during its exit animation.
+    // Stop pending writes before App clears the run and records progression.
+    finishedRef.current = true;
+    const completion: { reveal?: () => void } = {};
+    const saved = withSaveRollback(() => {
+      if (legacy && (legacy.celestials.length > 0 || legacy.consumables.length > 0) && !saveLegacy(legacy)) throw new Error("Legacy save failed");
+      const reveal = onGameOver(stats, relics, round, runSeed);
+      if (typeof reveal === "function") completion.reveal = reveal;
+    });
+    if (saved) completion.reveal?.();
+    else { finishedRef.current = false; setCheckpointFailed(true); }
+  }, [onGameOver, runSeed]);
   const mapMode = !isDaily && !isEndless && !isWeekly;
   // Mastery action bonus stacks with talents and modifier-driven bonuses per round.
   const effectiveActionBonus = modifierConfig.actionBonus + talentBonuses.actionBonus + masteryBonus.actionBonus;
   const [initResult] = useState(() => {
-    const base = createInitialRun(isDaily, modifierConfig.handSize, modifierConfig.targetMultiplier, modifierConfig.startingRelics, undefined, effectiveActionBonus, isWeekly);
+    if (resume) return { state: resume.states.game, handSize: resume.handSize, bonusGold: 0 };
+    setGlobalRNG(runSeed);
+    const base = createInitialRun(isDaily, modifierConfig.handSize, modifierConfig.targetMultiplier, modifierConfig.startingRelics, isChallenge ? { startingGold: 0, startingRelics: [], startingGoldenTiles: 0, handSizeBonus: 0 } : undefined, effectiveActionBonus, isWeekly);
     // Apply character bonuses: inject special tiles, add starting relics, expand hand to char size
     let pool = injectCharacterTiles(base.state.tilePool, character);
     let hand = base.state.hand;
-    const targetHandSize = Math.max(hand.length, character.startingHandSize);
+    const baseHandSize = isChallenge ? hand.length : Math.max(hand.length, character.startingHandSize);
+    const relics = Array.from(new Set([...base.state.relics, ...character.startingRelicIds]));
+    const targetHandSize = baseHandSize + getRelicHandBonus(relics);
     const missing = targetHandSize - hand.length;
     if (missing > 0 && pool.length >= missing) {
       hand = [...hand, ...pool.slice(0, missing)];
       pool = pool.slice(missing);
     }
-    const relics = Array.from(new Set([...base.state.relics, ...character.startingRelicIds]));
 
     // Pacto Sagrado: pick the best candidate tile and mark it
     // (also triggered by Hermit character passive without the target penalty)
@@ -275,8 +267,8 @@ export default function GameBoard({ onGameOver, isDaily = false, isEndless = fal
     if (shouldPact) {
       const all = [...hand, ...pool];
       // Prefer highest-sum double, fallback to highest-sum tile
-      const doubles = all.filter((t) => t.top === t.bottom && !t.type);
-      const candidates = doubles.length > 0 ? doubles : all.filter((t) => !t.type);
+      const doubles = all.filter((t) => t.top === t.bottom && (!t.type || t.type === "normal"));
+      const candidates = doubles.length > 0 ? doubles : all.filter((t) => !t.type || t.type === "normal");
       if (candidates.length > 0) {
         const chosen = [...candidates].sort((a, b) => (b.top + b.bottom) - (a.top + a.bottom))[0]!;
         hand = hand.map((t) => t.id === chosen.id ? { ...t, pact: true } : t);
@@ -287,7 +279,7 @@ export default function GameBoard({ onGameOver, isDaily = false, isEndless = fal
     // Alchemist: roll random editions onto N tiles
     if (character.passive.type === "starting_editions") {
       const count = character.passive.count;
-      const all = [...hand, ...pool].filter((t) => !t.edition && !t.type);
+      const all = [...hand, ...pool].filter((t) => !t.edition && (!t.type || t.type === "normal"));
       const picked = all.slice(0, count);
       for (const t of picked) {
         const ed = rollRandomEdition();
@@ -301,37 +293,39 @@ export default function GameBoard({ onGameOver, isDaily = false, isEndless = fal
         ...base.state,
         hand,
         tilePool: pool,
+        runTiles: [...hand, ...pool],
+        actions: createActionState(1, relics, effectiveActionBonus),
         relics,
         stats: { ...base.state.stats, relicsCollected: relics.length },
       },
       bonusGold: base.bonusGold + character.startingGold,
+      handSize: baseHandSize,
     };
   });
-  const [game, setGame] = useState<GameState>(() =>
+  const [game, setGame] = useRunValue(resume, "game", () =>
     mapMode ? { ...initResult.state, result: "map_select" as const } : initResult.state
   );
-  const [runMap, setRunMap] = useState<RunMap | null>(() => mapMode ? generateRunMap(1) : null);
+  const [runMap, setRunMap] = useRunValue(resume, "runMap", () => mapMode ? generateRunMap(1) : null);
   // Elite rounds have buffed target AND boosted reward rarity
-  const [isEliteRound, setIsEliteRound] = useState(false);
-  const [sanctuaryCtx, setSanctuaryCtx] = useState<{ gold: number; actions: number } | null>(null);
-  const [rewardOptions, setRewardOptions] = useState<RewardOption[]>([]);
-  const [mutationMode, setMutationMode] = useState<MutationMode>(null);
-  const [currentEvent, setCurrentEvent] = useState<GameEvent | null>(null);
-  const [tutorialStep, setTutorialStep] = useState(() => isTutorialComplete() ? -1 : 0);
-  const [gold, setGold] = useState(initResult.bonusGold + masteryBonus.startGold);
-  const [shopItems, setShopItems] = useState<ShopItem[]>([]);
-  const [shopRerolls, setShopRerolls] = useState(0);
-  const [currentBoss, setCurrentBoss] = useState<Boss | null>(null);
-  const [bossPhase, setBossPhase] = useState(0);
-  const [bossRewardData, setBossRewardData] = useState<{ boss: Boss; bonusRelicId?: string } | null>(null);
+  const [isEliteRound, setIsEliteRound] = useRunValue(resume, "isEliteRound", false);
+  const [sanctuaryCtx, setSanctuaryCtx] = useRunValue(resume, "sanctuaryCtx", null);
+  const [rewardOptions, setRewardOptions] = useRunValue(resume, "rewardOptions", []);
+  const [mutationMode, setMutationMode] = useRunValue(resume, "mutationMode", null);
+  const [currentEvent, setCurrentEvent] = useRunValue(resume, "currentEvent", null);
+  const [tutorialStep, setTutorialStep] = useRunValue(resume, "tutorialStep", () => isTutorialComplete() ? -1 : 0);
+  const [gold, setGold] = useRunValue(resume, "gold", initResult.bonusGold + masteryBonus.startGold);
+  const [shopItems, setShopItems] = useRunValue(resume, "shopItems", []);
+  const [shopRerolls, setShopRerolls] = useRunValue(resume, "shopRerolls", 0);
+  const [currentBoss, setCurrentBoss] = useRunValue(resume, "currentBoss", null);
+  const [bossPhase, setBossPhase] = useRunValue(resume, "bossPhase", 0);
+  const [bossRewardData, setBossRewardData] = useRunValue(resume, "bossRewardData", null);
   const [bossDefeatedOverlay, setBossDefeatedOverlay] = useState<Boss | null>(null);
-  const [activeSkin] = useState<TileSkin>(() => loadActiveSkin() as TileSkin);
-  const [prevScore, setPrevScore] = useState(0);
+  const [activeSkin] = useRunValue(resume, "activeSkin", () => loadActiveSkin() as TileSkin);
   const [particleTrigger, setParticleTrigger] = useState(0);
   const [roundTransition, setRoundTransition] = useState<{ round: number; isBoss: boolean } | null>(null);
   const [reactionQueue, setReactionQueue] = useState<ReactionEvent[]>([]);
   const reactionIdRef = useRef(0);
-  const [currentQuest, setCurrentQuest] = useState<QuestDefinition | null>(() => pickRoundQuest(1));
+  const [currentQuest, setCurrentQuest] = useRunValue(resume, "currentQuest", () => pickRoundQuest(1));
   const [questToast, setQuestToast] = useState<{ text: string; success: boolean } | null>(null);
   const [shakeTrigger, setShakeTrigger] = useState(0);
   const [shakeIntensity, setShakeIntensity] = useState<"small" | "medium" | "large">("medium");
@@ -339,7 +333,7 @@ export default function GameBoard({ onGameOver, isDaily = false, isEndless = fal
   const [patternFlash, setPatternFlash] = useState(0);
   const [relicPulseKey, setRelicPulseKey] = useState(0);
   const [relicPulseHighlights, setRelicPulseHighlights] = useState<string[]>([]);
-  const [roundPatternLog, setRoundPatternLog] = useState<Array<{ id: string; name: string; bonus: number }>>([]);
+  const [roundPatternLog, setRoundPatternLog] = useRunValue(resume, "roundPatternLog", []);
 
   /** Pulse the relic bar, highlighting only the relics that match the filter. */
   const triggerRelicPulse = useCallback(
@@ -352,16 +346,16 @@ export default function GameBoard({ onGameOver, isDaily = false, isEndless = fal
   );
 
   // Narrative interlude between acts (boss cleared -> map_select)
-  const [pendingInterlude, setPendingInterlude] = useState<Interlude | null>(null);
+  const [pendingInterlude, setPendingInterlude] = useRunValue(resume, "pendingInterlude", null);
   // Ceremonial milestone toast ("first time reaching Act III", "first Echo", ...)
   const [milestoneToast, setMilestoneToast] = useState<{ title: string; subtitle: string } | null>(null);
   // In-run challenge toast + ids already celebrated this run (no double-fire)
   const [challengeToast, setChallengeToast] = useState<CharacterChallenge | null>(null);
-  const celebratedChallengesRef = useRef<Set<string>>(new Set());
+  const celebratedChallengesRef = useRef<Set<string>>(new Set(resume?.celebratedChallenges ?? []));
   // One-shot multiplier applied to the next round's target (from interlude choices)
-  const [pendingTargetMultiplier, setPendingTargetMultiplier] = useState<number>(1);
+  const pendingTargetMultiplier = game.pendingRound?.targetMultiplier ?? 1;
   // Run-wide flat bonus added to each scoring event (from interlude choices)
-  const [runFlatBonusPerTile, setRunFlatBonusPerTile] = useState<number>(0);
+  const [runFlatBonusPerTile, setRunFlatBonusPerTile] = useRunValue(resume, "runFlatBonusPerTile", 0);
 
   const triggerShake = useCallback((intensity: "small" | "medium" | "large" = "medium") => {
     setShakeIntensity(intensity);
@@ -381,22 +375,22 @@ export default function GameBoard({ onGameOver, isDaily = false, isEndless = fal
   const triggerAberration = useCallback(() => {
     setAberrationKey((k) => k + 1);
   }, []);
-  const [ownedMutationIds, setOwnedMutationIds] = useState<string[]>([]);
-  const [mutationStates, setMutationStates] = useState<ActiveMutationState[]>([]);
-  const [wildNextActive, setWildNextActive] = useState(false);
-  const [freezeEndActive, setFreezeEndActive] = useState(false);
-  const [doubleNextScoreActive, setDoubleNextScoreActive] = useState(false);
+  const [ownedMutationIds, setOwnedMutationIds] = useRunValue(resume, "ownedMutationIds", []);
+  const [mutationStates, setMutationStates] = useRunValue(resume, "mutationStates", []);
+  const [wildNextActive, setWildNextActive] = useRunValue(resume, "wildNextActive", false);
+  const [freezeEndActive, setFreezeEndActive] = useRunValue(resume, "freezeEndActive", false);
+  const [doubleNextScoreActive, setDoubleNextScoreActive] = useRunValue(resume, "doubleNextScoreActive", false);
   // Consume legacy from previous run exactly once (gated by mount)
   const legacyRef = useRef<ReturnType<typeof resolveLegacy> | null>(null);
-  if (legacyRef.current === null) {
-    legacyRef.current = resolveLegacy(consumeLegacy());
+  if (legacyRef.current === null && !resume) {
+    legacyRef.current = isChallenge ? null : resolveLegacy(loadLegacy());
   }
-  const [ownedConsumables, setOwnedConsumables] = useState<Consumable[]>(() => {
+  const [ownedConsumables, setOwnedConsumables] = useRunValue(resume, "ownedConsumables", () => {
     const inherited = legacyRef.current?.consumable;
     return inherited ? [inherited] : [];
   });
   const [consumableFlashId, setConsumableFlashId] = useState<string | null>(null);
-  const [ownedCelestials, setOwnedCelestials] = useState<CelestialCard[]>(() => {
+  const [ownedCelestials, setOwnedCelestials] = useRunValue(resume, "ownedCelestials", () => {
     const base: CelestialCard[] = [];
     // Oracle character: start with a random celestial card
     if (character.passive.type === "celestial_start") {
@@ -409,7 +403,7 @@ export default function GameBoard({ onGameOver, isDaily = false, isEndless = fal
     }
     return base;
   });
-  const prevAlignmentsRef = useRef<{ firmaments: string[]; cosmic: boolean }>({ firmaments: [], cosmic: false });
+  const prevAlignmentsRef = useRef<{ firmaments: string[]; cosmic: boolean }>(resume ? { firmaments: computeCelestialSetBonus(ownedCelestials).firmamentAlignments.slice().sort(), cosmic: computeCelestialSetBonus(ownedCelestials).cosmicAlignment } : { firmaments: [], cosmic: false });
   // Celestial boost from relics (e.g. "Sello del Firmamento")
   const celestialBoost = useMemo(() => {
     let boost = 0;
@@ -420,20 +414,16 @@ export default function GameBoard({ onGameOver, isDaily = false, isEndless = fal
     return boost;
   }, [game.relics]);
   // Boss Heat: accumulates during boss fights. At 100 the boss "rages" (target +10%).
-  const [bossHeat, setBossHeat] = useState(0);
-  const [bossRageCount, setBossRageCount] = useState(0);
+  const [bossHeat, setBossHeat] = useRunValue(resume, "bossHeat", 0);
+  const [bossRageCount, setBossRageCount] = useRunValue(resume, "bossRageCount", 0);
   const [bossRageFlash, setBossRageFlash] = useState(0);
   // Modo Caos: one random twist per round
-  const [chaosTwist, setChaosTwist] = useState<ChaosTwist | null>(null);
+  const [chaosTwist, setChaosTwist] = useRunValue(resume, "chaosTwist", null);
   // Undo: snapshot key state before each play; reset at round change
-  const [undoSnapshot, setUndoSnapshot] = useState<{
-    game: GameState;
-    wildNextActive: boolean;
-    freezeEndActive: boolean;
-  } | null>(null);
-  const [undoUsesLeft, setUndoUsesLeft] = useState(1);
-  const prevPatternCount = useRef(0);
-  const modRef = useRef({ ...modifierConfig, actionBonus: effectiveActionBonus });
+  const [undoSnapshot, setUndoSnapshot] = useRunValue(resume, "undoSnapshot", null);
+  const [undoUsesLeft, setUndoUsesLeft] = useRunValue(resume, "undoUsesLeft", 1);
+  const prevPatternIds = useRef<Set<string>>(new Set(resume ? calculateScore(resume.states.game.chain).patternAnalysis.patterns.map(p=>p.id) : []));
+  const modRef = useRef(resume?.modifiers ?? { ...modifierConfig, handSize: initResult.handSize, actionBonus: effectiveActionBonus });
 
   // Active boss restriction (respects multi-phase)
   const activeBossRestriction = currentBoss?.phases
@@ -443,7 +433,7 @@ export default function GameBoard({ onGameOver, isDaily = false, isEndless = fal
   const pushReaction = useCallback((kind: ReactionEvent["kind"], label?: string) => {
     reactionIdRef.current += 1;
     const ev: ReactionEvent = { id: reactionIdRef.current, kind, label };
-    setReactionQueue((q) => [...q, ev]);
+    setReactionQueue((q) => [...q.slice(-2), ev]);
   }, []);
 
   const popReaction = useCallback(() => {
@@ -453,10 +443,11 @@ export default function GameBoard({ onGameOver, isDaily = false, isEndless = fal
   useEffect(() => {
     const analysis = calculateScore(game.chain, game.relics, modRef.current.patternBonus).patternAnalysis;
     const currentPatterns = analysis.patterns.length;
-    if (currentPatterns > prevPatternCount.current && currentPatterns > 0) {
+    const newlyActivated = analysis.patterns.filter((p) => !prevPatternIds.current.has(p.id));
+    if (newlyActivated.length > 0) {
       // Tier sound by number of patterns and rare pattern ids
       const legendaryIds = new Set(["cadena_maxima", "todo_dobles", "fractal", "armonia", "hexagrama", "constelacion", "ouroboros"]);
-      const newlyActivatedSlice = analysis.patterns.slice(prevPatternCount.current);
+      const newlyActivatedSlice = newlyActivated;
       const newlyHasLegendary = newlyActivatedSlice.some((p) => legendaryIds.has(p.id));
       const forceMega = analysis.patterns.some((p) => legendaryIds.has(p.id));
       audio.playPatternByTier(currentPatterns, forceMega);
@@ -468,7 +459,6 @@ export default function GameBoard({ onGameOver, isDaily = false, isEndless = fal
       }
       triggerShake(currentPatterns >= 3 || forceMega ? "medium" : "small");
       // Add newly activated pattern(s) to round log + register in Codex
-      const newlyActivated = analysis.patterns.slice(prevPatternCount.current);
       // Pulse relics tied to these new patterns
       const newPatternIds = new Set(newlyActivated.map((p) => p.id));
       triggerRelicPulse((r) => {
@@ -485,34 +475,27 @@ export default function GameBoard({ onGameOver, isDaily = false, isEndless = fal
       }
       setRoundPatternLog((log) => [
         ...log,
-        ...newlyActivated.map((p, i) => ({
+        ...newlyActivated.filter((p) => !log.some((entry) => entry.patternId === p.id)).map((p, i) => ({
           id: `${Date.now()}-${log.length + i}`,
+          patternId: p.id,
           name: p.name,
           bonus: p.bonus,
         })),
       ]);
-      const latestPattern = analysis.patterns[analysis.patterns.length - 1];
+      const latestPattern = newlyActivated[newlyActivated.length - 1];
       pushReaction("pattern", latestPattern ? localizePatternById(latestPattern.id, latestPattern.name).name : undefined);
       // Bomber passive: next play becomes wild
       if (character.passive.type === "wild_on_pattern") {
         setWildNextActive(true);
       }
     }
-    prevPatternCount.current = currentPatterns;
+    prevPatternIds.current = new Set(analysis.patterns.map((p) => p.id));
   }, [game.chain, game.relics, pushReaction, character, triggerShake, maybeCelebrateMilestone, triggerRelicPulse]);
-
-  const scoreRef = useRef(0);
-  useEffect(() => {
-    if (game.score !== scoreRef.current) {
-      setPrevScore(scoreRef.current);
-      scoreRef.current = game.score;
-    }
-  }, [game.score]);
 
   // Act transition (cinematic when crossing act boundaries)
   const [pendingActTransition, setPendingActTransition] = useState<ActDefinition | null>(null);
   const prevRoundRef = useRef<number>(game.round);
-  const actPrologueShownRef = useRef<boolean>(false);
+  const actPrologueShownRef = useRef<boolean>(!!resume);
   useEffect(() => {
     // On initial mount, show the opening act as a prologue
     if (!actPrologueShownRef.current) {
@@ -570,9 +553,17 @@ export default function GameBoard({ onGameOver, isDaily = false, isEndless = fal
     };
   }, []);
 
-  // Reset undo and pattern log each round
+  // A resumed round and StrictMode remount must not repeat start-of-round effects.
+  const initializedRound = useRef<number | null>(resume?.states.game.round ?? null);
   useEffect(() => {
+    if (initializedRound.current === game.round) return;
+    initializedRound.current = game.round;
     setUndoSnapshot(null);
+    setDoubleNextScoreActive(false);
+    setWildNextActive(false);
+    setFreezeEndActive(false);
+    setMutationStates((ms) => resetMutationUses(ms));
+    prevPatternIds.current = new Set();
     setUndoUsesLeft(1);
     setRoundPatternLog([]);
     setBossHeat(0);
@@ -605,9 +596,11 @@ export default function GameBoard({ onGameOver, isDaily = false, isEndless = fal
     }
   }, [game.round, pushReaction]);
 
-  // Legacy: show a welcoming toast when inheriting something from a previous run
+  // Legacy is consumed only by a newly started run, never a resume.
   useEffect(() => {
+    if (resume) return;
     const leg = legacyRef.current;
+    if (!isChallenge) consumeLegacy();
     if (!leg || (!leg.celestial && !leg.consumable)) return;
     const parts: string[] = [];
     if (leg.celestial) parts.push(leg.celestial.name);
@@ -615,7 +608,6 @@ export default function GameBoard({ onGameOver, isDaily = false, isEndless = fal
     pushReaction("big_score", translate("gb.toast.legacy", { parts: parts.join(" + ") }));
     audio.playAlignmentChord();
     // Only runs once on mount
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   // Celestial alignments: detect newly-activated set bonuses and fire reactions
@@ -648,20 +640,18 @@ export default function GameBoard({ onGameOver, isDaily = false, isEndless = fal
 
   // Boss Heat: accumulate per tile/pattern/double during boss fights
   useEffect(() => {
-    if (!currentBoss || game.result !== "playing") return;
+    if (!currentBoss) return;
     const tiles = game.chain.placed.length;
     const doubles = game.chain.placed.filter((p) => p.tile.top === p.tile.bottom).length;
-    const patterns = roundPatternLog.length;
+    const patterns = calculateScore(game.chain).patternAnalysis.patterns.length;
     // heat accumulated so far (deterministic from chain state)
     const totalHeat = tiles * 12 + patterns * 20 + doubles * 8;
     // Compute how many rages have triggered at this level
-    const expectedRages = Math.floor(totalHeat / 100);
+    const expectedRages = game.bossRages ?? 0;
     if (expectedRages > bossRageCount) {
-      const newRages = expectedRages - bossRageCount;
       setBossRageCount(expectedRages);
       setBossHeat(totalHeat % 100);
       // Each new rage: boss target +10%, flash + shake
-      setGame((prev) => ({ ...prev, target: Math.round(prev.target * Math.pow(1.1, newRages)) }));
       setBossRageFlash((f) => f + 1);
       triggerShake("medium");
       pushReaction("pattern", translate("gb.toast.bossRage"));
@@ -669,28 +659,42 @@ export default function GameBoard({ onGameOver, isDaily = false, isEndless = fal
     } else {
       setBossHeat(totalHeat % 100);
     }
-  }, [game.chain.placed, roundPatternLog.length, currentBoss, game.result, bossRageCount, pushReaction]);
+  }, [game.chain.placed, currentBoss, game.result, game.bossRages, bossRageCount, pushReaction]);
 
+  const presentedOutcome = useRef<string | null>(resume && ["win","lose"].includes(resume.states.game.result)
+    ? `${resume.states.game.round}:${resume.states.bossPhase}:${resume.states.game.result}` : null);
+  const resumedOutcome = !!resume && resume.states.game.round===game.round && resume.states.bossPhase===bossPhase && resume.states.game.result===game.result && ["win","lose"].includes(game.result);
   useEffect(() => {
-    if (game.result === "win") {
+    if (resumedOutcome || (game.result !== "win" && game.result !== "lose")) return;
+    // Focus after the first paint: focus/scroll during the commit synchronously
+    // measured the newly inserted result and blocked the close interaction.
+    let timer = 0;
+    const frame = requestAnimationFrame(() => {
+      timer = window.setTimeout(() => {
+        const title = boardRef.current?.querySelector<HTMLElement>('[data-outcome-title]');
+        title?.focus({ preventScroll: true });
+        title?.scrollIntoView({ block: "nearest" });
+      }, 0);
+    });
+    return () => { cancelAnimationFrame(frame); clearTimeout(timer); };
+  }, [game.result, game.round, bossPhase, resumedOutcome]);
+  useEffect(() => {
+    if(game.result === "playing"){presentedOutcome.current=null;return;}
+    if(game.result !== "win" && game.result !== "lose")return;
+    const key=`${game.round}:${bossPhase}:${game.result}`;
+    if(presentedOutcome.current===key)return;
+    presentedOutcome.current=key;
+    if(game.result === "win") {
       audio.playWinFanfare();
-      if (currentBoss) triggerShake("large");
-      // Big score burst if round exceeded target by 200% or more
-      if (game.score >= game.target * 2) {
+      if(currentBoss && !presentationSettings.fastAnimations)triggerShake("small");
+      if(game.score >= game.target*2 && !presentationSettings.fastAnimations){
+        // The result already owns a score, bar and local burst. A second
+        // full-screen numeric burst added 20 animated DOM particles here.
         audio.playScoreBig();
-        pushReaction("big_score", `+${game.score}`);
-        triggerShake("large");
-        triggerAberration();
-      } else if (game.score >= game.target * 1.5) {
-        pushReaction("big_score", `+${game.score}`);
-        triggerShake("large");
-        triggerAberration();
       }
-    } else if (game.result === "lose") {
-      audio.playLoseSting();
-      triggerShake("medium");
-    }
-  }, [game.result, game.score, game.target, pushReaction, currentBoss]);
+    } else {audio.playLoseSting();if(!presentationSettings.fastAnimations)triggerShake("small");}
+  },[game.result,game.round,bossPhase,game.score,game.target,currentBoss,presentationSettings.fastAnimations]);
+
 
   const familyBonuses = useMemo(() => computeFamilySetBonuses(game.relics), [game.relics]);
 
@@ -700,7 +704,7 @@ export default function GameBoard({ onGameOver, isDaily = false, isEndless = fal
   }, [familyBonuses.accionExtraActions, effectiveActionBonus]);
 
   // Celebrate when a relic family set newly activates (crosses to 3+ relics)
-  const prevActiveFamiliesRef = useRef<Set<RelicFamily>>(new Set());
+  const prevActiveFamiliesRef = useRef<Set<RelicFamily>>(new Set(resume ? familyBonuses.activeFamilies : []));
   useEffect(() => {
     const current = new Set(familyBonuses.activeFamilies);
     for (const fam of current) {
@@ -715,50 +719,19 @@ export default function GameBoard({ onGameOver, isDaily = false, isEndless = fal
     prevActiveFamiliesRef.current = current;
   }, [familyBonuses.activeFamilies, pushReaction, triggerShake]);
 
-  const getModifiedScore = useCallback(
-    (
-      rawTotal: number,
-      breakdown?: { patterns: number; hasDoubles: boolean; tilesPlayed?: number; patternBonusTotal?: number; editionFlat?: number; editionMultiplier?: number },
-    ) => {
-      let total = Math.round(rawTotal * modRef.current.scoreMultiplier);
-      // Talent bonuses (flat + per-pattern)
-      total += talentBonuses.flatScoreBonus;
-      // Numero family: flat per-round bonus
-      total += familyBonuses.numeroFlatBonus;
-      if (breakdown) {
-        total += breakdown.patterns * talentBonuses.extraPatternScore;
-        // Family set bonuses (score-related)
-        if (breakdown.tilesPlayed !== undefined) {
-          total += breakdown.tilesPlayed * familyBonuses.cadenaPerTile;
-          // Interlude-driven run bonus (e.g. "El yo salvaje")
-          if (runFlatBonusPerTile > 0) {
-            total += breakdown.tilesPlayed * runFlatBonusPerTile;
-          }
-        }
-        if (breakdown.patternBonusTotal !== undefined) {
-          total += Math.round(breakdown.patternBonusTotal * familyBonuses.patronPatternBoost);
-        }
-        if (breakdown.editionFlat) total += breakdown.editionFlat;
-        total = applyCharacterPassive({
-          character,
-          baseScore: total,
-          patternCount: breakdown.patterns,
-          hasDoubles: breakdown.hasDoubles,
-        });
-      }
-      total = Math.round(total * talentBonuses.scoreMultiplier);
-      total = Math.round(total * familyBonuses.fuerzaGlobalMultiplier);
-      if (breakdown?.editionMultiplier && breakdown.editionMultiplier !== 1) {
-        total = Math.round(total * breakdown.editionMultiplier);
-      }
-      return total;
-    },
-    [character, talentBonuses, familyBonuses, runFlatBonusPerTile]
+  const scoreContext: RunScoreContext = {
+    character, talents: talentBonuses,
+    scoreMultiplier: modRef.current.scoreMultiplier, patternBonus: modRef.current.patternBonus,
+    celestials: ownedCelestials, celestialBoost, chaosTwist, flatPerTile: runFlatBonusPerTile,
+  };
+  const scoreGame = (state: GameState) => calculateRunScore(state, scoreContext).total;
+  const legalSides = (tile: Tile, chain = game.chain) => getLegalPlacements(
+    chain, wildNextActive ? { ...tile, type: "wild" } : tile, activeBossRestriction,
   );
 
   const advanceRound = useCallback(
-    (prev: GameState, roundScore: number, patternsCount: number, patternIds: string[] = []) => {
-      const next = startNextRound(prev, roundScore, patternsCount, modRef.current.targetMultiplier, modRef.current.handSize, modRef.current.actionBonus, talentBonuses.tilePreserve, patternIds);
+    (prev: GameState) => {
+      const next = startNextRound(prev, modRef.current.targetMultiplier, modRef.current.handSize, modRef.current.actionBonus, talentBonuses.tilePreserve);
       // Reset active mutation uses for new round
       setMutationStates((ms) => resetMutationUses(ms));
       setWildNextActive(false);
@@ -770,7 +743,7 @@ export default function GameBoard({ onGameOver, isDaily = false, isEndless = fal
         setRoundTransition({ round: next.round, isBoss: true });
         return {
           ...next,
-          target: Math.round(next.target * boss.targetMultiplier * ascension.bossTargetMultiplier),
+          target: Math.round(next.target * (boss.phases?.[0]?.targetMultiplier ?? boss.targetMultiplier) * ascension.bossTargetMultiplier),
           result: "boss_intro" as const,
         };
       }
@@ -780,28 +753,19 @@ export default function GameBoard({ onGameOver, isDaily = false, isEndless = fal
     []
   );
 
+  const { boardRef, captureTile } = useTileFlight(game.chain, game.result, game.round, activeSkin);
+  const actionCue = useActionFeedback(game, boardRef);
   const handlePlay = useCallback(
     (tile: Tile, side: PlacementSide) => {
       if (game.result !== "playing") return;
 
-      // Boss restrictions (pre-placement validation)
-      if (activeBossRestriction) {
-        const r = activeBossRestriction;
-        if (r.type === "no_doubles" && tile.top === tile.bottom) return;
-        if (r.type === "no_wild" && tile.type === "wild") return;
-        if (r.type === "only_doubles" && tile.top !== tile.bottom) return;
-        if (r.type === "only_low" && (tile.top + tile.bottom) > r.max) return;
-        if (r.type === "even_sum_only" && (tile.top + tile.bottom) % 2 !== 0) return;
-        if (r.type === "max_doubles" && tile.top === tile.bottom) {
-          const currentDoubles = game.chain.placed.filter((p) => p.tile.top === p.tile.bottom).length;
-          if (currentDoubles >= r.count) return;
-        }
-        if (r.type === "exact_chain_length" && game.chain.placed.length >= r.count) return;
-      }
+      if (!game.hand.some((t) => t.id === tile.id) || !legalSides(tile).includes(side)) return;
+      if (game.actions && !canPlay(game.actions)) return;
+      captureTile(tile.id, side);
 
       // Snapshot for potential undo (only if usage left)
       if (undoUsesLeft > 0) {
-        setUndoSnapshot({ game, wildNextActive, freezeEndActive });
+        setUndoSnapshot({ game, wildNextActive, freezeEndActive, doubleNextScoreActive, patternLog: roundPatternLog, bossRageCount });
       }
 
       // Wild next: convert tile to wild before playing
@@ -840,188 +804,32 @@ export default function GameBoard({ onGameOver, isDaily = false, isEndless = fal
         return false;
       });
 
-      setGame((prev) => {
-        // Action limit check
-        if (prev.actions && !canPlay(prev.actions)) return prev;
-
-        // Boss: max_tiles restriction
-        if (activeBossRestriction?.type === "max_tiles" && prev.chain.placed.length >= activeBossRestriction.count) {
-          return prev;
-        }
-
-        // Boss: no_repeat_number — the connecting number can't be the same as the last connection
-        if (activeBossRestriction?.type === "no_repeat_number" && prev.chain.placed.length > 0) {
-          const lastPlaced = prev.chain.placed[prev.chain.placed.length - 1]!;
-          const lastConnection = side === "right" ? prev.chain.rightEnd : prev.chain.leftEnd;
-          const prevConnection = lastPlaced.tile.top === lastConnection ? lastPlaced.tile.bottom : lastPlaced.tile.top;
-          if (lastConnection !== null && lastConnection === prevConnection) {
-            // same number connecting twice in a row — blocked
-            return prev;
-          }
-        }
-
-        let newChain: ChainState;
-        try {
-          newChain = placeTile(prev.chain, playTile, side);
-        } catch {
-          return prev;
-        }
-
-        let newHand = prev.hand.filter((t) => t.id !== tile.id);
-        const raw = calculateScore(newChain, prev.relics, modRef.current.patternBonus);
-        const hasDoubles = newChain.placed.some((p) => p.tile.top === p.tile.bottom);
-        const ed = summarizeChainEditions(newChain);
-        let total = getModifiedScore(raw.total, { patterns: raw.patternAnalysis.patterns.length, hasDoubles, tilesPlayed: newChain.placed.length, patternBonusTotal: raw.patternAnalysis.totalBonus, editionFlat: ed.flatBonus, editionMultiplier: ed.multiplier });
-
-        // Celestial cards: per-pattern bonuses + firmament set bonuses (alineaciones)
-        const doublesCount = newChain.placed.filter((p) => p.tile.top === p.tile.bottom).length;
-        total += celestialTotalBonus(total, raw.patternAnalysis, ownedCelestials, {
-          tilesPlayed: newChain.placed.length,
-          doublesCount,
-          celestialBoost,
-        });
-
-        // Modo Caos: per-round twist modifications
-        if (chaosTwist) {
-          const cMods = chaosMods(chaosTwist);
-          total += cMods.flatPerTile * newChain.placed.length;
-          total += cMods.doubleBonus * doublesCount;
-          total += Math.floor(raw.patternAnalysis.totalBonus * (cMods.patternBonusMult - 1));
-          total = Math.floor(total * cMods.scoreMultiplier);
-        }
-
-        // Cartographer passive: flat score bonus added on every play
-        if (character.passive.type === "map_bonus") {
-          total += character.passive.amount;
-        }
-
-        // Pacto Sagrado: +100 base. Evoluciona si se juega dentro de un patrón,
-        // si la ficha tiene edition, o si hay alineación cósmica activa.
-        if (playTile.pact) {
-          let pactBonus = 100;
-          const newPatternCount = raw.patternAnalysis.patterns.length;
-          const patternOnThisPlay = newPatternCount > prevPatternCount.current;
-          if (patternOnThisPlay) pactBonus += 100; // pacto dentro de patrón: dobla
-          if (playTile.edition) pactBonus += 100; // pacto con edition: +edition synergy
-          // Cosmic alignment amplifica el pacto un 20% adicional
-          const cosmicActive = computeCelestialSetBonus(ownedCelestials).cosmicAlignment;
-          if (cosmicActive) pactBonus = Math.floor(pactBonus * 1.2);
-          total += pactBonus;
-        }
-
-        // Consumable "Sol": double the score delta from this single play
-        if (doubleNextScoreActive) {
-          const delta = total - prev.score;
-          total = prev.score + delta * 2;
-          setDoubleNextScoreActive(false);
-        }
-
-        // Unlock locked tiles when a pattern is activated
-        if (raw.patternAnalysis.patterns.length > 0 && newHand.some((t) => t.type === "locked")) {
-          newHand = newHand.map((t) => t.type === "locked" ? { ...t, type: "normal" as const } : t);
-        }
-
-        // Boss: filter hand for valid moves respecting restrictions
-        let validHand = newHand;
-        if (activeBossRestriction) {
-          const r = activeBossRestriction;
-          if (r.type === "no_doubles") validHand = validHand.filter((t) => t.top !== t.bottom);
-          if (r.type === "no_wild") validHand = validHand.filter((t) => t.type !== "wild");
-          if (r.type === "only_doubles") validHand = validHand.filter((t) => t.top === t.bottom);
-          if (r.type === "only_low") validHand = validHand.filter((t) => (t.top + t.bottom) <= r.max);
-          if (r.type === "even_sum_only") validHand = validHand.filter((t) => (t.top + t.bottom) % 2 === 0);
-          if (r.type === "max_doubles") {
-            const currentDoubles = newChain.placed.filter((p) => p.tile.top === p.tile.bottom).length;
-            if (currentDoubles >= r.count) validHand = validHand.filter((t) => t.top !== t.bottom);
-          }
-        }
-
-        const newActions = prev.actions ? usePlayAction(prev.actions) : prev.actions;
-        const actionsExhausted = newActions ? !canPlay(newActions) : false;
-        const noMoves = !hasAnyValidMove(newChain, validHand) ||
-          (activeBossRestriction?.type === "max_tiles" && newChain.placed.length >= activeBossRestriction.count);
-        const handEmpty = newHand.length === 0;
-        const roundOver = noMoves || handEmpty || actionsExhausted;
-
-        let result = prev.result;
-        if (roundOver) {
-          if (isEndless) {
-            // Endless: always advance to next round
-            result = "win";
-          } else {
-            let meetsTarget = total >= prev.target;
-            if (activeBossRestriction?.type === "min_patterns") {
-              meetsTarget = meetsTarget && raw.patternAnalysis.patterns.length >= activeBossRestriction.count;
-            }
-            if (activeBossRestriction?.type === "min_chain_length") {
-              meetsTarget = meetsTarget && newChain.placed.length >= activeBossRestriction.count;
-            }
-            if (activeBossRestriction?.type === "exact_chain_length") {
-              meetsTarget = meetsTarget && newChain.placed.length === activeBossRestriction.count;
-            }
-            result = meetsTarget ? "win" : "lose";
-          }
-        }
-
-        return {
-          ...prev,
-          hand: newHand,
-          chain: newChain,
-          score: total,
-          result,
-          actions: newActions,
-          stats: {
-            ...prev.stats,
-            tilesPlayed: prev.stats.tilesPlayed + 1,
-            bestCombo: Math.max(prev.stats.bestCombo, raw.patternAnalysis.patterns.length),
-          },
-        };
-      });
+      setGame((prev) => playRoundTile(prev, tile, side, scoreContext, {
+        wild: wildNextActive, freeze: freezeEndActive, double: doubleNextScoreActive,
+        restriction: activeBossRestriction, endless: isEndless, boss: !!currentBoss,
+      }));
+      setFreezeEndActive(false);
+      setDoubleNextScoreActive(false);
     },
-    [game.result, getModifiedScore, currentBoss, activeBossRestriction, isEndless, doubleNextScoreActive, undoUsesLeft, wildNextActive, freezeEndActive, game, ownedCelestials, celestialBoost, chaosTwist]
+    [game, scoreContext, activeBossRestriction, isEndless, doubleNextScoreActive, undoUsesLeft, wildNextActive, freezeEndActive, roundPatternLog, bossRageCount, captureTile]
   );
 
   const handleDiscard = useCallback(
     (tile: Tile) => {
-      if (game.result !== "playing") return;
+      if (game.result !== "playing" || !game.actions || !canDiscard(game.actions) || !game.hand.some(actual => actual.id === tile.id)) return;
+      setUndoSnapshot(null);
       audio.play("discard_tile");
-      setGame((prev) => {
-        if (!prev.actions || !canDiscard(prev.actions)) return prev;
-        const discardBonus = ALL_RELICS
-          .filter((r) => prev.relics.includes(r.id) && r.effect.type === "bonus_per_discard")
-          .reduce((sum, r) => sum + (r.effect as { value: number }).value, 0);
-        return {
-          ...prev,
-          hand: prev.hand.filter((t) => t.id !== tile.id),
-          score: prev.score + discardBonus,
-          stats: { ...prev.stats, tilesDiscarded: prev.stats.tilesDiscarded + 1 },
-          actions: useDiscardAction(prev.actions!),
-        };
-      });
+      setGame((prev) => discardRoundTile(prev, tile, scoreContext, { restriction: activeBossRestriction, endless: isEndless }));
     },
-    [game.result]
+    [game, scoreContext, activeBossRestriction, isEndless]
   );
 
   const handleDraw = useCallback(() => {
+    if (game.result !== "playing" || !game.actions || !canDraw(game.actions) || game.tilePool.length === 0) return;
+    setUndoSnapshot(null);
     audio.play("draw_tile");
-    setGame((prev) => {
-      if (prev.result !== "playing") return prev;
-      if (!prev.actions || !canDraw(prev.actions)) return prev;
-      if (prev.tilePool.length === 0) return prev;
-      const drawn = prev.tilePool[0]!;
-      const drawBonus = ALL_RELICS
-        .filter((r) => prev.relics.includes(r.id) && r.effect.type === "bonus_on_draw")
-        .reduce((sum, r) => sum + (r.effect as { value: number }).value, 0);
-      return {
-        ...prev,
-        hand: [...prev.hand, drawn],
-        tilePool: prev.tilePool.slice(1),
-        score: prev.score + drawBonus,
-        stats: { ...prev.stats, tilesDrawn: prev.stats.tilesDrawn + 1 },
-        actions: useDrawAction(prev.actions!),
-      };
-    });
-  }, []);
+    setGame((prev) => drawRoundTile(prev, scoreContext, { restriction: activeBossRestriction, endless: isEndless }));
+  }, [game, scoreContext, activeBossRestriction, isEndless]);
 
   const handleUndo = useCallback(() => {
     if (!undoSnapshot || undoUsesLeft <= 0) return;
@@ -1029,6 +837,10 @@ export default function GameBoard({ onGameOver, isDaily = false, isEndless = fal
     setGame(undoSnapshot.game);
     setWildNextActive(undoSnapshot.wildNextActive);
     setFreezeEndActive(undoSnapshot.freezeEndActive);
+    setDoubleNextScoreActive(undoSnapshot.doubleNextScoreActive);
+    setRoundPatternLog(undoSnapshot.patternLog);
+    setBossRageCount(undoSnapshot.bossRageCount);
+    prevPatternIds.current = new Set(calculateScore(undoSnapshot.game.chain).patternAnalysis.patterns.map((p) => p.id));
     setUndoSnapshot(null);
     setUndoUsesLeft((n) => n - 1);
     audio.play("button_click");
@@ -1039,6 +851,7 @@ export default function GameBoard({ onGameOver, isDaily = false, isEndless = fal
     const consumable = ownedConsumables.find((c) => c.id === consumableId);
     if (!consumable) return;
 
+    setUndoSnapshot(null);
     const effect = consumable.effect;
     let applied = true;
 
@@ -1055,43 +868,42 @@ export default function GameBoard({ onGameOver, isDaily = false, isEndless = fal
       setGold((g) => g + effect.amount);
       pushReaction("pattern", translate("gb.toast.goldGain", { n: effect.amount }));
     } else if (effect.type === "gain_score") {
-      setGame((prev) => ({ ...prev, score: prev.score + effect.amount }));
+      setGame((prev) => {
+        const updated = { ...prev, roundBonus: (prev.roundBonus ?? 0) + effect.amount };
+        return { ...updated, score: scoreGame(updated) };
+      });
       pushReaction("big_score", `+${effect.amount}`);
     } else if (effect.type === "hand_first_to_wild") {
       setGame((prev) => {
         if (prev.hand.length === 0) return prev;
         const lightest = [...prev.hand].sort((a, b) => (a.top + a.bottom) - (b.top + b.bottom))[0]!;
-        const newHand = prev.hand.map((t) => t.id === lightest.id ? { ...t, type: "wild" as const } : t);
-        return { ...prev, hand: newHand };
+        return editRunTile(prev, lightest.id, (t) => ({ ...t, type: "wild" }));
       });
       pushReaction("wild");
     } else if (effect.type === "random_foil") {
-      setGame((prev) => {
-        const candidates = prev.hand.filter((t) => !t.edition);
-        if (candidates.length === 0) return prev;
-        const target = candidates[Math.floor(Math.random() * candidates.length)]!;
-        const newHand = prev.hand.map((t) => t.id === target.id ? { ...t, edition: "foil" as const } : t);
-        return { ...prev, hand: newHand };
-      });
+        const candidates = game.hand.filter((t) => !t.edition);
+        if (candidates.length > 0) {
+        const target = candidates[Math.floor(getGlobalRNG().next() * candidates.length)]!;
+        setGame(editRunTile(game, target.id, (t) => ({ ...t, edition: "foil" })));
+        }
       pushReaction("pattern", translate("gb.toast.foilApplied"));
     } else if (effect.type === "purge_draw") {
-      setGame((prev) => {
-        if (prev.hand.length === 0) return prev;
-        const toRemove = Math.min(effect.count, prev.hand.length);
-        const shuffled = [...prev.hand].sort(() => Math.random() - 0.5);
+      if (game.hand.length > 0) {
+        const toRemove = Math.min(effect.count, game.hand.length);
+        const shuffled = shuffle(game.hand);
         const newHand = shuffled.slice(toRemove);
-        const drawn = prev.tilePool.slice(0, effect.count);
-        return {
-          ...prev,
+        const drawn = game.tilePool.slice(0, effect.count);
+        setGame({
+          ...game,
           hand: [...newHand, ...drawn],
-          tilePool: prev.tilePool.slice(drawn.length),
+          tilePool: game.tilePool.slice(drawn.length),
           stats: {
-            ...prev.stats,
-            tilesDiscarded: prev.stats.tilesDiscarded + toRemove,
-            tilesDrawn: prev.stats.tilesDrawn + drawn.length,
+            ...game.stats,
+            tilesDiscarded: game.stats.tilesDiscarded + toRemove,
+            tilesDrawn: game.stats.tilesDrawn + drawn.length,
           },
-        };
-      });
+        });
+      }
       pushReaction("pattern", translate("gb.toast.purge"));
     } else if (effect.type === "refill_hand") {
       setGame((prev) => {
@@ -1119,15 +931,15 @@ export default function GameBoard({ onGameOver, isDaily = false, isEndless = fal
       setTimeout(() => setConsumableFlashId(null), 600);
       setOwnedConsumables((prev) => prev.filter((c) => c.id !== consumableId));
     }
-  }, [game.result, ownedConsumables, pushReaction]);
+  }, [game, ownedConsumables, pushReaction, scoreContext]);
 
   // Keyboard shortcuts
   useEffect(() => {
     if (game.result !== "playing") return;
     const onKey = (e: KeyboardEvent) => {
       const tag = (document.activeElement?.tagName ?? "").toLowerCase();
-      if (tag === "input" || tag === "select" || tag === "textarea") return;
-      if (e.altKey || e.ctrlKey || e.metaKey) return;
+      const editing = ["input", "select", "textarea"].includes(tag) || !!(document.activeElement as HTMLElement | null)?.isContentEditable;
+      if (boardShortcutsBlocked(e, !!document.querySelector('dialog[open], [role="dialog"][aria-modal="true"], [data-round-transition]'), editing)) return;
       const k = e.key.toLowerCase();
       if (k === "u") {
         if (undoSnapshot && undoUsesLeft > 0) {
@@ -1146,17 +958,17 @@ export default function GameBoard({ onGameOver, isDaily = false, isEndless = fal
       const n = parseInt(k, 10);
       if (!Number.isNaN(n) && n >= 1 && n <= 9) {
         const sorted = [...game.hand].sort((a, b) => {
-          const ap = getValidPlacements(game.chain, a).length > 0 ? 0 : 1;
-          const bp = getValidPlacements(game.chain, b).length > 0 ? 0 : 1;
+          const ap = legalSides(a).length > 0 ? 0 : 1;
+          const bp = legalSides(b).length > 0 ? 0 : 1;
           if (ap !== bp) return ap - bp;
           return (a.top + a.bottom) - (b.top + b.bottom);
         });
         const tile = sorted[n - 1];
         if (!tile) return;
-        const sides = getValidPlacements(game.chain, tile);
+        const sides = legalSides(tile);
         if (sides.length === 0) return;
         e.preventDefault();
-        handlePlay(tile, sides[0]!);
+        handlePlay(tile, sides.includes("right") ? "right" : sides[0]!);
       }
     };
     window.addEventListener("keydown", onKey);
@@ -1164,129 +976,112 @@ export default function GameBoard({ onGameOver, isDaily = false, isEndless = fal
   }, [game.result, game.hand, game.chain, game.actions, game.tilePool.length, undoSnapshot, undoUsesLeft, handlePlay, handleDraw, handleUndo]);
 
   const handleEndChain = useCallback(() => {
+    if (game.result !== "playing") return;
     audio.playChainClear();
-    setGame((prev) => {
-      if (prev.result !== "playing") return prev;
-      const raw = calculateScore(prev.chain, prev.relics, modRef.current.patternBonus);
-      const hasDoubles = prev.chain.placed.some((p) => p.tile.top === p.tile.bottom);
-      const ed = summarizeChainEditions(prev.chain);
-      const baseTotal = getModifiedScore(raw.total, { patterns: raw.patternAnalysis.patterns.length, hasDoubles, tilesPlayed: prev.chain.placed.length, patternBonusTotal: raw.patternAnalysis.totalBonus, editionFlat: ed.flatBonus, editionMultiplier: ed.multiplier });
-      const doublesCount = prev.chain.placed.filter((p) => p.tile.top === p.tile.bottom).length;
-      const total = baseTotal + celestialTotalBonus(baseTotal, raw.patternAnalysis, ownedCelestials, {
-        tilesPlayed: prev.chain.placed.length,
-        doublesCount,
-        celestialBoost,
-      });
+    setGame((prev) => closeRound(prev, activeBossRestriction, isEndless));
+  }, [game.result, activeBossRestriction, isEndless]);
 
-      // Endless mode: always advance (no lose from target)
-      if (isEndless) {
-        return { ...prev, score: total, result: "win" };
-      }
-
-      let meetsTarget = total >= prev.target;
-      if (activeBossRestriction?.type === "min_patterns") {
-        meetsTarget = meetsTarget && raw.patternAnalysis.patterns.length >= activeBossRestriction.count;
-      }
-      if (activeBossRestriction?.type === "min_chain_length") {
-        meetsTarget = meetsTarget && prev.chain.placed.length >= activeBossRestriction.count;
-      }
-      if (activeBossRestriction?.type === "exact_chain_length") {
-        meetsTarget = meetsTarget && prev.chain.placed.length === activeBossRestriction.count;
-      }
-      return {
-        ...prev,
-        score: total,
-        result: meetsTarget ? "win" : "lose",
-      };
-    });
-  }, [getModifiedScore, activeBossRestriction, isEndless, ownedCelestials, celestialBoost]);
-
+  const claimedRoundRef = useRef<string | null>(resume?.claimedRound ?? null);
+  // Random routes are prepared by an accepted action, never by a React state
+  // updater: StrictMode is allowed to evaluate those updaters more than once.
+  const rollRewardOptions = (state: GameState) => {
+    const saved = isChallenge ? undefined : loadSavedData();
+    const options = generateRewardOptions(state.relics, saved, state.round, ownedMutationIds,
+      { eliteBoost: isEliteRound, legendaryWeightMultiplier: ascension.legendaryWeightMultiplier }, ownedCelestials.map(c => c.id));
+    if (!modRef.current.noMutations) return options;
+    const filtered = options.filter(option => option.reward.type === "relic");
+    return filtered.length > 0 ? filtered : options.slice(0, 2);
+  };
+  const openRewardRoute = (state: GameState) => {
+    const event = mapMode ? null : getRandomEvent(state.round);
+    if (event) {
+      if (event.type === "blessing") audio.play("event_good");
+      else if (event.type === "curse") audio.play("event_bad");
+      setCurrentEvent(event);
+      setGame({ ...state, result: "event" });
+    } else {
+      setRewardOptions(rollRewardOptions(state));
+      setGame({ ...state, result: "reward" });
+    }
+  };
   const handleClaimReward = useCallback(() => {
+    if (game.result !== "win") return;
+    const claimKey = `${game.round}:${bossPhase}`;
+    if (claimedRoundRef.current === claimKey) return;
+    claimedRoundRef.current = claimKey;
+    const lastPhase = !currentBoss?.phases || bossPhase >= currentBoss.phases.length - 1;
+    let claimed = game;
+    if (!currentBoss || lastPhase) {
+      const payout = getRoundPayout(game, computeGoldMultiplier(character) * talentBonuses.goldMultiplier, currentQuest);
+      setGold((g) => g + payout.gold);
+      const settled = recordRound(game, true);
+      claimed = { ...settled, stats: { ...settled.stats, goldEarned: settled.stats.goldEarned + payout.gold } };
+      if (currentQuest) setQuestToast({
+        text: payout.questCompleted ? translate("gb.questPassed", { title: currentQuest.title, amount: currentQuest.reward.kind === "gold" ? currentQuest.reward.amount : 0 }) : translate("gb.questFailed", { title: currentQuest.title }),
+        success: payout.questCompleted,
+      });
+      setCurrentQuest(pickRoundQuest(game.round + 1));
+    }
     if (currentBoss) {
       // Multi-phase boss: advance to next phase if not on last
       if (currentBoss.phases && bossPhase < currentBoss.phases.length - 1) {
         const nextPhaseIdx = bossPhase + 1;
         const nextPhase = currentBoss.phases[nextPhaseIdx]!;
         setBossPhase(nextPhaseIdx);
-        setGame((prev) => {
-          const baseTarget = getTarget(prev.round);
-          return {
-            ...prev,
-            target: Math.round(baseTarget * nextPhase.targetMultiplier),
-            chain: createEmptyChain(),
-            hand: shuffle([...prev.hand, ...prev.tilePool.slice(0, Math.max(0, HAND_SIZE - prev.hand.length))]),
-            tilePool: prev.tilePool.slice(Math.max(0, HAND_SIZE - prev.hand.length)),
-            score: 0,
-            result: "playing",
-            actions: createActionState(prev.round, prev.relics, modRef.current.actionBonus),
-          };
-        });
+        setDoubleNextScoreActive(false);
+        setWildNextActive(false);
+        setFreezeEndActive(false);
+        setBossRageCount(0);
+        setBossHeat(0);
+        setUndoSnapshot(null);
+        setRoundPatternLog([]);
+        prevPatternIds.current = new Set();
+        setMutationStates((ms) => resetMutationUses(ms));
+        const baseTarget = getTarget(game.round);
+        setGame(startBossPhase(game,
+            Math.round(baseTarget * modRef.current.targetMultiplier * nextPhase.targetMultiplier * ascension.bossTargetMultiplier),
+            modRef.current.handSize, modRef.current.actionBonus));
         return;
       }
 
       // Final phase or single-phase boss: give rewards
-      let bonusRelicId: string | undefined;
+      const bonusRelicId = currentBoss.reward.extraRelic ? getRandomRelics(1, game.relics)[0]?.id : undefined;
       setGold((g) => g + currentBoss.reward.gold);
       // Boss defeated celebration
-      celebrateBigEvent();
       // Cinematic overlay shown on top of the BossRewardScreen
       setBossDefeatedOverlay(currentBoss);
       // Milestone: first boss defeated
       maybeCelebrateMilestone("first_boss_defeated");
-      setGame((prev) => {
         let updated = {
-          ...prev,
+          ...claimed,
           stats: {
-            ...prev.stats,
-            bossesDefeated: prev.stats.bossesDefeated + 1,
-            goldEarned: prev.stats.goldEarned + currentBoss.reward.gold,
+            ...claimed.stats,
+            defeatedBossIds: [...(claimed.stats.defeatedBossIds ?? []), currentBoss.id],
+            bossesDefeated: claimed.stats.bossesDefeated + 1,
+            goldEarned: claimed.stats.goldEarned + currentBoss.reward.gold,
           },
         };
         if (currentBoss.reward.extraRelic) {
-          const newRelics = getRandomRelics(1, prev.relics);
-          const ids = newRelics.map((r) => r.id);
-          bonusRelicId = ids[0];
-          if (newRelics[0]?.rarity === "legendary") {
-            maybeCelebrateMilestone("first_legendary_relic");
-          }
+          const ids = bonusRelicId ? [bonusRelicId] : [];
           updated = {
             ...updated,
             relics: [...updated.relics, ...ids],
             stats: { ...updated.stats, relicsCollected: updated.stats.relicsCollected + ids.length },
           };
         }
-        return { ...updated, result: "boss_reward" as GameState["result"] };
-      });
+      setGame({ ...updated, result: "boss_reward" });
       setBossRewardData({ boss: currentBoss, bonusRelicId });
       setBossPhase(0);
       setCurrentBoss(null);
       return;
     }
 
-    setGame((prev) => {
-      if (prev.result !== "win") return prev;
-      const event = getRandomEvent(prev.round);
-      if (event) {
-        if (event.type === "blessing") audio.play("event_good");
-        else if (event.type === "curse") audio.play("event_bad");
-        setCurrentEvent(event);
-        return { ...prev, result: "event" };
-      }
-      const saved = loadSavedData();
-      const options = generateRewardOptions(prev.relics, saved, prev.round, ownedMutationIds, { eliteBoost: isEliteRound, legendaryWeightMultiplier: ascension.legendaryWeightMultiplier }, ownedCelestials.map((c) => c.id));
-      if (modRef.current.noMutations) {
-        const filtered = options.filter((o) => o.reward.type === "relic");
-        setRewardOptions(filtered.length > 0 ? filtered : options.slice(0, 2));
-      } else {
-        setRewardOptions(options);
-      }
-      return { ...prev, result: "reward" };
-    });
-  }, [currentBoss, bossPhase, ownedMutationIds, isEliteRound, maybeCelebrateMilestone]);
+    openRewardRoute(claimed);
+  }, [game, currentBoss, bossPhase, ownedMutationIds, isEliteRound, maybeCelebrateMilestone, character, currentQuest, talentBonuses.goldMultiplier, ownedCelestials]);
 
   const handleBossRewardContinue = useCallback(() => {
+    if (game.result !== "boss_reward") return;
     setBossRewardData(null);
-    setGame((prev) => {
       // In map mode: act complete, generate new map for next act
       if (mapMode && runMap) {
         const nextAct = runMap.act + 1;
@@ -1298,9 +1093,7 @@ export default function GameBoard({ onGameOver, isDaily = false, isEndless = fal
         // round of the new act via the isFirstVisit shortcut in
         // handleSelectMapNode.
         const next = startNextRound(
-          prev,
-          prev.score,
-          0,
+          game,
           modRef.current.targetMultiplier,
           modRef.current.handSize,
           modRef.current.actionBonus,
@@ -1315,148 +1108,33 @@ export default function GameBoard({ onGameOver, isDaily = false, isEndless = fal
         // Roll a narrative interlude for the act we just finished.
         // The interlude overlays the map_select state; its resolution
         // applies effects to run state before the player picks a node.
-        const completedActId = getActForRound(prev.round).id;
+        const completedActId = getActForRound(game.round).id;
         const interlude = rollInterlude(completedActId);
         if (interlude) setPendingInterlude(interlude);
-        return { ...next, result: "map_select" as const };
+        setGame({ ...next, result: "map_select" });
+        return;
       }
 
-      const event = getRandomEvent(prev.round);
-      if (event) {
-        if (event.type === "blessing") audio.play("event_good");
-        else if (event.type === "curse") audio.play("event_bad");
-        setCurrentEvent(event);
-        return { ...prev, result: "event" };
-      }
-      const saved = loadSavedData();
-      const options = generateRewardOptions(prev.relics, saved, prev.round, ownedMutationIds, { eliteBoost: isEliteRound, legendaryWeightMultiplier: ascension.legendaryWeightMultiplier }, ownedCelestials.map((c) => c.id));
-      if (modRef.current.noMutations) {
-        const filtered = options.filter((o) => o.reward.type === "relic");
-        setRewardOptions(filtered.length > 0 ? filtered : options.slice(0, 2));
-      } else {
-        setRewardOptions(options);
-      }
-      return { ...prev, result: "reward" };
-    });
-  }, [ownedMutationIds, mapMode, runMap, isEliteRound, talentBonuses.tilePreserve]);
+    openRewardRoute(game);
+  }, [game, ownedMutationIds, mapMode, runMap, isEliteRound, talentBonuses.tilePreserve, ownedCelestials]);
 
   const handleEventContinue = useCallback(
     (effect?: Exclude<EventEffect, { type: "choice" }>) => {
-      if (effect) {
-        const result = applyEventEffect(effect);
-        setGame((prev) => {
-          let newHand = [...prev.hand];
-          let newPool = [...prev.tilePool];
-
-          // Add extra tiles to hand
-          if (result.handBonus > 0 && newPool.length > 0) {
-            const extra = newPool.splice(0, result.handBonus);
-            newHand = [...newHand, ...extra];
-          }
-
-          // tileChange > 0: add tiles from pool to hand
-          if (result.tileChange > 0 && newPool.length > 0) {
-            const extra = newPool.splice(0, result.tileChange);
-            newHand = [...newHand, ...extra];
-          }
-
-          // tileChange < 0: remove random tiles from pool
-          if (result.tileChange < 0) {
-            const removeCount = Math.min(Math.abs(result.tileChange), newPool.length);
-            for (let i = 0; i < removeCount; i++) {
-              const idx = Math.floor(Math.random() * newPool.length);
-              newPool.splice(idx, 1);
-            }
-          }
-
-          const newRelics = result.relicId && !prev.relics.includes(result.relicId)
-            ? [...prev.relics, result.relicId]
-            : prev.relics;
-
-          // Apply action bonuses from events
-          let newActions = prev.actions;
-          if (result.actionBonus && newActions) {
-            newActions = {
-              ...newActions,
-              maxActions: Math.max(1, newActions.maxActions + result.actionBonus.actions),
-              maxDiscards: Math.max(0, newActions.maxDiscards + result.actionBonus.discards),
-              maxDraws: Math.max(0, newActions.maxDraws + result.actionBonus.draws),
-            };
-          }
-
-          return {
-            ...prev,
-            hand: newHand,
-            tilePool: newPool,
-            relics: newRelics,
-            target: Math.round(prev.target * result.targetModifier),
-            score: prev.score + result.scoreBonus,
-            actions: newActions,
-          };
-        });
-      }
+      if (game.result !== "event") return;
+      const updated = effect ? applyEventToRun(game, effect) : game;
       setCurrentEvent(null);
-      setGame((prev) => {
         // In map mode, event was a choice on the map → return to map selection
         if (mapMode) {
-          return { ...prev, result: "map_select" as const };
+          setGame({ ...updated, result: "map_select" });
+          return;
         }
-        const saved = loadSavedData();
-        const options = generateRewardOptions(prev.relics, saved, prev.round, ownedMutationIds, { eliteBoost: isEliteRound, legendaryWeightMultiplier: ascension.legendaryWeightMultiplier }, ownedCelestials.map((c) => c.id));
-        if (modRef.current.noMutations) {
-          const filtered = options.filter((o) => o.reward.type === "relic");
-          setRewardOptions(filtered.length > 0 ? filtered : options.slice(0, 2));
-        } else {
-          setRewardOptions(options);
-        }
-        return { ...prev, result: "reward" };
-      });
+      setRewardOptions(rollRewardOptions(updated));
+      setGame({ ...updated, result: "reward" });
     },
-    [ownedMutationIds, mapMode, isEliteRound]
+    [game, ownedMutationIds, mapMode, isEliteRound, ownedCelestials]
   );
 
   const goToShopOrNextRound = useCallback((prev: GameState) => {
-    const breakdown = calculateScore(prev.chain, prev.relics, modRef.current.patternBonus);
-    const hasDoubles = prev.chain.placed.some((p) => p.tile.top === p.tile.bottom);
-    const ed = summarizeChainEditions(prev.chain);
-    const bdInfo = { patterns: breakdown.patternAnalysis.patterns.length, hasDoubles, tilesPlayed: prev.chain.placed.length, patternBonusTotal: breakdown.patternAnalysis.totalBonus, editionFlat: ed.flatBonus, editionMultiplier: ed.multiplier };
-    const modTotal = getModifiedScore(breakdown.total, bdInfo);
-    let earnedGold = Math.round(calculateGoldEarned(modTotal, prev.round) * computeGoldMultiplier(character) * talentBonuses.goldMultiplier);
-
-    // Quest completion check
-    if (currentQuest) {
-      const completed = checkQuestCompletion(currentQuest, {
-        chain: prev.chain,
-        score: modTotal,
-        target: prev.target,
-        patternsActivated: bdInfo.patterns,
-      });
-      if (completed && currentQuest.reward.kind === "gold") {
-        earnedGold += currentQuest.reward.amount;
-        setQuestToast({ text: translate("gb.questPassed", { title: currentQuest.title, amount: currentQuest.reward.amount }), success: true });
-      } else if (!completed) {
-        setQuestToast({ text: translate("gb.questFailed", { title: currentQuest.title }), success: false });
-      }
-    }
-    // Pick next quest for upcoming round
-    setCurrentQuest(pickRoundQuest(prev.round + 1));
-
-    setGold((g) => g + earnedGold);
-    const patternIdsThisRound = breakdown.patternAnalysis.patterns.map((p) => p.id);
-    prev = {
-      ...prev,
-      stats: {
-        ...prev.stats,
-        goldEarned: prev.stats.goldEarned + earnedGold,
-        roundsCompleted: prev.stats.roundsCompleted + 1,
-        totalScore: prev.stats.totalScore + modTotal,
-        patternsActivated: prev.stats.patternsActivated + bdInfo.patterns,
-        patternBreakdown: mergeBreakdown(prev.stats.patternBreakdown, patternIdsThisRound),
-        highestRoundScore: Math.max(prev.stats.highestRoundScore, modTotal),
-        roundScores: [...prev.stats.roundScores, modTotal],
-      },
-    };
-
     // Map mode: return to map selection instead of auto-advancing
     if (mapMode) {
       setIsEliteRound(false);
@@ -1471,12 +1149,29 @@ export default function GameBoard({ onGameOver, isDaily = false, isEndless = fal
       return { ...prev, result: "shop" as const };
     }
 
-    // Stats already updated above (incl. patternBreakdown), so we pass empty
-    // ids and a 0 round-score to advanceRound to avoid double counting.
-    return advanceRound(prev, 0, 0);
-  }, [advanceRound, getModifiedScore, mapMode, character, currentQuest, talentBonuses.goldMultiplier]);
+    // Dealing is independent of recording results.
+    return advanceRound(prev);
+  }, [advanceRound, mapMode]);
+
+  const pendingReward = useRef<PendingReward | null>(resume?.pendingReward ?? null);
+  const [rewardReceipt, setRewardReceipt] = useState<Receipt | null>(null);
+  const dismissRewardReceipt = useCallback(() => setRewardReceipt(null), []);
+  useEffect(() => {
+    const pending = pendingReward.current;
+    if (!pending) return;
+    if (!rewardWasDelivered(pending, { relics:game.relics, tiles:game.runTiles, consumables:ownedConsumables, celestials:ownedCelestials, mutations:ownedMutationIds })) {
+      if (game.result !== "reward" && mutationMode === null) pendingReward.current = null;
+      return;
+    }
+    pendingReward.current = null;
+    const r = pending.option.reward;
+    setRewardReceipt({ key: Date.now(), name: r.type === "relic" ? localizeRelic(r.relic).name : pending.option.name,
+      replaced: r.type === "consumable" && pending.before.consumables.length >= MAX_CONSUMABLE_SLOTS ? pending.before.consumables[0]?.name : undefined });
+  }, [game.relics, game.runTiles, game.result, mutationMode, ownedConsumables, ownedCelestials, ownedMutationIds]);
 
   const handleSelectReward = useCallback((option: RewardOption) => {
+    if (game.result !== "reward" || !rewardOptions.some(o => o.id === option.id) || pendingReward.current) return;
+    pendingReward.current = { option, before: { relics:game.relics, tiles:game.runTiles, consumables:ownedConsumables, celestials:ownedCelestials, mutations:ownedMutationIds } };
     const reward = option.reward;
 
     if (reward.type === "relic") {
@@ -1484,11 +1179,9 @@ export default function GameBoard({ onGameOver, isDaily = false, isEndless = fal
       celebrateAchievement();
       audio.play("pattern_combo");
       pushReaction("big_score", translate("gb.toast.newRelic", { name: localizeRelic(reward.relic).name }));
-      setGame((prev) => {
-        const newPrev = { ...prev, relics: [...prev.relics, reward.relic.id], stats: { ...prev.stats, relicsCollected: prev.stats.relicsCollected + 1 } };
-        setRewardOptions([]);
-        return goToShopOrNextRound(newPrev);
-      });
+      const updated = { ...game, relics: [...game.relics, reward.relic.id], stats: { ...game.stats, relicsCollected: game.stats.relicsCollected + 1 } };
+      setRewardOptions([]);
+      setGame(goToShopOrNextRound(updated));
     } else if (reward.type === "remove_tile") {
       setMutationMode("remove");
     } else if (reward.type === "duplicate_tile") {
@@ -1502,10 +1195,8 @@ export default function GameBoard({ onGameOver, isDaily = false, isEndless = fal
         const mutation = ALL_ACTIVE_MUTATIONS.find((m) => m.id === mutId);
         return [...prev, { mutationId: mutId, usesLeft: mutation?.usesPerRound ?? 0 }];
       });
-      setGame((prev) => {
-        setRewardOptions([]);
-        return goToShopOrNextRound(prev);
-      });
+      setRewardOptions([]);
+      setGame(goToShopOrNextRound(game));
     } else if (reward.type === "consumable") {
       const c = getConsumable(reward.consumableId);
       if (c) {
@@ -1515,64 +1206,39 @@ export default function GameBoard({ onGameOver, isDaily = false, isEndless = fal
           return [...next, c];
         });
       }
-      setGame((prev) => {
-        setRewardOptions([]);
-        return goToShopOrNextRound(prev);
-      });
+      setRewardOptions([]);
+      setGame(goToShopOrNextRound(game));
     } else if (reward.type === "celestial") {
       const c = getCelestial(reward.celestialId);
       if (c) {
         setOwnedCelestials((prev) => [...prev, c]);
         discoverCelestial(c.id);
       }
-      setGame((prev) => {
-        setRewardOptions([]);
-        return goToShopOrNextRound(prev);
-      });
+      setRewardOptions([]);
+      setGame(goToShopOrNextRound(game));
     }
-  }, [goToShopOrNextRound]);
+  }, [goToShopOrNextRound, game, rewardOptions, ownedConsumables, ownedCelestials, ownedMutationIds]);
 
   const handleRemoveTile = useCallback((tile: Tile) => {
-    setGame((prev) => {
-      const newPool = prev.tilePool.filter((t) => t.id !== tile.id);
-      setMutationMode(null);
-      setRewardOptions([]);
-      return goToShopOrNextRound({ ...prev, tilePool: newPool });
-    });
-  }, [goToShopOrNextRound]);
+    setMutationMode(null);
+    setRewardOptions([]);
+    setGame(goToShopOrNextRound(removeRunTile(game, tile.id)));
+  }, [goToShopOrNextRound, game]);
 
   const handleDuplicateTile = useCallback((tile: Tile) => {
-    setGame((prev) => {
-      const duplicate: Tile = {
-        ...tile,
-        id: `${tile.id}-dup-${Date.now()}`,
-      };
-      const newPool = [...prev.tilePool, duplicate];
-      setMutationMode(null);
-      setRewardOptions([]);
-      return goToShopOrNextRound({ ...prev, tilePool: newPool });
-    });
-  }, [goToShopOrNextRound]);
+    setMutationMode(null);
+    setRewardOptions([]);
+    setGame(goToShopOrNextRound(duplicateRunTile(game, tile)));
+  }, [goToShopOrNextRound, game]);
 
-  const handleConvertNumber = useCallback(
-    (tile: Tile, position: "top" | "bottom", newValue: number) => {
-      setGame((prev) => {
-        const newPool = prev.tilePool.map((t) => {
-          if (t.id !== tile.id) return t;
-          return {
-            ...t,
-            [position]: newValue,
-          };
-        });
-        setMutationMode(null);
-        setRewardOptions([]);
-        return goToShopOrNextRound({ ...prev, tilePool: newPool });
-      });
-    },
-    [goToShopOrNextRound]
-  );
+  const handleConvertNumber = useCallback((tile: Tile, position: "top" | "bottom", newValue: number) => {
+    setMutationMode(null);
+    setRewardOptions([]);
+    setGame(goToShopOrNextRound(editRunTile(game, tile.id, t => ({ ...t, [position]: newValue }))));
+  }, [goToShopOrNextRound, game]);
 
   const handleCancelMutation = useCallback(() => {
+    pendingReward.current = null;
     setMutationMode(null);
   }, []);
 
@@ -1585,15 +1251,15 @@ export default function GameBoard({ onGameOver, isDaily = false, isEndless = fal
     const state = mutationStates[stateIdx]!;
     if (!canUseMutation(mutation, state, game)) return;
 
+    setUndoSnapshot(null);
     // Deduct cost
-    setGame((prev) => {
-      let updated = { ...prev };
+    let updated = { ...game };
 
       if (mutation.cost.type === "actions" && updated.actions) {
         updated = { ...updated, actions: { ...updated.actions, usedActions: updated.actions.usedActions + mutation.cost.amount } };
       }
       if (mutation.cost.type === "score") {
-        updated = { ...updated, score: updated.score - mutation.cost.amount };
+        updated = { ...updated, roundBonus: (updated.roundBonus ?? 0) - mutation.cost.amount };
       }
 
       // Apply effect
@@ -1606,7 +1272,7 @@ export default function GameBoard({ onGameOver, isDaily = false, isEndless = fal
         setWildNextActive(true);
       }
       if (eff.type === "score_burst") {
-        updated = { ...updated, score: updated.score + eff.amount };
+        updated = { ...updated, roundBonus: (updated.roundBonus ?? 0) + eff.amount };
       }
       if (eff.type === "extend_actions" && updated.actions) {
         updated = { ...updated, actions: { ...updated.actions, maxActions: updated.actions.maxActions + eff.amount } };
@@ -1618,8 +1284,7 @@ export default function GameBoard({ onGameOver, isDaily = false, isEndless = fal
         setFreezeEndActive(true);
       }
 
-      return updated;
-    });
+    setGame(resolveExhaustion({ ...updated, score: scoreGame(updated) }, activeBossRestriction, isEndless));
 
     // Decrement uses
     setMutationStates((prev) =>
@@ -1627,168 +1292,91 @@ export default function GameBoard({ onGameOver, isDaily = false, isEndless = fal
     );
 
     audio.play("pattern_activate");
-  }, [mutationStates, game]);
+  }, [mutationStates, game, scoreContext, activeBossRestriction, isEndless]);
 
   const handleSkipReward = useCallback(() => {
-    setGame((prev) => {
-      setRewardOptions([]);
-      return goToShopOrNextRound(prev);
-    });
-  }, [goToShopOrNextRound]);
+    if (game.result !== "reward") return;
+    pendingReward.current = null;
+    setRewardOptions([]);
+    setGame(goToShopOrNextRound(game));
+  }, [goToShopOrNextRound, game]);
 
   const handleBuyShopItem = useCallback((item: ShopItem) => {
-    if (gold < item.cost) return;
+    if (game.result !== "shop" || !shopItems.some((i) => i.id === item.id) || gold < item.cost) return false;
+    const normal = game.runTiles.filter((t) => !t.type || t.type === "normal");
+    const noEdition = game.runTiles.filter((t) => !t.edition);
+    if ((item.type === "tile_upgrade" || item.type === "wild_tile") && normal.length === 0) return false;
+    if (item.type === "forge_edition" && noEdition.length === 0) return false;
+    if (item.type === "remove_tile" && game.runTiles.length <= 7) return false;
+    if (item.type === "relic" && (!item.relic || game.relics.includes(item.relic.id))) return false;
     audio.play("shop_buy");
     setGold((g) => g - item.cost);
-
-    if (item.type === "relic" && item.relic) {
-      setGame((prev) => ({
-        ...prev,
-        relics: [...prev.relics, item.relic!.id],
-        stats: { ...prev.stats, relicsCollected: prev.stats.relicsCollected + 1 },
-      }));
-    } else if (item.type === "tile_upgrade") {
-      setGame((prev) => {
-        const normalTiles = prev.tilePool.filter((t) => !t.type || t.type === "normal");
-        if (normalTiles.length === 0) return prev;
-        const target = normalTiles[Math.floor(Math.random() * normalTiles.length)]!;
-        return {
-          ...prev,
-          tilePool: prev.tilePool.map((t) => t.id === target.id ? { ...t, type: "golden" as const } : t),
-        };
-      });
-    } else if (item.type === "remove_tile") {
-      setGame((prev) => {
-        if (prev.tilePool.length <= 7) return prev;
-        const idx = Math.floor(Math.random() * prev.tilePool.length);
-        return {
-          ...prev,
-          tilePool: prev.tilePool.filter((_, i) => i !== idx),
-        };
-      });
-    } else if (item.type === "heal") {
-      setGame((prev) => ({
-        ...prev,
-        target: Math.round(prev.target * 0.9),
-      }));
-    } else if (item.type === "wild_tile") {
-      setGame((prev) => {
-        const normalTiles = prev.tilePool.filter((t) => !t.type || t.type === "normal");
-        if (normalTiles.length === 0) return prev;
-        const target = normalTiles[Math.floor(Math.random() * normalTiles.length)]!;
-        return {
-          ...prev,
-          tilePool: prev.tilePool.map((t) => t.id === target.id ? { ...t, type: "wild" as const } : t),
-        };
-      });
-    } else if (item.type === "extra_hand") {
-      setGame((prev) => {
-        if (prev.tilePool.length === 0) return prev;
-        const extra = prev.tilePool[0]!;
-        return {
-          ...prev,
-          hand: [...prev.hand, extra],
-          tilePool: prev.tilePool.slice(1),
-        };
-      });
-    } else if (item.type === "forge_edition") {
-      setGame((prev) => {
-        // Target pool: prefer tiles without edition, fall back to hand
-        const poolNoEd = prev.tilePool.filter((t) => !t.edition);
-        const handNoEd = prev.hand.filter((t) => !t.edition);
-        let target: Tile | null = null;
-        let fromHand = false;
-        if (poolNoEd.length > 0) {
-          target = poolNoEd[Math.floor(Math.random() * poolNoEd.length)]!;
-        } else if (handNoEd.length > 0) {
-          target = handNoEd[Math.floor(Math.random() * handNoEd.length)]!;
-          fromHand = true;
-        }
-        if (!target) return prev;
-        const newEdition = rollRandomEdition();
-        pushReaction("pattern", translate("gb.toast.forged", { edition: newEdition }));
-        triggerShake("medium");
-        if (fromHand) {
-          return {
-            ...prev,
-            hand: prev.hand.map((t) => t.id === target!.id ? { ...t, edition: newEdition } : t),
-          };
-        }
-        return {
-          ...prev,
-          tilePool: prev.tilePool.map((t) => t.id === target!.id ? { ...t, edition: newEdition } : t),
-        };
-      });
-    }
-
-    // Track purchase and remove bought item from shop
-    setGame((prev) => ({
-      ...prev,
-      stats: { ...prev.stats, shopPurchases: prev.stats.shopPurchases + 1 },
-    }));
+    // Choose random targets once, outside the React updater.
+    const source = item.type === "forge_edition" ? noEdition : item.type === "remove_tile" ? game.runTiles : normal;
+    const target = source[Math.floor(getGlobalRNG().next() * source.length)];
+    const edition = item.type === "forge_edition" ? rollRandomEdition() : undefined;
+    setGame((prev) => {
+      let updated = prev;
+      if (item.type === "relic" && item.relic && !prev.relics.includes(item.relic.id)) {
+        updated = { ...prev, relics: [...prev.relics, item.relic.id], stats: { ...prev.stats, relicsCollected: prev.stats.relicsCollected + 1 } };
+      } else if ((item.type === "tile_upgrade" || item.type === "wild_tile") && target) {
+        updated = editRunTile(prev, target.id, (t) => ({ ...t, type: item.type === "tile_upgrade" ? "golden" : "wild" }));
+      } else if (item.type === "remove_tile" && target) {
+        updated = removeRunTile(prev, target.id);
+      } else if (item.type === "heal") {
+        updated = { ...prev, pendingRound: { ...prev.pendingRound, targetMultiplier: (prev.pendingRound?.targetMultiplier ?? 1) * 0.9 } };
+      } else if (item.type === "extra_hand") {
+        updated = { ...prev, pendingRound: { ...prev.pendingRound, hand: (prev.pendingRound?.hand ?? 0) + 1 } };
+      } else if (item.type === "forge_edition" && target && edition) {
+        updated = editRunTile(prev, target.id, (t) => ({ ...t, edition }));
+      }
+      return { ...updated, stats: { ...updated.stats, shopPurchases: updated.stats.shopPurchases + 1 } };
+    });
     setShopItems((items) => items.filter((i) => i.id !== item.id));
-  }, [gold]);
+    return true;
+  }, [gold, game, shopItems]);
 
   const handleShopReroll = useCallback(() => {
-    const cost = Math.round(getRerollCost(shopRerolls) * ascension.rerollCostMultiplier);
+    const cost = Math.round(getRerollCost(shopRerolls) * ascension.rerollCostMultiplier * (character.passive.type === "reroll_discount" ? 1 - character.passive.percent / 100 : 1));
     if (gold < cost) return;
     setGold((g) => g - cost);
     setShopRerolls((r) => r + 1);
-    setGame((prev) => {
-      const items = generateShopItems(prev.relics, prev.round, talentBonuses.relicDiscount, ascension.shopRelicCostMultiplier);
-      setShopItems(items);
-      return prev;
-    });
-  }, [gold, shopRerolls]);
+    setShopItems(generateShopItems(game.relics, game.round, talentBonuses.relicDiscount, ascension.shopRelicCostMultiplier));
+  }, [gold, shopRerolls, game.relics, game.round]);
 
   const handleLeaveShop = useCallback(() => {
-    setGame((prev) => {
-      if (mapMode) {
-        return { ...prev, result: "map_select" as const };
-      }
-      const breakdown = calculateScore(prev.chain, prev.relics, modRef.current.patternBonus);
-      const hasDoubles = prev.chain.placed.some((p) => p.tile.top === p.tile.bottom);
-      const ed = summarizeChainEditions(prev.chain);
-      const bdInfo = { patterns: breakdown.patternAnalysis.patterns.length, hasDoubles, tilesPlayed: prev.chain.placed.length, patternBonusTotal: breakdown.patternAnalysis.totalBonus, editionFlat: ed.flatBonus, editionMultiplier: ed.multiplier };
-      return advanceRound(prev, getModifiedScore(breakdown.total, bdInfo), bdInfo.patterns, breakdown.patternAnalysis.patterns.map((p) => p.id));
-    });
-  }, [advanceRound, getModifiedScore, mapMode]);
+    if (game.result !== "shop") return;
+    setGame(mapMode ? { ...game, result: "map_select" } : advanceRound(game));
+  }, [advanceRound, mapMode, game]);
 
   const handleSelectMapNode = useCallback((node: MapNode) => {
-    if (!runMap) return;
+    if (!runMap || !getAvailableNodes(runMap).some((n) => n.id === node.id)) return;
     const newMap = visitNode(runMap, node.id);
     const isFirstVisit = runMap.visitedNodeIds.length === 0;
     setRunMap(newMap);
+    if (node.type === "normal" || node.type === "elite" || node.type === "boss") {
+      setCurrentQuest(pickRoundQuest(node.round));
+    }
 
     switch (node.type) {
       case "normal": {
         setIsEliteRound(false);
         if (isFirstVisit) {
-          setGame((prev) => {
-            // Apply any pending target multiplier granted by a narrative
-            // interlude to the current target on entering the node.
-            const adjustedTarget = pendingTargetMultiplier !== 1
-              ? Math.round(prev.target * pendingTargetMultiplier)
-              : prev.target;
-            return { ...prev, target: adjustedTarget, result: "playing" as const };
-          });
-          if (pendingTargetMultiplier !== 1) setPendingTargetMultiplier(1);
+          const next = game.pendingRound ? startNextRound({ ...game, round: node.round - 1 }, modRef.current.targetMultiplier, modRef.current.handSize, modRef.current.actionBonus, talentBonuses.tilePreserve) : game;
+          setGame({ ...next, result: "playing" });
         } else {
-          setGame((prev) => {
-            const next = startNextRound(prev, 0, 0, modRef.current.targetMultiplier, modRef.current.handSize, modRef.current.actionBonus, talentBonuses.tilePreserve);
+            const next = startNextRound({ ...game, round: node.round - 1 }, modRef.current.targetMultiplier, modRef.current.handSize, modRef.current.actionBonus, talentBonuses.tilePreserve);
             setMutationStates((ms) => resetMutationUses(ms));
             setWildNextActive(false);
             setFreezeEndActive(false);
             setRoundTransition({ round: next.round, isBoss: false });
-            return { ...next, result: "playing" as const };
-          });
+            setGame({ ...next, result: "playing" });
         }
         break;
       }
       case "elite": {
         setIsEliteRound(true);
-        setGame((prev) => {
-          const base = isFirstVisit ? prev : startNextRound(prev, 0, 0, modRef.current.targetMultiplier, modRef.current.handSize, modRef.current.actionBonus, talentBonuses.tilePreserve);
+          const base = isFirstVisit ? game : startNextRound({ ...game, round: node.round - 1 }, modRef.current.targetMultiplier, modRef.current.handSize, modRef.current.actionBonus, talentBonuses.tilePreserve);
           const eliteTarget = Math.round(base.target * 1.35);
           if (!isFirstVisit) {
             setMutationStates((ms) => resetMutationUses(ms));
@@ -1796,12 +1384,11 @@ export default function GameBoard({ onGameOver, isDaily = false, isEndless = fal
             setFreezeEndActive(false);
             setRoundTransition({ round: base.round, isBoss: false });
           }
-          return { ...base, target: eliteTarget, result: "playing" as const };
-        });
+          setGame({ ...base, target: eliteTarget, result: "playing" });
         break;
       }
       case "event": {
-        const event = getRandomEvent(game.round);
+        const event = getRandomEvent(game.round, true);
         if (event) {
           setCurrentEvent(event);
           setGame((prev) => ({ ...prev, result: "event" as const }));
@@ -1825,48 +1412,46 @@ export default function GameBoard({ onGameOver, isDaily = false, isEndless = fal
       case "boss": {
         const bossRound = runMap.act * 5;
         const bossToFight = getBossForRound(bossRound) ?? ALL_BOSSES[(runMap.act - 1) % ALL_BOSSES.length]!;
-        setGame((prev) => {
-          const base = isFirstVisit ? prev : startNextRound(prev, 0, 0, modRef.current.targetMultiplier, modRef.current.handSize, modRef.current.actionBonus, talentBonuses.tilePreserve);
+          const base = isFirstVisit ? game : startNextRound({ ...game, round: node.round - 1 }, modRef.current.targetMultiplier, modRef.current.handSize, modRef.current.actionBonus, talentBonuses.tilePreserve);
           setCurrentBoss(bossToFight);
           setBossPhase(0);
           setMutationStates((ms) => resetMutationUses(ms));
           setWildNextActive(false);
           setFreezeEndActive(false);
           setRoundTransition({ round: bossRound, isBoss: true });
-          return {
+          setGame({
             ...base,
             round: bossRound,
-            target: Math.round(getTarget(bossRound) * modRef.current.targetMultiplier * bossToFight.targetMultiplier * ascension.bossTargetMultiplier),
-            result: "boss_intro" as const,
-          };
-        });
+            target: Math.round(base.target * (bossToFight.phases?.[0]?.targetMultiplier ?? bossToFight.targetMultiplier) * ascension.bossTargetMultiplier),
+            result: "boss_intro",
+          });
         break;
       }
     }
-  }, [runMap, game.round, game.relics, pendingTargetMultiplier]);
+  }, [runMap, game, pendingTargetMultiplier]);
 
   const handleInterludeResolve = useCallback((choice: InterludeChoice) => {
     const eff = choice.outcome.effects;
+    let updated = game;
     if (eff.gold) {
       setGold((g) => g + eff.gold!);
-      setGame((prev) => ({ ...prev, stats: { ...prev.stats, goldEarned: prev.stats.goldEarned + eff.gold! } }));
+      updated = { ...updated, stats: { ...updated.stats, goldEarned: updated.stats.goldEarned + eff.gold } };
     }
     if (eff.randomRelic) {
       // Narrative relic grant: filter legendary pool if requested, otherwise random
-      setGame((prev) => {
-        let pool = ALL_RELICS.filter((r) => !prev.relics.includes(r.id));
+        let pool = ALL_RELICS.filter((r) => !updated.relics.includes(r.id));
         if (eff.randomRelic === "legendary") pool = pool.filter((r) => r.rarity === "legendary");
         else if (eff.randomRelic === "rare") pool = pool.filter((r) => r.rarity === "rare");
         else if (eff.randomRelic === "common") pool = pool.filter((r) => r.rarity === "common");
-        if (pool.length === 0) pool = ALL_RELICS.filter((r) => !prev.relics.includes(r.id));
-        if (pool.length === 0) return prev;
-        const pick = pool[Math.floor(Math.random() * pool.length)]!;
-        return {
-          ...prev,
-          relics: [...prev.relics, pick.id],
-          stats: { ...prev.stats, relicsCollected: prev.stats.relicsCollected + 1 },
+        if (pool.length === 0) pool = ALL_RELICS.filter((r) => !updated.relics.includes(r.id));
+        if (pool.length > 0) {
+        const pick = pool[Math.floor(getGlobalRNG().next() * pool.length)]!;
+        updated = {
+          ...updated,
+          relics: [...updated.relics, pick.id],
+          stats: { ...updated.stats, relicsCollected: updated.stats.relicsCollected + 1 },
         };
-      });
+        }
     }
     if (eff.randomConsumable) {
       const c = rollRandomConsumable();
@@ -1879,59 +1464,50 @@ export default function GameBoard({ onGameOver, isDaily = false, isEndless = fal
       const c = rollRandomCelestial();
       if (c) setOwnedCelestials((prev) => [...prev, c]);
     }
-    if (eff.trimPool && eff.trimPool > 0) {
+    if (eff.trimPool && eff.trimPool > 0 && updated.tilePool.length > eff.trimPool + 4) {
       const toTrim = eff.trimPool;
-      setGame((prev) => {
-        if (prev.tilePool.length <= toTrim + 4) return prev; // keep a minimum pool
-        const next = [...prev.tilePool];
+        const next = [...updated.tilePool];
         for (let i = 0; i < toTrim; i++) {
-          const idx = Math.floor(Math.random() * next.length);
+          const idx = Math.floor(getGlobalRNG().next() * next.length);
           next.splice(idx, 1);
         }
-        return { ...prev, tilePool: next };
-      });
+        updated = { ...updated, tilePool: next, runTiles: updated.runTiles.filter((t) => !updated.tilePool.some((p) => p.id === t.id) || next.some((p) => p.id === t.id)) };
     }
     if (eff.nextTargetMultiplier && eff.nextTargetMultiplier !== 1) {
-      setPendingTargetMultiplier((m) => m * eff.nextTargetMultiplier!);
+      updated = { ...updated, pendingRound: { ...updated.pendingRound, targetMultiplier: (updated.pendingRound?.targetMultiplier ?? 1) * eff.nextTargetMultiplier } };
     }
     if (eff.permanentFlatBonus && eff.permanentFlatBonus > 0) {
       setRunFlatBonusPerTile((v) => v + eff.permanentFlatBonus!);
     }
     setPendingInterlude(null);
-  }, []);
+    setGame(updated);
+  }, [game]);
 
   const handleSanctuaryChoice = useCallback((choice: SanctuaryChoice) => {
     if (!sanctuaryCtx) return;
     const ctx = sanctuaryCtx;
     setSanctuaryCtx(null);
-    setGame((prev) => {
-      let updated = { ...prev };
+      let updated = { ...game };
       if (choice === "heal_actions" && updated.actions) {
         updated = {
           ...updated,
-          actions: { ...updated.actions, maxActions: updated.actions.maxActions + ctx.actions },
+          pendingRound: { ...updated.pendingRound, actions: (updated.pendingRound?.actions ?? 0) + ctx.actions },
         };
       } else if (choice === "gold") {
         setGold((g) => g + ctx.gold);
         updated = { ...updated, stats: { ...updated.stats, goldEarned: updated.stats.goldEarned + ctx.gold } };
       } else if (choice === "remove_tile") {
         if (updated.tilePool.length > 7) {
-          const idx = Math.floor(Math.random() * updated.tilePool.length);
-          updated = { ...updated, tilePool: updated.tilePool.filter((_, i) => i !== idx) };
+          const idx = Math.floor(getGlobalRNG().next() * updated.tilePool.length);
+          updated = removeRunTile(updated, updated.tilePool[idx]!.id);
         }
       }
-      return { ...updated, result: "map_select" as const };
-    });
-  }, [sanctuaryCtx]);
+      setGame({ ...updated, result: "map_select" });
+  }, [sanctuaryCtx, game]);
 
   const handleTutorialNext = useCallback(() => {
-    setTutorialStep((prev) => {
-      if (prev >= TUTORIAL_STEPS.length - 1) {
-        markTutorialComplete();
-        return -1;
-      }
-      return prev + 1;
-    });
+    markTutorialComplete();
+    setTutorialStep(-1);
   }, []);
 
   const handleTutorialSkip = useCallback(() => {
@@ -1943,45 +1519,86 @@ export default function GameBoard({ onGameOver, isDaily = false, isEndless = fal
     setGame((prev) => ({ ...prev, result: "playing" }));
   }, []);
 
-  const scoreBreakdown = calculateScore(game.chain, game.relics, modRef.current.patternBonus);
+  const [checkpointReady, setCheckpointReady] = useState(false);
+  const [checkpointFailed, setCheckpointFailed] = useState(false);
+  const checkpointRound = useRef<number | null>(game.round);
+  useEffect(() => { setCheckpointReady(true); }, []);
+  const checkpointValues = { game, runMap, isEliteRound, sanctuaryCtx, rewardOptions, mutationMode, currentEvent, tutorialStep, gold, shopItems, shopRerolls, currentBoss, bossPhase, bossRewardData, activeSkin, currentQuest, pendingInterlude, runFlatBonusPerTile, ownedMutationIds, mutationStates, wildNextActive, freezeEndActive, doubleNextScoreActive, ownedConsumables, ownedCelestials, bossHeat, bossRageCount, chaosTwist, undoSnapshot, undoUsesLeft, roundPatternLog };
+  const captureCheckpoint = (): RunCheckpoint => ({
+    ruleset: RUN_RULESET, savedAt: Date.now(), mode: isWeekly ? "weekly" : isDaily ? "daily" : isEndless ? "endless" : "playing",
+    characterId, modifierIds, modifierConfig, modifiers: modRef.current, runtime, seed: runSeed,
+    rng: getGlobalRNG().snapshot(), handSize: initResult.handSize, states: checkpointValues,
+    claimedRound: claimedRoundRef.current, celebratedChallenges: [...celebratedChallengesRef.current], pendingReward: pendingReward.current,
+  });
+  const latestCapture = useRef(captureCheckpoint);
+  latestCapture.current = captureCheckpoint;
+  useEffect(() => {
+    if (!onCheckpoint || !checkpointReady) return;
+    if (checkpointRound.current !== game.round) { checkpointRound.current = game.round; return; }
+    const timer = setTimeout(() => { if (!finishedRef.current) setCheckpointFailed(!onCheckpoint(latestCapture.current())); }, 150);
+    return () => clearTimeout(timer);
+  }, [onCheckpoint, checkpointReady, game, runMap, isEliteRound, sanctuaryCtx, rewardOptions, mutationMode, currentEvent, tutorialStep, gold, shopItems, shopRerolls, currentBoss, bossPhase, bossRewardData, activeSkin, currentQuest, pendingInterlude, runFlatBonusPerTile, ownedMutationIds, mutationStates, wildNextActive, freezeEndActive, doubleNextScoreActive, ownedConsumables, ownedCelestials, bossHeat, bossRageCount, chaosTwist, undoSnapshot, undoUsesLeft, roundPatternLog]);
+  useEffect(() => {
+    if (!onCheckpoint || !checkpointReady) return;
+    const flush = () => { if (!finishedRef.current) setCheckpointFailed(!onCheckpoint(latestCapture.current())); };
+    const hidden = () => { if (document.visibilityState === "hidden") flush(); };
+    const beforeReload = (event: Event) => {
+      if (!finishedRef.current && !onCheckpoint(latestCapture.current())) {
+        event.preventDefault();
+        setCheckpointFailed(true);
+      }
+    };
+    window.addEventListener("pagehide", flush);
+    window.addEventListener(SAVE_BEFORE_RELOAD_EVENT, beforeReload);
+    document.addEventListener("visibilitychange", hidden);
+    return () => { window.removeEventListener("pagehide", flush); window.removeEventListener(SAVE_BEFORE_RELOAD_EVENT, beforeReload); document.removeEventListener("visibilitychange", hidden); };
+  }, [onCheckpoint, checkpointReady]);
+  const saveAndExit = () => { if (onCheckpoint?.(captureCheckpoint())) onSaveExit?.(); else setCheckpointFailed(true); };
+
+  const receiptElement = <><RewardReceipt receipt={rewardReceipt} onDismiss={dismissRewardReceipt} />
+    {(seedCopy.status === "copied" || seedCopy.status === "error") && <SystemNotice><p role="status" className="pointer-events-auto w-full rounded-xl border border-surface-600 bg-surface-900 p-4 text-sm text-accent-silver">{translate(seedCopy.status === "copied" ? "copy.seedCopied" : "copy.seedFailed", { seed: seedToString(runSeed) })}</p></SystemNotice>}
+    {checkpointFailed && <SystemNotice><p role="alert" className="pointer-events-auto w-full rounded-xl border border-red-400/40 bg-surface-900 p-4 text-sm text-red-200">{translate("resume.saveFailed")}</p></SystemNotice>}
+  </>;
+  const scoreBreakdown = calculateRunScore(game, scoreContext).breakdown;
 
   if (mutationMode === "remove") {
     return (
-      <TileSelector
-        tiles={game.tilePool}
+      <>{receiptElement}<TileSelector
+        tiles={game.runTiles}
         title={translate("tileSelector.removeTitle")}
         subtitle={translate("tileSelector.removeSubtitle")}
         onSelect={handleRemoveTile}
         onCancel={handleCancelMutation}
-      />
+      /></>
     );
   }
 
   if (mutationMode === "duplicate") {
     return (
-      <TileSelector
-        tiles={game.tilePool}
+      <>{receiptElement}<TileSelector
+        tiles={game.runTiles}
         title={translate("tileSelector.duplicateTitle")}
         subtitle={translate("tileSelector.duplicateSubtitle")}
         onSelect={handleDuplicateTile}
         onCancel={handleCancelMutation}
-      />
+      /></>
     );
   }
 
   if (mutationMode === "convert") {
     return (
-      <NumberConverter
-        tiles={game.tilePool}
+      <>{receiptElement}<NumberConverter
+        tiles={game.runTiles}
         onConvert={handleConvertNumber}
         onCancel={handleCancelMutation}
-      />
+      /></>
     );
   }
 
   if (game.result === "map_select" && runMap) {
     return (
       <>
+        {receiptElement}
         <RunMapScreen
           map={runMap}
           onSelectNode={handleSelectMapNode}
@@ -2002,17 +1619,18 @@ export default function GameBoard({ onGameOver, isDaily = false, isEndless = fal
 
   if (game.result === "sanctuary" && sanctuaryCtx) {
     return (
-      <SanctuaryScreen
+      <>{receiptElement}<SanctuaryScreen
         onSelect={handleSanctuaryChoice}
         goldReward={sanctuaryCtx.gold}
         extraActions={sanctuaryCtx.actions}
-      />
+      /></>
     );
   }
 
   if (game.result === "boss_reward" && bossRewardData) {
     return (
       <>
+        {receiptElement}
         <BossRewardScreen
           boss={bossRewardData.boss}
           bonusRelicId={bossRewardData.bonusRelicId}
@@ -2029,104 +1647,63 @@ export default function GameBoard({ onGameOver, isDaily = false, isEndless = fal
 
   if (game.result === "boss_intro" && currentBoss) {
     return (
-      <BossIntro
+      <>{receiptElement}<BossIntro
         boss={currentBoss}
         round={game.round}
         onStart={handleStartBoss}
-      />
+      /></>
     );
   }
 
   if (game.result === "event" && currentEvent) {
     return (
-      <EventScreen
+      <>{receiptElement}<EventScreen
         event={currentEvent}
         onContinue={handleEventContinue}
-      />
+      /></>
     );
   }
 
   if (game.result === "shop") {
     return (
-      <ShopScreen
+      <>{receiptElement}<ShopScreen
         items={shopItems}
         gold={gold}
         onBuy={handleBuyShopItem}
         onSkip={handleLeaveShop}
-        rerollCost={getRerollCost(shopRerolls)}
+        rerollCost={Math.round(getRerollCost(shopRerolls) * ascension.rerollCostMultiplier * (character.passive.type === "reroll_discount" ? 1 - character.passive.percent / 100 : 1))}
         onReroll={handleShopReroll}
-      />
+      /></>
     );
   }
 
   if (game.result === "reward") {
     return (
-      <RewardScreen
+      <>{receiptElement}<RewardScreen
         options={rewardOptions}
+        ownedRelicIds={game.relics}
+        replacedConsumableName={ownedConsumables.length >= MAX_CONSUMABLE_SLOTS ? ownedConsumables[0]?.name : undefined}
         onSelect={handleSelectReward}
         onSkip={handleSkipReward}
-      />
+      /></>
     );
   }
 
-  const currentEd = summarizeChainEditions(game.chain);
-  const currentDoublesCount = game.chain.placed.filter((p) => p.tile.top === p.tile.bottom).length;
-  const baseModifiedTotal = getModifiedScore(scoreBreakdown.total, {
-    patterns: scoreBreakdown.patternAnalysis.patterns.length,
-    hasDoubles: currentDoublesCount > 0,
-    tilesPlayed: game.chain.placed.length,
-    patternBonusTotal: scoreBreakdown.patternAnalysis.totalBonus,
-    editionFlat: currentEd.flatBonus,
-    editionMultiplier: currentEd.multiplier,
-  });
-  const celestialExtra = celestialTotalBonus(baseModifiedTotal, scoreBreakdown.patternAnalysis, ownedCelestials, {
-    tilesPlayed: game.chain.placed.length,
-    doublesCount: currentDoublesCount,
-    celestialBoost,
-  });
-  const modifiedTotal = baseModifiedTotal + celestialExtra;
-
+  const modifiedTotal = game.score;
+  const hasNextBossPhase = !!currentBoss?.phases && bossPhase < currentBoss.phases.length - 1;
   const scoreRevealExtras = {
-    editionFlat: currentEd.flatBonus > 0 ? currentEd.flatBonus : undefined,
-    editionMultiplier: currentEd.multiplier !== 1 ? currentEd.multiplier : undefined,
-    talentFlat: (talentBonuses.flatScoreBonus + talentBonuses.extraPatternScore * scoreBreakdown.patternAnalysis.patterns.length) > 0
-      ? talentBonuses.flatScoreBonus + talentBonuses.extraPatternScore * scoreBreakdown.patternAnalysis.patterns.length
-      : undefined,
-    talentMultiplier: talentBonuses.scoreMultiplier !== 1 ? talentBonuses.scoreMultiplier : undefined,
-    familyFlat: (familyBonuses.numeroFlatBonus + familyBonuses.cadenaPerTile * game.chain.placed.length) > 0
-      ? familyBonuses.numeroFlatBonus + familyBonuses.cadenaPerTile * game.chain.placed.length
-      : undefined,
-    familyMultiplier: familyBonuses.fuerzaGlobalMultiplier !== 1 ? familyBonuses.fuerzaGlobalMultiplier : undefined,
+    runAdjustment: game.score - scoreBreakdown.total,
   };
-
-  // Preview: simulate placing a tile on each valid side and return best delta
-  const previewScoreFor = (tile: Tile): number | null => {
+  const previewScoreFor = (tile: Tile, preferredSide?: PlacementSide): number | null => {
     if (game.result !== "playing") return null;
-    const sides = getValidPlacements(game.chain, tile);
+    const sides = legalSides(tile);
     if (sides.length === 0) return null;
-    let best = 0;
-    for (const side of sides) {
-      let simChain: ChainState;
-      try {
-        simChain = placeTile(game.chain, tile, side);
-      } catch {
-        continue;
-      }
-      const simRaw = calculateScore(simChain, game.relics, modRef.current.patternBonus);
-      const simHasDoubles = simChain.placed.some((p) => p.tile.top === p.tile.bottom);
-      const simEd = summarizeChainEditions(simChain);
-      const simTotal = getModifiedScore(simRaw.total, {
-        patterns: simRaw.patternAnalysis.patterns.length,
-        hasDoubles: simHasDoubles,
-        tilesPlayed: simChain.placed.length,
-        patternBonusTotal: simRaw.patternAnalysis.totalBonus,
-        editionFlat: simEd.flatBonus,
-        editionMultiplier: simEd.multiplier,
-      });
-      const delta = simTotal - modifiedTotal;
-      if (delta > best) best = delta;
-    }
-    return best;
+    const side = preferredSide ?? (sides.includes("right") ? "right" : sides[0]!);
+    if (!sides.includes(side)) return null;
+    return playRoundTile(game, tile, side, scoreContext, {
+      wild: wildNextActive, freeze: freezeEndActive, double: doubleNextScoreActive,
+      restriction: activeBossRestriction, endless: isEndless, boss: !!currentBoss,
+    }).score - game.score;
   };
 
   const shakeAnim = (() => {
@@ -2139,16 +1716,17 @@ export default function GameBoard({ onGameOver, isDaily = false, isEndless = fal
 
   return (
     <motion.div
-      key={`gb-shake-${shakeTrigger}`}
-      animate={shakeTrigger > 0 ? shakeAnim : undefined}
+      ref={boardRef}
+      animate={!reducedMotion && shakeTrigger > 0 ? shakeAnim : undefined}
       transition={{ duration: shakeIntensity === "large" ? 0.5 : shakeIntensity === "medium" ? 0.35 : 0.22 }}
-      className="flex flex-col items-center gap-3 md:gap-6 w-full max-w-3xl mx-auto px-3 md:px-4 py-3 md:py-8 pb-[env(safe-area-inset-bottom,0px)] min-h-screen relative ambient-grain"
+      className="flex flex-col items-center gap-3 md:gap-6 w-full max-w-3xl mx-auto px-3 md:px-4 py-3 md:py-8 pb-[env(safe-area-inset-bottom,0px)] min-h-screen relative ambient-grain tactical-board"
     >
+      {receiptElement}
       {/* Pattern activity log (floating, desktop only) */}
       {game.result === "playing" && <PatternLog entries={roundPatternLog} />}
 
       {/* Round transition overlay */}
-      {roundTransition && (
+      {roundTransition && !pendingActTransition && (
         <RoundTransition
           round={roundTransition.round}
           isBoss={roundTransition.isBoss}
@@ -2205,15 +1783,9 @@ export default function GameBoard({ onGameOver, isDaily = false, isEndless = fal
         )}
       </AnimatePresence>
 
-      {/* Tutorial overlay */}
-      {tutorialStep >= 0 && tutorialStep < TUTORIAL_STEPS.length && (
-        <TutorialOverlay
-          step={TUTORIAL_STEPS[tutorialStep]!}
-          currentIndex={tutorialStep}
-          totalSteps={TUTORIAL_STEPS.length}
-          onNext={handleTutorialNext}
-          onSkip={handleTutorialSkip}
-        />
+      {/* Legacy nonnegative tutorial indexes open the isolated practice safely. */}
+      {tutorialStep >= 0 && game.result === "playing" && !pendingActTransition && !roundTransition && (
+        <TutorialOverlay onComplete={handleTutorialNext} onSkip={handleTutorialSkip}/>
       )}
 
       {/* Cinematic act transition */}
@@ -2237,6 +1809,9 @@ export default function GameBoard({ onGameOver, isDaily = false, isEndless = fal
         onDismiss={() => setChallengeToast(null)}
       />
 
+      {onSaveExit && <div className="flex items-center gap-3 w-full justify-end">
+        <button type="button" className="min-h-11 px-3 text-xs text-accent-silver border border-surface-600 rounded-lg" onClick={saveAndExit}>{translate("resume.saveExit")}</button>
+      </div>}
       {/* Header */}
       <div className="flex flex-wrap items-center gap-2 w-full min-w-0">
         <h1 className="font-display font-black text-xl tracking-tight bg-gradient-to-b from-white via-white/80 to-accent-silver/40 bg-clip-text text-transparent">
@@ -2247,23 +1822,28 @@ export default function GameBoard({ onGameOver, isDaily = false, isEndless = fal
           initial={{ opacity: 0, y: -4 }}
           animate={{ opacity: 1, y: 0 }}
           className="hidden sm:flex flex-col leading-tight"
-          title={`${currentAct.name} — ${currentAct.tagline}`}
+          title={`${translate(`act.${currentAct.id}.name`)} — ${translate(`act.${currentAct.id}.tagline`)}`}
         >
           <span className="text-[8px] font-bold uppercase tracking-[0.3em] text-accent-silver/40">
-            {currentAct.numeral}
+            {translate(`act.${currentAct.id}.numeral`)}
           </span>
           <span className="text-[10px] font-bold uppercase tracking-widest text-accent-silver/70">
-            {currentAct.name}
+            {translate(`act.${currentAct.id}.name`)}
           </span>
         </motion.span>
         {isDaily && (
           <span className="px-2 py-0.5 rounded-md bg-blue-500/10 border border-blue-500/20 text-blue-400 text-[9px] font-bold uppercase tracking-widest">
-            Diario
+            {translate("home.daily")}
           </span>
         )}
         {isEndless && (
           <span className="px-2 py-0.5 rounded-md bg-purple-500/10 border border-purple-500/20 text-purple-400 text-[9px] font-bold uppercase tracking-widest">
             Endless
+          </span>
+        )}
+        {isWeekly && (
+          <span className="px-2 py-0.5 rounded-md bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-[9px] font-bold uppercase tracking-widest">
+            {translate("board.weekly")}
           </span>
         )}
         {modRef.current.scoreMultiplier !== 1 && (
@@ -2273,7 +1853,7 @@ export default function GameBoard({ onGameOver, isDaily = false, isEndless = fal
         )}
         {currentBoss && (
           <span className="px-2 py-0.5 rounded-md bg-red-500/10 border border-red-500/20 text-red-400 text-[9px] font-bold uppercase tracking-widest animate-pulse">
-            Jefe
+            {translate("boss.label")}
           </span>
         )}
         <span
@@ -2284,9 +1864,11 @@ export default function GameBoard({ onGameOver, isDaily = false, isEndless = fal
         </span>
         <div className="flex-1" />
         <button
-          onClick={() => { navigator.clipboard.writeText(seedToString(runSeed)); }}
-          title={`Seed: ${seedToString(runSeed)} (click para copiar)`}
-          className="hidden xs:block px-2 py-0.5 rounded-md text-[8px] font-mono text-accent-silver/20 hover:text-accent-silver/40 transition-colors truncate max-w-[80px]"
+          onClick={() => { void seedCopy.copy(seedToString(runSeed)); }}
+          disabled={seedCopy.status === "copying"}
+          title={translate("board.seedCopy", { seed: seedToString(runSeed) })}
+          aria-label={translate("board.seedCopy", { seed: seedToString(runSeed) })}
+          className="hidden xs:block px-2 py-0.5 rounded-md text-[10px] font-mono text-accent-silver/75 hover:text-accent-silver transition-colors truncate max-w-[80px]"
         >
           {seedToString(runSeed)}
         </button>
@@ -2321,13 +1903,14 @@ export default function GameBoard({ onGameOver, isDaily = false, isEndless = fal
         />
       )}
 
+      {game.result === "playing" && (game.roundWinBonus ?? 0) > 0 && <p className="text-xs text-amber-200">{translate("board.winBonus", { n: game.roundWinBonus! })}</p>}
+      {game.result === "playing" && (game.roundScoreFactor ?? 1) !== 1 && <p className="text-xs text-amber-200">{translate("board.scoreFactor", { n: game.roundScoreFactor! })}</p>}
       {/* Score */}
       <div
-        key={`score-aberration-${aberrationKey}`}
         className={["relative w-full", aberrationKey > 0 ? "chromatic-aberration" : ""].join(" ")}
       >
-        <ScoreBar score={modifiedTotal} target={game.target} round={game.round} />
-        <ScorePopup score={modifiedTotal} prevScore={prevScore} />
+        <ScoreBar score={modifiedTotal} target={game.target} round={game.round} referenceOnly={isEndless} chainLength={game.chain.placed.length} />
+        <ScorePopup score={modifiedTotal} />
         {(runFlatBonusPerTile > 0 || pendingTargetMultiplier !== 1) && (
           <div className="mt-1 flex justify-center">
             <RunModifiersBadge
@@ -2350,14 +1933,7 @@ export default function GameBoard({ onGameOver, isDaily = false, isEndless = fal
 
       {/* Score breakdown */}
       {game.chain.placed.length > 0 && game.result === "playing" && (
-        <div className="flex flex-wrap items-center justify-center gap-x-2 gap-y-1 px-4 py-1.5 rounded-lg">
-          <span className="text-[10px] font-mono text-accent-silver/30">Base {scoreBreakdown.baseScore}</span>
-          {scoreBreakdown.lengthBonus > 0 && <span className="text-[10px] font-mono text-blue-400/40">+ Largo {scoreBreakdown.lengthBonus}</span>}
-          {scoreBreakdown.patternAnalysis.totalBonus > 0 && <span className="text-[10px] font-mono text-cyan-400/40">+ Patron {Math.floor(scoreBreakdown.patternAnalysis.totalBonus * modRef.current.patternBonus)}</span>}
-          {scoreBreakdown.relicBonus > 0 && <span className="text-[10px] font-mono text-purple-400/40">+ Reliquia {scoreBreakdown.relicBonus}</span>}
-          {scoreBreakdown.multiplier > 1 && <span className="text-[10px] font-mono text-accent-gold/45">x{scoreBreakdown.multiplier.toFixed(2)}</span>}
-          {modRef.current.scoreMultiplier !== 1 && <span className="text-[10px] font-mono text-green-400/45">x{modRef.current.scoreMultiplier}</span>}
-        </div>
+        <ScoreSummary breakdown={scoreBreakdown} patternBonus={modRef.current.patternBonus} scoreMultiplier={modRef.current.scoreMultiplier} />
       )}
 
       {/* Boss restriction indicator */}
@@ -2567,47 +2143,46 @@ export default function GameBoard({ onGameOver, isDaily = false, isEndless = fal
         <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,_rgba(212,168,83,0.04)_0%,_transparent_60%)] pointer-events-none" />
         <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-accent-gold/10 to-transparent" />
         <div className="absolute bottom-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-surface-600/20 to-transparent" />
-        {game.chain.placed.length === 0 && game.result === "playing" && (
-          <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-            <span className="text-[10px] text-accent-silver/15 uppercase tracking-[0.3em] font-medium" style={{ animation: "ambient-pulse 3s ease-in-out infinite" }}>
-              {translate("chain.empty")}
-            </span>
-          </div>
-        )}
+        <div className="table-heading">
+          <span className="table-end">{translate("board.leftEnd")}<strong>{game.chain.leftEnd ?? "—"}</strong></span>
+          <span>{translate("board.table")}</span>
+          <span className="table-end"><strong>{game.chain.rightEnd ?? "—"}</strong>{translate("board.rightEnd")}</span>
+        </div>
         <Chain chain={game.chain} skin={activeSkin} patternFlash={patternFlash} />
         <ChainParticles tileCount={game.chain.placed.length} enabled={game.result === "playing"} />
       </div>
 
       {/* Result overlay */}
       {game.result === "win" && (
-        <motion.div
-          initial={{ opacity: 0, scale: 0.95 }}
+        <motion.div data-round-outcome="win"
+          initial={false}
           animate={{ opacity: 1, scale: 1 }}
           transition={{ duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
-          className="relative flex flex-col items-center gap-5 py-8 px-6 rounded-2xl bg-green-500/[0.04] border border-green-500/20 backdrop-blur-sm w-full"
+          className="relative flex flex-col items-center gap-5 py-8 px-6 rounded-2xl bg-green-500/[0.04] border border-green-500/20 w-full"
         >
-          <ParticleEffect trigger={game.round} color="#4ade80" count={32} />
+          <ParticleEffect trigger={resumedOutcome ? 0 : game.round} color="#4ade80" count={presentationSettings.fastAnimations ? 4 : 8} />
           <div className="absolute inset-0 rounded-2xl bg-[radial-gradient(ellipse_at_center,_rgba(74,222,128,0.06)_0%,_transparent_70%)] pointer-events-none" />
           <motion.div
-            initial={{ opacity: 0, y: -10 }}
+            initial={false}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.2 }}
+            transition={{ duration: 0 }}
             className="flex flex-col items-center gap-2"
           >
-            <span className="font-display font-black text-4xl tracking-tight bg-gradient-to-b from-green-200 via-green-400 to-green-600 bg-clip-text text-transparent drop-shadow-[0_0_20px_rgba(74,222,128,0.3)]">
-              {currentBoss ? translate("outcome.bossDefeated") : translate("outcome.roundCleared")}
+            <span data-outcome-title tabIndex={-1} className="font-display font-black text-4xl tracking-tight bg-gradient-to-b from-green-200 via-green-400 to-green-600 bg-clip-text text-transparent drop-shadow-[0_0_20px_rgba(74,222,128,0.3)]">
+              {hasNextBossPhase ? translate("outcome.phaseCleared") : currentBoss ? translate("outcome.bossDefeated") : translate("outcome.roundCleared")}
             </span>
           </motion.div>
-          <ScoreReveal breakdown={scoreBreakdown} finalScore={modifiedTotal} target={game.target} won={true} extras={scoreRevealExtras} />
-          <motion.div
-            initial={{ opacity: 0 }}
+          <ScoreReveal breakdown={scoreBreakdown} finalScore={modifiedTotal} target={game.target} won={true} extras={scoreRevealExtras} referenceOnly={isEndless} />
+          {(game.phaseScore ?? 0) > 0 && <p className="text-xs text-accent-silver/70">{translate("outcome.encounterScore", { n: game.score + (game.phaseScore ?? 0) })}</p>}
+          {!hasNextBossPhase && <motion.div
+            initial={false}
             animate={{ opacity: 1 }}
-            transition={{ delay: 0.8 }}
-            className="flex items-center gap-3"
+            transition={{ duration: 0 }}
+            className="flex flex-wrap items-center justify-center gap-3"
           >
             <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-accent-gold/10 border border-accent-gold/20">
               <div className="w-2 h-2 rounded-full bg-accent-gold/70" />
-              <span className="font-mono font-bold text-sm text-accent-gold">+{calculateGoldEarned(modifiedTotal, game.round)}</span>
+              <span className="font-mono font-bold text-sm text-accent-gold">+{getRoundPayout(game, computeGoldMultiplier(character) * talentBonuses.goldMultiplier, currentQuest).gold}</span>
             </div>
             {currentBoss && (
               <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-red-500/10 border border-red-500/20">
@@ -2619,50 +2194,32 @@ export default function GameBoard({ onGameOver, isDaily = false, isEndless = fal
                 <span className="font-mono font-bold text-sm text-purple-400">{translate("outcome.bossExtraRelic")}</span>
               </div>
             )}
-          </motion.div>
+          </motion.div>}
           <motion.div
-            initial={{ opacity: 0, y: 10 }}
+            initial={false}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 1 }}
-            className="flex items-center gap-3"
+            transition={{ duration: 0 }}
+            className="flex flex-wrap items-center justify-center gap-3"
           >
             <motion.button
-              whileHover={{ scale: 1.04 }}
-              whileTap={{ scale: 0.97 }}
+              whileHover={reducedMotion ? undefined : { scale: 1.02 }}
+              whileTap={reducedMotion ? undefined : { scale: 0.98 }}
               onClick={handleClaimReward}
               className="px-10 py-3 rounded-2xl bg-gradient-to-b from-accent-gold to-amber-600 text-surface-900 font-bold text-sm tracking-wide btn-premium"
             >
-              {translate("outcome.claimReward")}
+              {translate(hasNextBossPhase ? "outcome.nextPhase" : "outcome.claimReward")}
             </motion.button>
-            {isEndless && (
+            {isEndless && !currentBoss && (
               <motion.button
-                whileHover={{ scale: 1.04 }}
-                whileTap={{ scale: 0.97 }}
+                whileHover={reducedMotion ? undefined : { scale: 1.02 }}
+                whileTap={reducedMotion ? undefined : { scale: 0.98 }}
                 onClick={() => {
-                  const endEd = summarizeChainEditions(game.chain);
-                  const endDoubles = game.chain.placed.filter((p) => p.tile.top === p.tile.bottom).length;
-                  const endBase = getModifiedScore(scoreBreakdown.total, { patterns: scoreBreakdown.patternAnalysis.patterns.length, hasDoubles: endDoubles > 0, tilesPlayed: game.chain.placed.length, patternBonusTotal: scoreBreakdown.patternAnalysis.totalBonus, editionFlat: endEd.flatBonus, editionMultiplier: endEd.multiplier });
-                  const modifiedTotal = endBase + celestialTotalBonus(endBase, scoreBreakdown.patternAnalysis, ownedCelestials, {
-                    tilesPlayed: game.chain.placed.length,
-                    doublesCount: endDoubles,
-                    celestialBoost,
-                  });
-                  const finalStats: RunStats = {
-                    ...game.stats,
-                    totalScore: game.stats.totalScore + modifiedTotal,
-                    patternsActivated: game.stats.patternsActivated + scoreBreakdown.patternAnalysis.patterns.length,
-                    patternBreakdown: mergeBreakdown(
-                      game.stats.patternBreakdown,
-                      scoreBreakdown.patternAnalysis.patterns.map((p) => p.id)
-                    ),
-                    highestRoundScore: Math.max(game.stats.highestRoundScore, modifiedTotal),
-                  };
-                  saveLegacy({ celestials: ownedCelestials, consumables: ownedConsumables, finalRound: game.stats.roundsCompleted, totalScore: finalStats.totalScore });
-                  onGameOver(finalStats, game.relics, game.stats.roundsCompleted);
+                  const finalStats = recordRound(game, true).stats;
+                  finishRun(finalStats, game.relics, game.round, isChallenge ? undefined : { celestials: ownedCelestials, consumables: ownedConsumables, finalRound: game.stats.roundsCompleted, totalScore: finalStats.totalScore });
                 }}
                 className="px-6 py-3 rounded-2xl border border-accent-silver/20 text-accent-silver/60 font-bold text-sm tracking-wide hover:border-accent-silver/30 transition-all"
               >
-                Terminar run
+                {translate("board.endRun")}
               </motion.button>
             )}
           </motion.div>
@@ -2670,75 +2227,66 @@ export default function GameBoard({ onGameOver, isDaily = false, isEndless = fal
       )}
 
       {game.result === "lose" && (
-        <motion.div
-          initial={{ opacity: 0, scale: 0.95 }}
+        <motion.div data-round-outcome="lose"
+          initial={false}
           animate={{ opacity: 1, scale: 1 }}
           transition={{ duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
-          className="relative flex flex-col items-center gap-5 py-8 px-6 rounded-2xl bg-red-500/[0.04] border border-red-500/20 backdrop-blur-sm w-full"
+          className="relative flex flex-col items-center gap-5 py-8 px-6 rounded-2xl bg-red-500/[0.04] border border-red-500/20 w-full"
         >
           <div className="absolute inset-0 rounded-2xl bg-[radial-gradient(ellipse_at_center,_rgba(239,68,68,0.05)_0%,_transparent_70%)] pointer-events-none" />
           <motion.div
-            initial={{ opacity: 0, y: -10 }}
+            initial={false}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.2 }}
+            transition={{ duration: 0 }}
             className="flex flex-col items-center gap-2"
           >
-            <span className="font-display font-black text-4xl tracking-tight bg-gradient-to-b from-red-200 via-red-400 to-red-600 bg-clip-text text-transparent drop-shadow-[0_0_20px_rgba(239,68,68,0.3)]">
-              Run terminada
+            <span data-outcome-title tabIndex={-1} className="font-display font-black text-4xl tracking-tight bg-gradient-to-b from-red-200 via-red-400 to-red-600 bg-clip-text text-transparent drop-shadow-[0_0_20px_rgba(239,68,68,0.3)]">
+              {translate("outcome.runEnded")}
             </span>
           </motion.div>
-          <ScoreReveal breakdown={scoreBreakdown} finalScore={modifiedTotal} target={game.target} won={false} extras={scoreRevealExtras} />
+          <ScoreReveal breakdown={scoreBreakdown} finalScore={modifiedTotal} target={game.target} won={false} extras={scoreRevealExtras} referenceOnly={isEndless} />
           <motion.button
-            initial={{ opacity: 0, y: 10 }}
+            initial={false}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 1 }}
-            whileHover={{ scale: 1.04 }}
-            whileTap={{ scale: 0.97 }}
+            transition={{ duration: 0 }}
+            whileHover={reducedMotion ? undefined : { scale: 1.02 }}
+            whileTap={reducedMotion ? undefined : { scale: 0.98 }}
             onClick={() => {
-              const finalStats: RunStats = {
-                ...game.stats,
-                totalScore: game.stats.totalScore + modifiedTotal,
-                patternsActivated: game.stats.patternsActivated + scoreBreakdown.patternAnalysis.patterns.length,
-                patternBreakdown: mergeBreakdown(
-                  game.stats.patternBreakdown,
-                  scoreBreakdown.patternAnalysis.patterns.map((p) => p.id)
-                ),
-                highestRoundScore: Math.max(game.stats.highestRoundScore, modifiedTotal),
-              };
-              saveLegacy({ celestials: ownedCelestials, consumables: ownedConsumables, finalRound: game.stats.roundsCompleted, totalScore: finalStats.totalScore });
-              onGameOver(finalStats, game.relics, game.stats.roundsCompleted);
+              const finalStats = recordRound(game, false).stats;
+              finishRun(finalStats, game.relics, game.round, isChallenge ? undefined : { celestials: ownedCelestials, consumables: ownedConsumables, finalRound: game.stats.roundsCompleted, totalScore: finalStats.totalScore });
             }}
             className="px-10 py-3 rounded-2xl bg-gradient-to-b from-red-500 to-red-700 text-white font-bold text-sm tracking-wide btn-premium"
           >
-            Ver resultados
+            {translate("board.results")}
           </motion.button>
         </motion.div>
       )}
 
+      <>
       {/* End chain button */}
-      {game.result === "playing" && game.chain.placed.length > 0 && (
+      {game.result === "playing" && (!isEndless || game.chain.placed.length > 0) && (
         <motion.button
           onClick={handleEndChain}
           whileHover={{ scale: 1.03 }}
           whileTap={{ scale: 0.97 }}
-          className="w-full sm:w-auto px-8 py-3 sm:py-2.5 rounded-xl border border-accent-silver/15 bg-surface-800/50 text-accent-silver/60 font-medium text-sm tracking-wide hover:border-accent-gold/30 hover:text-accent-gold/80 transition-all backdrop-blur-sm"
+          className="w-full sm:w-auto px-8 py-3 sm:py-2.5 rounded-xl border border-accent-silver/35 bg-surface-800/80 text-accent-silver font-medium text-sm tracking-wide hover:border-accent-gold/30 hover:text-accent-gold/80 transition-all backdrop-blur-sm"
         >
-          Cerrar cadena
+          {translate("board.closeChain")}
         </motion.button>
       )}
 
       {/* Actions bar */}
       {game.result === "playing" && game.actions && (
-        <div className="flex flex-wrap items-center justify-center gap-2 sm:gap-3 w-full max-w-md">
+        <div className="tactical-actions flex flex-wrap items-center justify-center gap-2 sm:gap-3 w-full max-w-md">
           <ActionHUD actions={game.actions} poolSize={game.tilePool.length} />
           {canDraw(game.actions) && game.tilePool.length > 0 && (
             <motion.button
               onClick={handleDraw}
               whileHover={{ scale: 1.05 }}
               whileTap={{ scale: 0.95 }}
-              className="px-3.5 py-1.5 rounded-lg border border-blue-500/25 bg-blue-500/10 text-blue-400 text-[10px] font-bold uppercase tracking-wider hover:bg-blue-500/20 hover:border-blue-400/40 transition-all"
+              className="min-h-11 px-3.5 py-1.5 rounded-lg border border-blue-500/25 bg-blue-500/10 text-blue-300 text-[10px] font-bold uppercase tracking-wider hover:bg-blue-500/20 hover:border-blue-400/40 transition-all"
             >
-              Robar ({game.actions.maxDraws - game.actions.usedDraws})
+              {translate("board.draw", { n: game.actions.maxDraws - game.actions.usedDraws })}
             </motion.button>
           )}
           {undoSnapshot && undoUsesLeft > 0 && (
@@ -2748,7 +2296,7 @@ export default function GameBoard({ onGameOver, isDaily = false, isEndless = fal
               animate={{ opacity: 1, scale: 1 }}
               whileHover={{ scale: 1.05 }}
               whileTap={{ scale: 0.95 }}
-              className="px-3.5 py-1.5 rounded-lg border border-amber-500/25 bg-amber-500/10 text-amber-300 text-[10px] font-bold uppercase tracking-wider hover:bg-amber-500/20 hover:border-amber-400/40 transition-all"
+              className="min-h-11 px-3.5 py-1.5 rounded-lg border border-amber-500/25 bg-amber-500/10 text-amber-300 text-[10px] font-bold uppercase tracking-wider hover:bg-amber-500/20 hover:border-amber-400/40 transition-all"
               title={translate("gb.undoTitle")}
             >
               {translate("gb.undo")}
@@ -2757,6 +2305,8 @@ export default function GameBoard({ onGameOver, isDaily = false, isEndless = fal
         </div>
       )}
 
+      </>
+      <ActionFeedback cue={actionCue}/>
       {/* Consumables bar — desktop only */}
       {game.result === "playing" && (
         <ConsumableBar
@@ -2821,14 +2371,23 @@ export default function GameBoard({ onGameOver, isDaily = false, isEndless = fal
       )}
 
       {/* Hand */}
+      {game.result === "playing" && game.hand.every((tile) => legalSides(tile).length === 0) && (
+        <p role="status" className="text-xs text-amber-100/80 text-center">{translate("board.noMoves")}</p>
+      )}
       <Hand
+        getPlacements={legalSides}
         tiles={game.hand}
         chain={game.chain}
         onPlay={handlePlay}
         disabled={game.result !== "playing"}
         skin={activeSkin}
         onDiscard={handleDiscard}
+        actionCue={actionCue}
         canDiscard={!!(game.actions && canDiscard(game.actions))}
+        getScoreExplanation={(tile, side) => explainTileScore(game, tile, scoreContext, {
+          wild: wildNextActive, freeze: freezeEndActive, double: doubleNextScoreActive,
+          restriction: activeBossRestriction, endless: isEndless, boss: !!currentBoss,
+        }, side)}
         getScorePreview={previewScoreFor}
       />
     </motion.div>

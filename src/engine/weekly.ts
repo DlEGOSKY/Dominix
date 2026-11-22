@@ -33,6 +33,8 @@ function getWeeklySeed(): number {
   return year * 100 + week;
 }
 
+export const getWeeklySeedValue = getWeeklySeed;
+
 export function getWeeklyLabel(): string {
   const { year, week } = getISOWeek();
   return `Semana ${week} · ${year}`;
@@ -135,17 +137,17 @@ export function getWeeklyRecord(): WeeklyRecord | null {
   }
 }
 
-export function saveWeeklyResult(score: number, round: number): WeeklyRecord {
-  const current = getWeeklyRecord();
+export function saveWeeklyResult(score: number, round: number, seed = getWeeklySeed()): WeeklyRecord {
+  const current = seed === getWeeklySeed() ? getWeeklyRecord() : null;
   const next: WeeklyRecord = {
-    seed: getWeeklySeed(),
+    seed,
     bestScore: Math.max(score, current?.bestScore ?? 0),
     bestRound: Math.max(round, current?.bestRound ?? 0),
     runs: (current?.runs ?? 0) + 1,
     lastPlayedAt: Date.now(),
   };
   try {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(next));
+    if (seed === getWeeklySeed()) localStorage.setItem(STORAGE_KEY, JSON.stringify(next));
   } catch {
     /* ignore */
   }

@@ -2,11 +2,14 @@ import { motion } from "framer-motion";
 import type { ShopItem } from "@/engine/shop";
 import { useTranslation, t as translate } from "@/engine/i18n";
 import RelicCard from "./RelicCard";
+import { useState } from "react";
+import { useReduceMotion } from "@/hooks/useSettings";
+import EncounterBackdrop from "./EncounterBackdrop";
 
 interface ShopScreenProps {
   items: ShopItem[];
   gold: number;
-  onBuy: (item: ShopItem) => void;
+  onBuy: (item: ShopItem) => boolean;
   onSkip: () => void;
   rerollCost?: number;
   onReroll?: () => void;
@@ -39,12 +42,16 @@ function getItemAccent(type: ShopItem["type"]) {
 export default function ShopScreen({ items, gold, onBuy, onSkip, rerollCost, onReroll }: ShopScreenProps) {
   // Subscribe to language changes so getItemAccent() re-renders on switch.
   const { t } = useTranslation();
+  const reducedMotion = useReduceMotion();
+  const [receipt, setReceipt] = useState<{ name: string; cost: number; bought: boolean } | null>(null);
+  const [hasPurchased, setHasPurchased] = useState(false);
   return (
-    <div className="min-h-screen flex flex-col items-center justify-center px-4 sm:px-6 py-8 sm:py-12">
+    <div className="min-h-screen flex flex-col items-center justify-center px-4 sm:px-6 py-8 sm:py-12 relative isolate">
+      <EncounterBackdrop scene="shop" />
       <motion.div
         initial={{ opacity: 0, y: -20 }}
         animate={{ opacity: 1, y: 0 }}
-        className="flex flex-col items-center gap-3 mb-10"
+        className="flex flex-col items-center gap-3 mb-10 relative"
       >
         <div className="w-14 h-14 rounded-2xl bg-accent-gold/10 border border-accent-gold/30 flex items-center justify-center mb-1">
           <div className="w-6 h-6 rounded-full bg-accent-gold/70" />
@@ -54,26 +61,35 @@ export default function ShopScreen({ items, gold, onBuy, onSkip, rerollCost, onR
           <div className="w-3 h-3 rounded-full bg-accent-gold/80" />
           <span className="font-mono font-bold text-xl text-accent-gold">{gold}</span>
         </div>
+        <p role="status" aria-live="polite" className={`absolute top-full left-1/2 -translate-x-1/2 mt-2 w-80 max-w-[90vw] min-h-5 text-center text-xs ${receipt?.bought ? "text-emerald-300" : "text-amber-200"}`}>
+          {receipt ? receipt.bought ? t("shop.purchaseReceipt", { name: receipt.name, n: receipt.cost }) : t("shop.purchaseUnavailable") : ""}
+        </p>
       </motion.div>
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-5 max-w-2xl w-full mb-10">
+      <motion.div layout={!reducedMotion} className="grid grid-cols-1 sm:grid-cols-2 gap-5 max-w-2xl w-full mb-10">
         {items.map((item, i) => {
           const canAfford = gold >= item.cost;
           const accent = getItemAccent(item.type);
           return (
             <motion.button
               key={item.id}
+              layout={!reducedMotion}
               initial={{ opacity: 0, y: 20, scale: 0.95 }}
               animate={{ opacity: 1, y: 0, scale: 1 }}
               transition={{ delay: i * 0.08, type: "spring", stiffness: 300, damping: 25 }}
               whileHover={canAfford ? { scale: 1.03, y: -4 } : undefined}
               whileTap={canAfford ? { scale: 0.97 } : undefined}
-              onClick={() => canAfford && onBuy(item)}
+              onClick={() => {
+                if (!canAfford) return;
+                const bought = onBuy(item);
+                setReceipt({ name: item.name, cost: item.cost, bought });
+                if (bought) setHasPurchased(true);
+              }}
               disabled={!canAfford}
               className={[
                 "relative p-5 rounded-2xl border-2 text-left overflow-hidden shop-card transition-shadow duration-300",
                 canAfford ? accent.border : "border-surface-700/50",
-                canAfford ? accent.glow : "opacity-40 cursor-not-allowed",
+                canAfford ? accent.glow : "opacity-70 cursor-not-allowed",
                 canAfford ? "cursor-pointer" : "",
               ].join(" ")}
             >
@@ -92,14 +108,14 @@ export default function ShopScreen({ items, gold, onBuy, onSkip, rerollCost, onR
                     <span
                       className={[
                         "px-3 py-1 rounded-lg text-sm font-mono font-bold",
-                        canAfford ? "bg-accent-gold/15 text-accent-gold border border-accent-gold/20" : "bg-surface-700 text-surface-500",
+                        canAfford ? "bg-accent-gold/15 text-accent-gold border border-accent-gold/20" : "bg-surface-700 text-accent-silver border border-accent-silver/15",
                       ].join(" ")}
                     >
                       {item.cost}g
                     </span>
                     {!canAfford && (
-                      <span className="text-[9px] font-mono text-red-400/60 tabular-nums">
-                        faltan {item.cost - gold}g
+                      <span className="text-[10px] font-mono text-red-300 tabular-nums">
+                        {t("shop.missingGold", { n: item.cost - gold })}
                       </span>
                     )}
                   </div>
@@ -108,13 +124,13 @@ export default function ShopScreen({ items, gold, onBuy, onSkip, rerollCost, onR
                   )}
                 </div>
               </div>
-              <p className="relative text-sm text-accent-silver/50 leading-relaxed">{item.description}</p>
+              <p className="relative text-sm text-accent-silver/80 leading-relaxed">{item.description}</p>
             </motion.button>
           );
         })}
-      </div>
+      </motion.div>
 
-      <div className="flex gap-3">
+      <div className="flex flex-wrap justify-center gap-3">
         {onReroll && rerollCost !== undefined && (
           <motion.button
             initial={{ opacity: 0 }}
@@ -126,7 +142,7 @@ export default function ShopScreen({ items, gold, onBuy, onSkip, rerollCost, onR
               "px-6 py-3 rounded-xl border font-medium text-sm transition-all",
               gold >= rerollCost
                 ? "border-blue-500/40 text-blue-400 hover:bg-blue-500/10 cursor-pointer"
-                : "border-surface-700/50 text-surface-500 opacity-40 cursor-not-allowed",
+                : "border-surface-600 text-accent-silver/80 opacity-70 cursor-not-allowed",
             ].join(" ")}
           >
             {t("shop.reroll", { n: rerollCost })}
@@ -137,9 +153,9 @@ export default function ShopScreen({ items, gold, onBuy, onSkip, rerollCost, onR
           animate={{ opacity: 1 }}
           transition={{ delay: 0.5 }}
           onClick={onSkip}
-          className="px-8 py-3 rounded-xl border border-surface-600/50 text-accent-silver/50 font-medium hover:text-accent-silver/80 hover:border-surface-600 transition-all"
+          className="px-8 py-3 rounded-xl border border-surface-600/50 text-accent-silver/80 font-medium hover:text-accent-silver hover:border-surface-600 transition-all"
         >
-          {t("shop.skip")}
+          {t(hasPurchased ? "shop.continue" : "shop.skip")}
         </motion.button>
       </div>
     </div>

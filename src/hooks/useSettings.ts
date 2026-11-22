@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { useReducedMotion } from "framer-motion";
 import { getSettings, subscribeSettings, updateSettings, type GameSettings } from "@/engine/settings";
 
 export function useSettings(): [GameSettings, (patch: Partial<GameSettings>) => void] {
@@ -9,5 +10,6 @@ export function useSettings(): [GameSettings, (patch: Partial<GameSettings>) => 
 
 export function useReduceMotion(): boolean {
   const [s] = useSettings();
-  return s.reduceMotion;
+  const system = useReducedMotion();
+  return s.reduceMotion || !!system;
 }

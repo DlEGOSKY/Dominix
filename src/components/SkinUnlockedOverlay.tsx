@@ -45,7 +45,6 @@ export default function SkinUnlockedOverlay({ skinIds, onComplete }: SkinUnlocke
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [index, skinIds.length]);
 
   const advance = () => {

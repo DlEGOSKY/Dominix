@@ -89,7 +89,7 @@ describe("i18nContent — patterns", () => {
     setLanguage("en");
     const loc = localizePattern(fractal);
     expect(loc.name).toBe("Fractal");
-    expect(loc.description).toBe("Every sum is a power of 2 (1, 2, 4, 8)");
+    expect(loc.description).toBe("4+ tiles; every pip sum is 1, 2, 4 or 8");
   });
 
   it("falls back to Spanish when a pattern id is unknown", () => {

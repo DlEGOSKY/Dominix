@@ -74,9 +74,10 @@ export function getDailyProgress(): DailyProgress | null {
   }
 }
 
-export function saveDailyProgress(bestRound: number, completed: boolean): void {
+export function saveDailyProgress(bestRound: number, completed: boolean, seed = getDailySeed()): void {
+  if (seed !== getDailySeed()) return;
   const progress: DailyProgress = {
-    seed: getDailySeed(),
+    seed,
     bestRound,
     completed,
   };
