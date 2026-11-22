@@ -1,0 +1,83 @@
+{
+  "source_sha256": "cb05db3304de08f3a5446f295b5c81795bd1cbcc827bbe5d9e13a4a71da4628d",
+  "size": [
+    672,
+    96
+  ],
+  "frame": 96,
+  "palette_colors": 128,
+  "resampling": "nearest",
+  "bytes": 43054,
+  "portraits": [
+    {
+      "value": 0,
+      "name": "Apagado",
+      "source_crop": [
+        30,
+        20,
+        360
+      ],
+      "sha256": "20d6330c67f173c753b14eafa78b41a274afc72faa753d6bc143e8038f19de97"
+    },
+    {
+      "value": 1,
+      "name": "Farol",
+      "source_crop": [
+        450,
+        20,
+        350
+      ],
+      "sha256": "233674c925b3db90a32c7b6a4b12c975977bf8ac9e1d2f51b0139827d3c121fd"
+    },
+    {
+      "value": 2,
+      "name": "Pinza",
+      "source_crop": [
+        850,
+        25,
+        360
+      ],
+      "sha256": "9b622796117ffe31bf4bb3063d388caa7ed03c23b32619ca3cc07782b64e3bb5"
+    },
+    {
+      "value": 3,
+      "name": "Triciclo",
+      "source_crop": [
+        25,
+        435,
+        360
+      ],
+      "sha256": "512eaf7b42b3e7502c05cd371735fe3df89f201939190791ece5fbc7138d945a"
+    },
+    {
+      "value": 4,
+      "name": "Remache",
+      "source_crop": [
+        445,
+        435,
+        360
+      ],
+      "sha256": "7e271b289b45aa51e972409610045953e64e82bb87f6ded65e918f0e02db69d5"
+    },
+    {
+      "value": 5,
+      "name": "Dínamo",
+      "source_crop": [
+        850,
+        435,
+        370
+      ],
+      "sha256": "24dccabbd3b14c86bb219d368bda40a14f1a81f4f68932be28796b03577a7ae0"
+    },
+    {
+      "value": 6,
+      "name": "Caldero",
+      "source_crop": [
+        25,
+        860,
+        365
+      ],
+      "sha256": "d336a7c3278aec38f619c8d66ce973e836d2e3e840b636ba9a9ab8e22307c7e9"
+    }
+  ]
+}

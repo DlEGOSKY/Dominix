@@ -1,11 +1,31 @@
+import { useReduceMotion } from "@/hooks/useSettings";
 import React from "react";
 import { motion } from "framer-motion";
 import type { Tile } from "@/types/domino";
 import { audio } from "@/engine/audio";
 import { getTileSkin } from "@/engine/tileSkins";
+import { MaterialSurface, RomanHalf, romanValue } from "@/engine/materialArt";
+import { t } from "@/engine/i18n";
+import EditionBadge from "./EditionBadge";
+import NumericTileRibbon from "./NumericTileRibbon";
 
 export type TileSkin =
   | "default"
+  | "banda_doble"
+  | "chatarra_lujo"
+  | "invitados_umbral"
+  | "among_us"
+  | "hollow_knight"
+  | "one_piece"
+  | "roma_eterna"
+  | "diamond"
+  | "imperium"
+  | "eclipse_glass"
+  | "orbital_reactor"
+  | "sunken_temple"
+  | "dragon_forge"
+  | "alchemist_cabinet"
+  | "midnight_express"
   | "obsidian"
   | "emerald"
   | "ruby"
@@ -29,7 +49,12 @@ interface TileViewProps {
   highlight?: boolean;
   size?: "sm" | "md";
   animate?: boolean;
+  /** Hand owns the outer exit; other containers retain their presence lifecycle. */
+  animateExit?: boolean;
   skin?: TileSkin;
+  /** Non-interactive collection preview; avoids buttons inside skin buttons. */
+  staticView?: boolean;
+  placementSound?: boolean;
 }
 
 const dots: Record<number, number[][]> = {
@@ -67,12 +92,20 @@ const dots: Record<number, number[][]> = {
   ],
 };
 
-function ValueArtHalf({ value, iconFn, cellSize, accent }: {
+function ValueArtHalf({ value, iconFn, cellSize, accent, portrait = false, labelEdge = "bottom", roman = false, showLabel = true }: {
   value: number;
   iconFn: (v: number) => React.ReactNode;
   cellSize: number;
   accent: string;
+  portrait?: boolean;
+  roman?: boolean;
+  showLabel?: boolean;
+  labelEdge?: "top" | "bottom";
 }) {
+  if (portrait) return <div aria-hidden="true" className="relative overflow-hidden rounded-sm" style={{ width: cellSize, height: cellSize }}>
+    {iconFn(value)}
+    {showLabel && <span data-value-label={value} className={`absolute right-0 ${labelEdge === "top" ? "top-0" : "bottom-0"} px-1 rounded-sm bg-surface-900/95 border border-white/20 font-mono font-black tabular-nums leading-none`} style={{ fontSize: cellSize >= 48 ? 12 : 10, lineHeight: "14px", color: accent }}>{roman && value > 0 ? romanValue(value) : value}</span>}
+  </div>;
   const iconSize = Math.round(cellSize * 0.62);
   return (
     <div
@@ -84,7 +117,7 @@ function ValueArtHalf({ value, iconFn, cellSize, accent }: {
       </div>
       <span
         className="font-mono font-bold tabular-nums leading-none"
-        style={{ fontSize: 7, color: accent, opacity: 0.55 }}
+        style={{ fontSize: cellSize >= 48 ? 10 : 9, color: accent }}
       >
         {value}
       </span>
@@ -106,7 +139,7 @@ function DotGrid({ value, cellSize, dotClass, dotShape = "round" }: { value: num
 
   return (
     <div
-      className="grid grid-cols-3 grid-rows-3 place-items-center"
+      className="relative z-10 grid grid-cols-3 grid-rows-3 place-items-center"
       style={{ width: cellSize, height: cellSize }}
     >
       {Array.from({ length: 9 }).map((_, idx) => {
@@ -129,8 +162,8 @@ function DotGrid({ value, cellSize, dotClass, dotShape = "round" }: { value: num
 }
 
 // Skin palettes are kept in `@/engine/tileSkins.tsx`. The view fetches the
-// active definition through `getTileSkin(id)` and only applies it when the
-// special tile types (wild / golden / mirror / bomb / locked) are not in play.
+// active definition through `getTileSkin(id)`. Portrait packs retain their art
+// under special-type markers; legacy skins keep the original type palettes.
 
 export default function TileView({
   tile,
@@ -139,8 +172,12 @@ export default function TileView({
   highlight = false,
   size = "md",
   animate = true,
+  animateExit = true,
   skin = "default",
+  staticView = false,
+  placementSound = true,
 }: TileViewProps) {
+  const reducedMotion = useReduceMotion();
   const cellSize = size === "md" ? 48 : 36;
   const isDouble = tile.top === tile.bottom;
   const tileType = tile.type ?? "normal";
@@ -152,7 +189,7 @@ export default function TileView({
 
   const handleClick = () => {
     if (!disabled && onClick) {
-      audio.play("tile_place");
+      if (placementSound) audio.play("tile_place");
       onClick();
     }
   };
@@ -164,9 +201,13 @@ export default function TileView({
   };
 
   const skinDef = getTileSkin(skin);
-  const skinActive = !isWild && !isGolden && !isLocked && !isMirror && !isBomb && skin !== "default";
+  const isPortrait = skinDef.valueArtStyle === "portrait";
+  const isRoman = skinDef.valueArtStyle === "roman";
+  const isSpecial = isWild || isGolden || isLocked || isMirror || isBomb;
+  const skinActive = skinDef.id !== "default" && (isPortrait || isRoman || !!skinDef.material || !isSpecial);
   const skinStyle = skinActive ? skinDef : null;
   const skinDotShape = skinStyle?.dotShape ?? "round";
+  const romanAccent = isGolden ? "#37220c" : isSpecial ? "#fff0d4" : skinDef.accent;
 
   const getBgClass = () => {
     if (isWild) return "bg-gradient-to-br from-purple-700/90 via-purple-800/80 to-indigo-900/90";
@@ -185,7 +226,7 @@ export default function TileView({
     if (isGolden) return "border-yellow-400/60";
     if (isMirror) return "border-cyan-400/60";
     if (isBomb) return "border-red-400/60";
-    if (isLocked) return "border-surface-500/50";
+    if (isLocked) return "border-accent-silver/30";
     if (skinStyle) return skinStyle.border;
     return "border-tile-border/60";
   };
@@ -200,6 +241,7 @@ export default function TileView({
   };
 
   const getEffectClass = () => {
+    if (reducedMotion || staticView) return "";
     if (isWild) return "wild-holo";
     if (isGolden) return "golden-shimmer";
     if (isMirror) return "tile-mirror-flow";
@@ -222,25 +264,28 @@ export default function TileView({
   })();
 
   // Build a screen-reader description: type + values + edition + pact
-  const describeType = isWild ? "Comodin" : isGolden ? "Dorada" : isMirror ? "Espejo" : isBomb ? "Bomba" : isLocked ? "Bloqueada" : isDouble ? "Doble" : "";
+  const describeType = isWild ? t("tile.aria.wild") : isGolden ? t("tile.aria.golden") : isMirror ? t("tile.type.mirror") : isBomb ? t("tile.type.bomb") : isLocked ? t("tile.aria.locked") : isDouble ? t("tile.aria.double") : "";
   const ariaLabel = [
     describeType,
-    `Ficha ${tile.top} ${tile.bottom}`,
-    tile.pact ? "con Pacto Sagrado" : "",
-    tile.edition ? `edicion ${tile.edition}` : "",
+    t("tile.aria.values", { top: tile.top, bottom: tile.bottom }),
+    tile.pact ? t("tile.aria.pact") : "",
+    tile.edition ? t("tile.aria.edition", { edition: tile.edition }) : "",
   ].filter(Boolean).join(", ");
 
+  const Root = staticView ? motion.div : motion.button;
   return (
-    <motion.button
-      onClick={handleClick}
-      onHoverStart={handleHover}
-      disabled={disabled || isLocked}
+    <Root
+      {...(staticView ? { role: "img" } : { disabled: disabled || isLocked })}
+      onClick={staticView ? undefined : handleClick}
+      onHoverStart={staticView ? undefined : handleHover}
       aria-label={ariaLabel}
-      initial={animate ? { scale: 0.8, opacity: 0 } : false}
+      data-skin={skinActive ? skinDef.id : "default"}
+      data-tile-id={tile.id}
+      initial={animate && !reducedMotion ? { scale: 0.8, opacity: 0 } : false}
       animate={{ scale: 1, opacity: 1 }}
-      exit={{ scale: 0.8, opacity: 0 }}
-      whileHover={!disabled && !isLocked ? { scale: 1.08, y: -4 } : undefined}
-      whileTap={!disabled && !isLocked ? { scale: 0.95 } : undefined}
+      exit={animateExit && !reducedMotion ? { scale: 0.8, opacity: 0 } : undefined}
+      whileHover={!disabled && !isLocked && !staticView && !reducedMotion ? { scale: 1.08, y: -4 } : undefined}
+      whileTap={!disabled && !isLocked && !staticView && !reducedMotion ? { scale: 0.95 } : undefined}
       transition={{ type: "spring", stiffness: 400, damping: 25 }}
       className={[
         "relative flex flex-col items-center rounded-xl border-2 overflow-hidden",
@@ -249,7 +294,7 @@ export default function TileView({
         getShadowClass(),
         getEffectClass(),
         editionClass,
-        disabled || isLocked
+        staticView ? "cursor-default" : disabled || isLocked
           ? "opacity-40 cursor-not-allowed"
           : "cursor-pointer",
         getBgClass(),
@@ -257,7 +302,7 @@ export default function TileView({
       style={{ padding: size === "md" ? 8 : 5 }}
     >
       {/* Highlight pulse for playable tiles */}
-      {highlight && !disabled && !isLocked && (
+      {highlight && !disabled && !isLocked && !reducedMotion && (
         <motion.div
           className="absolute -inset-0.5 rounded-xl border border-accent-gold/40 pointer-events-none"
           animate={{ opacity: [0.3, 0.6, 0.3] }}
@@ -265,65 +310,58 @@ export default function TileView({
         />
       )}
       {/* Skin texture rendered behind everything else (cosmetic only) */}
+      {skinStyle?.material && <MaterialSurface material={skinStyle.material} tileId={tile.id} special={isSpecial} />}
       {skinStyle?.pattern}
       {/* Skin corner glyph — suppressed if the pact already owns that slot */}
       {skinStyle?.glyph && !tile.pact && skinStyle.glyph}
       {tile.pact && (
         <>
           <div className="absolute inset-0 rounded-xl pointer-events-none tile-pact-aura" />
-          <div className="absolute -top-0.5 -left-0.5 w-4 h-4 rounded-full bg-gradient-to-br from-amber-300 to-amber-600 border border-amber-200/80 flex items-center justify-center shadow-[0_0_6px_rgba(251,191,36,0.7)] pointer-events-none">
+            {!skinDef.valueFace && <div data-pact-badge className="absolute z-30 -top-0.5 -left-0.5 w-4 h-4 rounded-full bg-gradient-to-br from-amber-300 to-amber-600 border border-amber-200/80 flex items-center justify-center shadow-[0_0_6px_rgba(251,191,36,0.7)] pointer-events-none">
             <svg width="8" height="8" viewBox="0 0 24 24" fill="none" className="text-amber-950">
               <path d="M12 3l2.5 6.5L21 11l-5 4.5 1.5 6.5L12 18.5 6.5 22 8 15.5 3 11l6.5-1.5z" stroke="currentColor" strokeWidth="1.8" strokeLinejoin="round" fill="currentColor" />
             </svg>
-          </div>
+            </div>}
         </>
       )}
-      {isWild && (
-        <div className="absolute -top-0.5 -right-0.5 px-1.5 py-0.5 rounded-bl-lg bg-purple-500/90 text-[7px] text-white font-bold uppercase tracking-wider">
-          Wild
+      {isWild && !skinDef.valueFace && (
+        <div data-tile-badge="wild" className="absolute z-20 -top-0.5 -right-0.5 px-1 py-0.5 rounded-bl-lg bg-purple-800 text-[8px] leading-none text-white font-bold uppercase tracking-wide">
+          {t(size === "sm" ? "tile.badge.wild" : "tile.aria.wild")}
         </div>
       )}
-      {isGolden && (
-        <div className="absolute -top-0.5 -right-0.5 px-1.5 py-0.5 rounded-bl-lg bg-gradient-to-r from-yellow-500 to-amber-500 text-[7px] text-surface-900 font-bold uppercase tracking-wider">
+      {isGolden && !skinDef.valueFace && (
+        <div className="absolute z-20 -top-0.5 -right-0.5 px-1.5 py-0.5 rounded-bl-lg bg-gradient-to-r from-yellow-500 to-amber-500 text-[8px] leading-none text-surface-900 font-bold uppercase tracking-wider">
           x2
         </div>
       )}
+      {!skinDef.valueFace && (isPortrait || isRoman || !!skinStyle?.material) && (isMirror || isBomb) && <span data-tile-badge={isMirror ? "mirror" : "bomb"} className={`absolute z-20 -top-0.5 -right-0.5 px-1 py-0.5 rounded-bl-lg text-[8px] leading-none text-white font-bold ${isMirror ? "bg-cyan-800" : "bg-red-800"}`}>
+        {t(size === "sm" ? isMirror ? "tile.badge.mirror" : "tile.badge.bomb" : isMirror ? "tile.type.mirror" : "tile.type.bomb")}
+      </span>}
       {isLocked && (
-        <div className="absolute inset-0 flex items-center justify-center bg-surface-900/70 rounded-xl backdrop-blur-[1px]">
-          <div className="w-6 h-6 rounded-full bg-surface-600 border border-surface-500 flex items-center justify-center">
-            <div className="w-2 h-2.5 border-2 border-surface-400 rounded-sm border-b-0" />
+        <div className="absolute z-20 inset-0 flex items-center justify-center bg-surface-900/70 rounded-xl backdrop-blur-[1px]">
+          <div className="w-6 h-6 rounded-full bg-surface-600 border border-accent-silver/40 flex items-center justify-center">
+            <div className="w-2 h-2.5 border-2 border-accent-silver/80 rounded-sm border-b-0" />
           </div>
         </div>
       )}
-      {skinActive && skinDef.valueIcon ? (
-        <ValueArtHalf value={tile.top} iconFn={skinDef.valueIcon} cellSize={cellSize} accent={skinDef.accent} />
+      {isRoman ? <RomanHalf value={tile.top} cellSize={cellSize} accent={romanAccent} /> : skinActive && skinDef.valueIcon ? (
+        <ValueArtHalf value={tile.top} iconFn={skinDef.valueFace ?? skinDef.valueIcon} cellSize={cellSize} accent={skinDef.accent} portrait={isPortrait} roman={skinDef.portraitNumerals === "roman" && !skinDef.valueFace} showLabel={!skinDef.valueFace}/>
       ) : (
         <DotGrid value={tile.top} cellSize={cellSize} dotClass={dotClass} dotShape={isWild || isGolden || isMirror || isBomb ? "round" : skinDotShape} />
       )}
-      <div className="w-4/5 my-1.5 relative">
+      <div className="w-4/5 my-1.5 relative z-10">
         <div className={["h-px bg-gradient-to-r from-transparent to-transparent", skinStyle?.separator ?? "via-tile-border/40"].join(" ")} />
+        {skinDef.valueFace && <NumericTileRibbon tile={tile} cellSize={cellSize}/>}
         {highlight && (
           <div className="absolute inset-0 h-px bg-gradient-to-r from-transparent via-accent-gold/40 to-transparent" />
         )}
       </div>
-      {skinActive && skinDef.valueIcon ? (
-        <ValueArtHalf value={tile.bottom} iconFn={skinDef.valueIcon} cellSize={cellSize} accent={skinDef.accent} />
+      {isRoman ? <RomanHalf value={tile.bottom} cellSize={cellSize} accent={romanAccent} labelEdge="top" /> : skinActive && skinDef.valueIcon ? (
+        <ValueArtHalf value={tile.bottom} iconFn={skinDef.valueFace ?? skinDef.valueIcon} cellSize={cellSize} accent={skinDef.accent} portrait={isPortrait} labelEdge="top" roman={skinDef.portraitNumerals === "roman" && !skinDef.valueFace} showLabel={!skinDef.valueFace}/>
       ) : (
         <DotGrid value={tile.bottom} cellSize={cellSize} dotClass={dotClass} dotShape={isWild || isGolden || isMirror || isBomb ? "round" : skinDotShape} />
       )}
-      {tile.edition && (
-        <div
-          className={[
-            "absolute -bottom-0.5 left-0 right-0 text-center py-0.5 text-[7px] font-bold uppercase tracking-widest",
-            tile.edition === "foil" && "bg-blue-500/30 text-blue-100",
-            tile.edition === "holo" && "bg-purple-500/30 text-purple-100",
-            tile.edition === "polychrome" && "bg-pink-500/30 text-pink-100",
-            tile.edition === "negative" && "bg-slate-700/50 text-slate-100",
-          ].filter(Boolean).join(" ")}
-        >
-          {tile.edition}
-        </div>
-      )}
-    </motion.button>
+      {tile.edition && !skinDef.valueFace && <EditionBadge edition={tile.edition} />}
+    </Root>
   );
 }

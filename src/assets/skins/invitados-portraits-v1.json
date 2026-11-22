@@ -1,0 +1,83 @@
+{
+  "source_sha256": "03f2bba2217ffd491784296cd7534569ddb32935fd2d5269ddff2237860759b4",
+  "size": [
+    672,
+    96
+  ],
+  "frame": 96,
+  "palette_colors": 128,
+  "resampling": "nearest",
+  "bytes": 42358,
+  "portraits": [
+    {
+      "value": 0,
+      "name": "La Náufraga",
+      "source_crop": [
+        12,
+        10,
+        315
+      ],
+      "sha256": "a36b99fc2520b80c4d753f02495d57fe2c76585181ad2b6c5db9de0f09612741"
+    },
+    {
+      "value": 1,
+      "name": "El Ronin",
+      "source_crop": [
+        350,
+        0,
+        325
+      ],
+      "sha256": "257c21fad36376bd96c969c660a2df5e139d1677530bda78688561aa932ca19b"
+    },
+    {
+      "value": 2,
+      "name": "La Sabueso",
+      "source_crop": [
+        690,
+        0,
+        330
+      ],
+      "sha256": "103f7f480c42d933f0566549e29c78ab46abb55620628c9c24a92fa4f5bce893"
+    },
+    {
+      "value": 3,
+      "name": "La Vidente",
+      "source_crop": [
+        0,
+        350,
+        330
+      ],
+      "sha256": "1a1eb6cfee8321b652778d04da92f98d08279bdc2a82c3ab1d23626f2bef678a"
+    },
+    {
+      "value": 4,
+      "name": "El Piloto",
+      "source_crop": [
+        350,
+        350,
+        330
+      ],
+      "sha256": "0a14f838dda5e208bfe1919271d809d761ec79f8819931a7ec45b5db676ef5f3"
+    },
+    {
+      "value": 5,
+      "name": "La Carmesí",
+      "source_crop": [
+        690,
+        350,
+        330
+      ],
+      "sha256": "d91e0a880f0aec4f7c891bc3df4a85a10feec93025eafd1ae81a688dc9917794"
+    },
+    {
+      "value": 6,
+      "name": "El Errante",
+      "source_crop": [
+        0,
+        690,
+        330
+      ],
+      "sha256": "e1a1ba0d8af74b40f2ffea20d2176c631a8c77f6ee123fcc1ca6fee9ca9ae97b"
+    }
+  ]
+}
