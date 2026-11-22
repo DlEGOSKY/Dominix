@@ -1,0 +1,70 @@
+.home-screen { position: relative; isolation: isolate; display: flex; flex-direction: column; min-height: 100vh; min-height: 100dvh; }
+.home-screen button { -webkit-tap-highlight-color: transparent; }
+.home-screen button:focus-visible, .home-menu-content button:focus-visible, .home-modes-content button:focus-visible, .home-progress-content button:focus-visible { outline: 2px solid #d4a853; outline-offset: 4px; }
+.home-atmosphere { position: absolute; inset: 0; z-index: -1; pointer-events: none; background: radial-gradient(ellipse at 32% 32%, #d4a85306, transparent 52%), radial-gradient(ellipse at 72% 62%, #a855f706, transparent 50%); }
+.home-navigation { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 12px clamp(16px, 3vw, 36px); }
+.home-navigation button { min-height: 44px; padding: 0 12px; font-size: 12px; font-weight: 600; border-radius: 9px; transition: background-color .15s, border-color .15s; }
+.home-help { color: #7db6f6; border: 1px solid #3b82f63d; background: #3b82f60b; }
+.home-help:hover { background: #3b82f61a; }
+.home-navigation-right { display: flex; align-items: center; gap: 8px; }
+.home-nav-link { color: #c2b1dd; }
+.home-nav-link:hover { background: #a78bfa0e; }
+.home-menu-trigger { display: flex; align-items: center; gap: 8px; color: #c6cbd5; background: #18182066; border: 1px solid #343443; }
+.home-menu-trigger:hover { border-color: #8c829f; }
+.home-main { flex: 1; width: 100%; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: clamp(28px, 5vh, 44px); padding: 28px 20px 40px; }
+.home-identity { text-align: center; }
+.home-identity h1 { font: 900 clamp(3.2rem, 8vw, 5rem)/1.08 "Inter", sans-serif; letter-spacing: -.045em; background: linear-gradient(#fff, #f2f2f3 55%, #91959f); background-clip: text; color: transparent; filter: drop-shadow(0 0 24px #d4a8530e); }
+.home-identity p { margin-top: 15px; color: #949cac; font-size: 10px; letter-spacing: .3em; text-transform: uppercase; }
+.home-play { display: flex; flex-direction: column; gap: 12px; width: min(100%, 350px); }
+.home-primary { min-height: 60px; padding: 14px 22px; display: flex; align-items: center; justify-content: center; gap: 14px; border-radius: 16px; background: linear-gradient(#d4a853, #cc850e); border: 1px solid #edc57855; color: #101018; font-size: 16px; font-weight: 800; box-shadow: 0 4px 12px #0004, inset 0 1px #ffe9b44d; }
+.home-primary svg { flex-shrink: 0; }
+.home-continue-copy { display: flex; flex-direction: column; align-items: center; gap: 3px; }
+.home-continue-round { color: #463413; font-size: 11px; font-weight: 600; }
+.home-secondary-actions { display: flex; gap: 8px; }
+.home-secondary { flex: 1; min-height: 44px; padding: 8px 12px; display: flex; justify-content: center; align-items: center; gap: 10px; color: #bec4d0; border-radius: 10px; border: 1px solid #34344399; background: #1818204d; font-size: 12px; font-weight: 600; }
+.home-secondary:hover { color: #fff; border-color: #716c8077; background: #24243077; }
+.home-recovery { color: #f0d6a0; font-size: 12px; line-height: 1.6; text-align: center; }
+.home-summary { width: min(100%, 540px); padding-top: 22px; border-top: 1px solid #a8b2c11a; display: grid; grid-template-columns: 1fr 1fr; gap: 22px; }
+.home-summary button { min-width: 0; min-height: 54px; display: flex; align-items: center; gap: 10px; text-align: left; border-radius: 8px; padding: 4px; }
+.home-summary button:hover .home-summary-title { color: #e8c97c; }
+.home-summary button > svg { color: #8d94a5; flex-shrink: 0; margin-left: auto; }
+.home-summary-title { display: block; color: #c5cbd6; font-size: 11px; font-weight: 600; }
+.home-summary-detail { display: block; color: #9099ac; font-size: 10px; margin-top: 4px; line-height: 1.5; }
+.home-progress-copy { flex: 1; min-width: 0; }
+.home-level-seal { width: 30px; height: 34px; border: 1px solid #d4a85344; border-radius: 8px; color: #e8c97c; display: grid; place-items: center; font: 700 14px "JetBrains Mono", monospace; flex-shrink: 0; }
+.home-mini-track { display: block; width: 100%; height: 2px; margin-top: 6px; background: #343443; overflow: hidden; border-radius: 3px; }
+.home-mini-track > span, .home-xp-track > span { display: block; height: 100%; background: linear-gradient(90deg, #a98546, #e3be65); border-radius: inherit; }
+.home-skin-preview { display: grid; place-items: center; width: 30px; height: 34px; flex-shrink: 0; overflow: hidden; border: 1px solid #7780924d; border-radius: 6px; color: #b9bdc7; }
+.home-appearance > span:nth-child(2) { min-width: 0; }
+.home-footer { position: relative; padding: 0 20px max(22px, env(safe-area-inset-bottom)); text-align: center; color: #818998; font-size: 10px; line-height: 1.5; letter-spacing: .08em; font-style: italic; }
+.home-menu-groups { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap: 20px; }
+.home-menu-groups h3, .home-next-unlocks h3 { color: #d4a853; font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: .14em; margin: 0 0 8px; }
+.home-menu-content button, .home-panel-action { display: flex; align-items: center; justify-content: space-between; gap: 12px; min-height: 44px; width: 100%; color: #d1d5df; font-size: 13px; padding: 8px 10px; border-radius: 8px; text-align: left; }
+.home-menu-content button:hover, .home-panel-action:hover { background: #242430; color: #fff; }
+.home-menu-content button svg, .home-panel-action svg { color: #959cac; flex-shrink: 0; }
+.home-menu-bottom { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap: 20px; margin-top: 18px; padding-top: 14px; border-top: 1px solid #343443; }
+.home-ascension { margin-top: 14px; color: #b9a99c; font-size: 11px; }
+.home-mode-date { color: #929aac; font-size: 11px; margin: 0 0 16px; }
+.home-mode-list { display: grid; gap: 10px; }
+.home-mode-card { display: flex; align-items: center; justify-content: space-between; gap: 14px; padding: 15px 16px; min-height: 76px; border: 1px solid #3b82f644; border-radius: 12px; background: linear-gradient(110deg,#3b82f618,#11111a); color: #9fc5fc; text-align: left; }
+.home-mode-card[data-tone="green"] { color: #7fdbbf; border-color: #10b98144; background: linear-gradient(110deg,#10b98118,#11111a); }
+.home-mode-card[data-tone="purple"] { color: #cfb0f9; border-color: #a855f744; background: linear-gradient(110deg,#a855f718,#11111a); }
+.home-mode-card[data-tone="rose"] { color: #e5acc8; border-color: #dc658d44; background: linear-gradient(110deg,#dc658d14,#11111a); }
+.home-mode-card strong { display: block; font-size: 14px; }
+.home-mode-card > span > span { display: block; color: #adb4c3; font-size: 11px; line-height: 1.6; margin-top: 4px; }
+.home-mode-card:hover:not(:disabled) { border-color: currentColor; }
+.home-mode-card:disabled { opacity: .5; cursor: not-allowed; }
+.home-stats { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap: 20px; padding: 4px 0 24px; }
+.home-stats dt { font-size: 11px; color: #a8b2c1; }
+.home-stats dd { font: 700 24px "JetBrains Mono", monospace; color: #ebd4a1; margin-top: 5px; }
+.home-level-detail { display: flex; justify-content: space-between; gap: 10px; font-size: 11px; color: #c4cbd5; }
+.home-xp-track { height: 5px; background: #343443; border-radius: 6px; overflow: hidden; margin-top: 9px; }
+.home-reward-hint { font-size: 11px; color: #b6bdcb; line-height: 1.6; margin-top: 12px; }
+.home-next-unlocks { margin-top: 22px; padding-top: 18px; border-top: 1px solid #343443; }
+.home-next-unlocks li { padding: 8px 0; color: #e2c78e; font-size: 12px; }
+.home-next-unlocks li p { color: #a8b2c1; font-size: 11px; margin-top: 4px; }
+.home-panel-action { border: 1px solid #343443; margin-top: 20px; }
+.home-empty-progress { color: #b6bdcb; font-size: 12px; line-height: 1.6; margin-bottom: 20px; }
+@media (max-width: 440px) { .home-summary { grid-template-columns: 1fr; gap: 10px; max-width: 350px; padding-top: 16px; } .home-summary button { padding: 4px 8px; } .home-summary-detail { font-size: 11px; } .home-main { gap: 28px; padding-top: 20px; padding-bottom: 28px; } }
+@media (max-height: 620px) { .home-main { gap: 20px; padding-top: 14px; padding-bottom: 18px; } .home-identity h1 { font-size: clamp(3rem,7vw,4rem); } .home-identity p { margin-top: 10px; } .home-footer { padding-bottom: 12px; } }
+@media (prefers-reduced-motion: reduce) { .home-screen button { transition: none; } }
