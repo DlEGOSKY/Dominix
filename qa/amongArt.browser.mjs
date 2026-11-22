@@ -1,0 +1,8 @@
+import assert from 'node:assert/strict';
+import {writeFile} from 'node:fs/promises';
+const {chromium}=await import(process.argv[2]);const browser=await chromium.launch({executablePath:process.argv[3],headless:true});const output=process.argv[4],errors=[],checks=[];
+try{const page=await browser.newPage({viewport:{width:1440,height:1100},reducedMotion:'reduce'});page.on('pageerror',e=>errors.push(String(e)));page.on('console',m=>{if(m.type()==='error')errors.push(m.text());});await page.goto('http://127.0.0.1:5178/qa/amongArt.html',{waitUntil:'networkidle'});await page.evaluate(()=>document.fonts.ready);
+  for(const width of [1440,390]){await page.setViewportSize({width,height:1100});for(const id of ['higgsfield','integrated']){const panel=page.locator(`[data-art-candidate="${id}"]`);assert.equal(await panel.locator('[data-face-value]').count(),21);for(let value=0;value<7;value++)for(const face of await panel.locator(`[data-face-value="${value}"]`).all())assert.equal(await face.locator('[data-value-mark]').count(),value);checks.push({id,width,faces:7,sizes:[80,48,36],pipsExact:true});}
+    assert(await page.evaluate(()=>document.documentElement.scrollWidth===document.documentElement.clientWidth));await page.screenshot({path:`${output}/among-arte-comparacion-${width}.jpg`,type:'jpeg',quality:94,fullPage:true});}
+  await page.setViewportSize({width:1440,height:1100});await page.locator('[data-art-candidate="integrated"]').screenshot({path:`${output}/among-trajes-esmalte-final.jpg`,type:'jpeg',quality:94});assert.deepEqual(errors,[]);await writeFile(`${output}/among-arte-verificacion.json`,JSON.stringify({checks,errors},null,2));console.log(JSON.stringify({checks,errors},null,2));
+}finally{await browser.close();}
