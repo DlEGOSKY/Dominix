@@ -1926,15 +1926,7 @@ export default function GameBoard({ onGameOver, isDaily = false, isEndless = fal
     });
   }, [sanctuaryCtx]);
 
-  const handleTutorialNext = useCallback(() => {
-    setTutorialStep((prev) => {
-      if (prev >= TUTORIAL_STEPS.length - 1) {
-        markTutorialComplete();
-        return -1;
-      }
-      return prev + 1;
-    });
-  }, []);
+  const handleTutorialNext = useCallback(() => { markTutorialComplete(); setTutorialStep(-1); }, []);
 
   const handleTutorialSkip = useCallback(() => {
     markTutorialComplete();
@@ -2209,13 +2201,7 @@ export default function GameBoard({ onGameOver, isDaily = false, isEndless = fal
 
       {/* Tutorial overlay */}
       {tutorialStep >= 0 && tutorialStep < TUTORIAL_STEPS.length && (
-        <TutorialOverlay
-          step={TUTORIAL_STEPS[tutorialStep]!}
-          currentIndex={tutorialStep}
-          totalSteps={TUTORIAL_STEPS.length}
-          onNext={handleTutorialNext}
-          onSkip={handleTutorialSkip}
-        />
+        <TutorialOverlay onComplete={handleTutorialNext} onSkip={handleTutorialSkip} />
       )}
 
       {/* Cinematic act transition */}
